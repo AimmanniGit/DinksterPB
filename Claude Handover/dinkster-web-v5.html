@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dinkster web mockup v5</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+body{--g:#1D9E75;--gm:#5DCAA5;--gl:#E8F7F1;--gd:#0A5C43;--am:#EF9F27;--al:#FEF3E2;--aml:#FAC775;--rd:#E24B4A;--rl:#FEF0F0;--bl:#3B82F6;--ink:#111;--ink2:#333;--ink3:#666;--sf:#f8f7f3;--sf3:#e8e6df;--cd:#fff;--brm:rgba(0,0,0,.12);--r:16px;--body-bg:#dedad2}
+body[data-theme=genz1]{--g:#A855F7;--gm:#C084FC;--gl:#F5F0FF;--gd:#6B21A8;--am:#F43F8E;--al:#FFF0F7;--aml:#F9A8D4;--rd:#EF4444;--rl:#FEF2F2;--bl:#06B6D4;--ink:#0F0A1E;--ink2:#1E1040;--ink3:#5B4B8A;--sf:#FAF8FF;--sf3:#E9E0FF;--brm:rgba(168,85,247,.18);--r:20px;--body-bg:#EDE3FA}
+body[data-theme=genz2]{--g:#10B981;--gm:#34D399;--gl:#ECFDF5;--gd:#065F46;--am:#F59E0B;--al:#FFFBEB;--aml:#FDE68A;--rd:#F43F5E;--rl:#FFF1F2;--bl:#38BDF8;--ink:#111827;--ink2:#1F2937;--ink3:#6B7280;--sf:#FAFFFE;--sf3:#DCFCE7;--brm:rgba(16,185,129,.16);--r:24px;--body-bg:#D1FAE5}
+body[data-theme=mil1]{--g:#1E40AF;--gm:#3B82F6;--gl:#EFF6FF;--gd:#1E3A8A;--am:#D97706;--al:#FFFBEB;--aml:#FCD34D;--rd:#DC2626;--rl:#FEF2F2;--bl:#0891B2;--ink:#0F172A;--ink2:#1E293B;--ink3:#475569;--sf:#F8FAFC;--sf3:#E2E8F0;--brm:rgba(15,23,42,.12);--r:12px;--body-bg:#E2E8F0}
+body[data-theme=mil2]{--g:#6B7C5E;--gm:#8FA07E;--gl:#F2F5EE;--gd:#3D4F33;--am:#C0714A;--al:#FBF0EA;--aml:#E4A882;--rd:#B94040;--rl:#FBF0F0;--bl:#5B7FA6;--ink:#1C1917;--ink2:#292524;--ink3:#57534E;--sf:#FAFAF9;--sf3:#EAE8E3;--brm:rgba(28,25,23,.12);--r:14px;--body-bg:#E7E4DD}
+body{--disp:'Syne',system-ui,sans-serif;--body:'DM Sans',system-ui,sans-serif;--mono:'DM Mono',ui-monospace,monospace;
+ --bg:var(--sf);--surface:var(--cd);--muted:var(--ink3);--line:var(--brm);--accent:var(--gd);--ainv:#fff;--pop:var(--am);--danger:var(--rd);--ok:var(--g);--side:var(--gd);--sideink:#fff;
+ font-family:var(--body);background:var(--bg);color:var(--ink);min-height:100vh;display:grid;grid-template-columns:248px 1fr;font-size:14.5px}
+aside{background:var(--side);color:var(--sideink);padding:18px 14px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh;overflow:auto}
+.logo{font-family:var(--disp);font-weight:800;font-size:24px;letter-spacing:-.03em;padding:4px 10px 12px}
+.logo i{font-style:normal;color:var(--pop)}
+.roles{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;background:#ffffff14;border-radius:12px;padding:3px;margin-bottom:10px}
+.roles button{padding:7px 0;border-radius:9px;font-size:12.5px;font-weight:600;color:var(--sideink)}
+.roles button.on{background:var(--pop);color:#111}
+.nav{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:10px;font-weight:600;color:var(--sideink);width:100%;text-align:left;opacity:.82}
+.nav:hover{background:#ffffff12}
+.nav.on{background:#ffffff1c;opacity:1;box-shadow:inset 3px 0 0 var(--pop)}
+.nav .n{background:var(--pop);color:#0e2a20;border-radius:999px;font-size:11.5px;padding:1px 7px;font-weight:700}
+.side-foot{margin-top:auto;font-size:12.5px;opacity:.8;display:grid;gap:8px}
+.side-foot select{background:#ffffff14;border:1px solid #ffffff22;border-radius:8px;padding:6px;color:var(--sideink)}
+.side-foot option{color:#000}
+main{padding:22px 28px 60px;min-width:0}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+h1{font-family:var(--disp);font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+h2{font-family:var(--disp);font-size:19px;font-weight:650;margin-bottom:10px}
+h3{font-size:15px;font-weight:700}
+p,.mut{color:var(--muted);line-height:1.45}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.g21{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}
+.row{display:flex;align-items:center;gap:10px}.sp{justify-content:space-between}.grow{flex:1;min-width:0}.wrap{flex-wrap:wrap}
+.btn{background:var(--accent);color:var(--ainv);border-radius:11px;padding:9px 15px;font-weight:700}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.pop{background:var(--pop);color:#111}
+.btn.sm{padding:5px 10px;font-size:13px;border-radius:9px}
+.btn.danger{background:#b42318;color:#fff}
+.btn[disabled]{opacity:.4;pointer-events:none}
+.tag{font-size:12px;font-weight:700;padding:3px 9px;border-radius:8px;background:var(--aml);color:#111;white-space:nowrap}
+.tag.mut{background:var(--sf3);color:var(--ink2)}.tag.ok{background:var(--gl);color:var(--gd)}.tag.warn{background:var(--al);color:#7a4a00}.tag.bad{background:var(--rl);color:#a02020}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-weight:700;color:var(--muted);font-size:12.5px;padding:8px 10px;border-bottom:1px solid var(--line)}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+.in{width:100%;background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:8px 10px}
+label.l{display:block;font-size:12.5px;font-weight:700;color:var(--muted);margin:10px 0 4px}
+.kpi b{font-family:var(--disp);font-size:30px;display:block;line-height:1.1;letter-spacing:-.02em}
+.courts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.court{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:7px;min-height:176px}
+.court.live{border-color:var(--ok)}.court.called{border-color:#d49a1a}.court.blocked{opacity:.65;border-style:dashed}
+.sc{font-family:var(--disp);font-size:30px;font-weight:800;letter-spacing:-.02em}
+.bar{height:10px;border-radius:6px;background:var(--line);position:relative;overflow:hidden}
+.bar i{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:6px}
+.bar i.p{background:var(--pop)}
+.chat{display:flex;flex-direction:column;gap:10px;max-height:52vh;overflow:auto;padding:4px}
+.msg{max-width:84%;padding:10px 13px;border-radius:16px;line-height:1.4}
+.msg.u{background:var(--accent);color:var(--ainv);margin-left:auto;border-bottom-right-radius:4px}
+.msg.b{background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:4px;max-width:96%}
+.prop{border:1.5px solid var(--accent);border-radius:14px;padding:12px;margin-top:8px}
+.prop pre{white-space:pre-wrap;font-size:12.5px;background:var(--bg);border-radius:8px;padding:8px;margin:8px 0;color:var(--ink);font-family:ui-monospace,Menlo,monospace}
+.chip{display:inline-block;padding:5px 11px;border:1px solid var(--line);background:var(--surface);border-radius:999px;font-size:13px;font-weight:600;margin:0 6px 6px 0;text-align:left}
+.pv{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface)}
+.pv .hero{background:var(--accent);color:var(--ainv);padding:22px}
+.pv .hero h2{font-size:24px;margin:0 0 4px;color:var(--ainv)}
+.ov{position:fixed;inset:0;background:#000a;display:grid;place-items:center;z-index:50;padding:20px}
+.tablet{width:min(860px,100%);background:#000;border-radius:28px;padding:14px}
+.tablet .in2{background:var(--bg);color:var(--ink);border-radius:16px;padding:22px}
+.toast{position:fixed;right:20px;bottom:20px;background:#0e2a20;color:#fff;padding:12px 16px;border-radius:12px;z-index:60;max-width:380px;box-shadow:0 10px 30px #0006;animation:up .25s ease-out}
+@keyframes up{from{transform:translateY(12px);opacity:0}to{opacity:1}}
+:focus-visible{outline:3px solid var(--pop);outline-offset:2px}
+@media(max-width:1000px){body{grid-template-columns:1fr}aside{position:static;height:auto;flex-direction:row;flex-wrap:wrap}.g3,.g4,.g21,.g2{grid-template-columns:1fr}.courts{grid-template-columns:repeat(2,1fr)}.side-foot{margin:0}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body data-theme="default">
+<aside>
+ <div class="logo">dink<i>ster</i></div>
+ <div class="roles" role="tablist" id="roles"></div>
+ <nav id="nav" style="display:grid;gap:2px"></nav>
+ <div class="side-foot">
+  <select id="theme" aria-label="Theme"><optgroup label="Default"><option value="default">Green Court</option></optgroup><optgroup label="Gen Z"><option value="genz1">Neon Rave</option><option value="genz2">Y2K Pastel</option></optgroup><optgroup label="Millennial"><option value="mil1">Clean Slate</option><option value="mil2">Warm Studio</option></optgroup></select>
+  <span id="clock"></span>
+ </div>
+</aside>
+<main id="main"></main>
+<div id="ov"></div>
+
+<script>
+const $=s=>document.querySelector(s);
+const fmt=m=>{const h=Math.floor(m/60)%24,mm=m%60;return `${h%12||12}:${String(mm).padStart(2,'0')} ${h<12?'AM':'PM'}`};
+const SHORT='To 9, win by 2';
+const NAMES=['Reyes / Tran','Johnson / Rivera','Cruz / Lee','Lowe / Shah','Moss / Ito','Patel / Kim','Garcia / Wong','Brooks / Diaz','Singh / Hart','Owens / Vega','Park / Ruiz','Chen / Boyd','Khan / Fox','Lopez / Reed','Ward / Cole','Young / Bell'];
+const DU=[4.02,3.65,3.91,3.88,3.84,3.80,3.77,3.74,3.71,3.68,3.64,3.62,3.58,3.55,3.52,3.50];
+const S={role:'org',page:'dash',now:13*60+42,
+ ev:{name:'Dink Masters Open',dates:'Sat Nov 7 to Sun Nov 8, 2026',venue:'Barton Springs Pickleball, Austin',status:'Draft',waiver:true,seed:true},
+ divs:[{id:'A',n:'Mixed Doubles 3.5 to 4.0',f:'Mixed doubles',lo:3.5,hi:4.0,fee:60,cap:16},{id:'B',n:"Men's Doubles 4.0 and up",f:'Doubles',lo:4.0,hi:5.0,fee:60,cap:16},{id:'C',n:'Singles Open',f:'Singles',lo:0,hi:5.5,fee:45,cap:24}],
+ regs:NAMES.map((n,i)=>({n,d:DU[i],wv:i!==13,pay:i===13?'Pending':'Paid',seed:null})),
+ sp:[{n:'Volt Paddles',tier:'Title',court:2},{n:'Hill Country Hydration',tier:'Gold',court:null},{n:'Barton Springs Bakery',tier:'Community',court:null}],
+ proj:{A:18*60+10,B:17*60+25,C:16*60+30},
+ matches:[],courts:[],disputes:[
+  {id:'D1',m:'M107',c:3,by:'Player T. Lowe',t:'Line call on game point',st:'Open',opts:['Replay the point','Referee call stands']},
+  {id:'D2',m:'M108',c:4,by:'Referee R. Gill',t:'Self-reported 11-8 does not match referee 11-9',st:'Escalated',opts:['Confirm referee score 11-9','Confirm self-reported score 11-8']}],
+ inc:[{t:'12:58 PM',c:5,ty:'Injury',n:'Player rolled ankle, ice and rest, resumed play'}],
+ log:[],chat:[],props:{},pid:0,rv:{sets:[[0,0],[0,0],[0,0]],done:false,err:''},kiosk:null};
+(function seed(){
+ const A=[];let id=101;
+ for(let i=0;i<6;i++)A.push({id:'M'+id++,div:'A',st:'COMPLETED',rules:'To 11, win by 2',rv:1});
+ A.push({id:'M'+id++,div:'A',st:'IN_PROGRESS',rules:'To 11, win by 2',rv:1,court:3});
+ A.push({id:'M'+id++,div:'A',st:'IN_PROGRESS',rules:'To 11, win by 2',rv:1,court:4});
+ for(let i=0;i<14;i++)A.push({id:'M'+id++,div:'A',st:'SCHEDULED',rules:'To 11, win by 2',rv:1});
+ for(let i=0;i<2;i++)A.push({id:'M'+id++,div:'A',st:'PENDING',rules:'To 11, win by 2',rv:1});
+ S.matches=A;
+ S.courts=[
+  {n:1,st:'live',t:"B-14  Okafor / Cruz vs Tran / Lee",sc:[7,5],ref:'S. Hart',since:'1:20 PM'},
+  {n:2,st:'live',t:'B-15  Brooks / Diaz vs Singh / Hart',sc:[3,6],ref:'M. Ono',since:'1:31 PM'},
+  {n:3,st:'live',t:'M107  Lowe / Shah vs Moss / Ito',sc:[10,10],ref:'R. Gill',since:'1:12 PM',m:'M107'},
+  {n:4,st:'live',t:'M108  Chen / Kim vs Park / Ruiz',sc:[11,9],ref:'R. Gill',since:'1:05 PM',m:'M108'},
+  {n:5,st:'live',t:'C-08  Singles, Reyes vs Chen',sc:[4,8],ref:'A. Pruitt',since:'1:34 PM'},
+  {n:6,st:'open'},{n:7,st:'open'},{n:8,st:'called',t:'M109  Johnson / Rivera vs Cruz / Lee',m:'M109'}];
+})();
+
+/* ---------- helpers ---------- */
+const pay=()=>S.regs.filter(r=>r.pay==='Paid').length;
+const cnt=(st,d='A')=>S.matches.filter(m=>m.div===d&&m.st===st).length;
+const sp=c=>{const s=S.sp.find(x=>x.court===c);return s?`Court ${c}, presented by ${s.n}`:`Court ${c}`};
+function toast(m){const o=$('.toast');if(o)o.remove();const t=document.createElement('div');t.className='toast';t.setAttribute('role','status');t.innerHTML=m;document.body.appendChild(t);setTimeout(()=>t.remove(),4200)}
+const tick=()=>{S.now+=1};
+function pvw(d='A'){const ms=S.matches.filter(m=>m.div===d);const aff=ms.filter(m=>['SCHEDULED','PENDING'].includes(m.st)&&m.rules!==SHORT);
+ const saved=Math.round(aff.length*5/4);return {aff,done:ms.filter(m=>m.st==='COMPLETED').length,live:ms.filter(m=>m.st==='IN_PROGRESS').length,saved,from:S.proj[d],to:S.proj[d]-saved}}
+
+/* ---------- nav ---------- */
+const NAV={
+ org:[['dash','Dashboard'],['setup','Event setup'],['regs','Registrations'],['sponsors','Sponsors'],['copilot','Copilot'],['log','Change log']],
+ desk:[['board','Court board'],['disputes','Disputes'],['incidents','Incidents'],['copilot','Copilot']],
+ ref:[['card','Scorecard']]};
+function renderNav(){
+ $('#roles').innerHTML=[['org','Organizer'],['desk','Desk'],['ref','Referee']].map(r=>`<button role="tab" aria-selected="${S.role===r[0]}" class="${S.role===r[0]?'on':''}" data-a="role" data-v="${r[0]}">${r[1]}</button>`).join('');
+ const badge={disputes:S.disputes.filter(d=>d.st!=='Resolved').length,log:S.log.length};
+ $('#nav').innerHTML=NAV[S.role].map(n=> `<button class="nav ${S.page===n[0]?'on':''}" ${S.page===n[0]?'aria-current="page"':''} data-a="page" data-v="${n[0]}"><span>${n[1]}</span>${badge[n[0]]?`<span class="n">${badge[n[0]]}</span>`:''}</button>`).join('');
+ $('#clock').textContent=`Live day clock ${fmt(S.now)}`}
+
+/* ---------- pages ---------- */
+const P={};
+P.dash=()=>{const a=pvw('A'),pr=S.proj;
+ const PLAN={A:18*60+10,B:17*60+25,C:16*60+30};
+ const prog=(d,lab)=>{const dl=PLAN[d]-pr[d];return `<div style="margin-bottom:12px"><div class="row sp"><b>${lab}</b><span class="tag ${dl>0?'ok':'mut'}">${dl>0?dl+' min sooner':'On plan'}</span></div><p>Planned finish ${fmt(PLAN[d])}, projected ${fmt(pr[d])}</p></div>`};
+ return `<div class="top"><div><h1>${S.ev.name}</h1><p>${S.ev.dates}, ${S.ev.venue}</p></div><div class="row"><span class="tag ${S.ev.status==='Live'?'':'mut'}">${S.ev.status}</span>${S.ev.status==='Draft'?'<button class="btn" data-a="status" data-v="Published">Publish event</button>':S.ev.status==='Published'?'<button class="btn pop" data-a="status" data-v="Live">Go live</button>':'<button class="btn ghost" data-a="status" data-v="Published">Pause</button>'}</div></div>
+ <div class="grid g4" style="margin-bottom:14px">
+  <div class="card kpi"><p>Teams paid</p><b>${pay()} of ${S.regs.length}</b><span class="mut">Mixed 3.5 to 4.0</span></div>
+  <div class="card kpi"><p>Collected, all divisions</p><b>$${(pay()*60+32*60+18*45).toLocaleString()}</b><span class="mut">before platform fee</span></div>
+  <div class="card kpi"><p>Mixed 3.5 to 4.0 progress</p><b>${cnt('COMPLETED')} of ${S.matches.length}</b><span class="mut">matches complete</span></div>
+  <div class="card kpi"><p>Open disputes</p><b>${S.disputes.filter(d=>d.st!=='Resolved').length}</b><span class="mut">${S.disputes.filter(d=>d.st==='Escalated').length} escalated</span></div></div>
+ <div class="grid g21"><div class="card"><h2>Projected finish by division</h2>${prog('A','Mixed Doubles 3.5 to 4.0')}${prog('B',"Men's Doubles 4.0 and up")}${prog('C','Singles Open')}
+  ${a.aff.length?`<div class="row sp card" style="background:var(--bg);margin-top:8px"><div><b>Mixed 3.5 to 4.0 is running behind</b><p>Games to 9 for ${a.aff.length} remaining matches would finish about ${a.saved} minutes sooner.</p></div><button class="btn sm" data-a="askcp" data-v="Courts are running behind. Switch the remaining pool matches in Mixed Doubles 3.5 to 4.0 to games to 9, win by 2.">Ask Copilot</button></div>`:'<p>All remaining Mixed matches already play to 9.</p>'}</div>
+ <div class="card"><h2>Courts now</h2><div class="grid g4" style="gap:8px">${S.courts.map(c=>`<div class="card" style="padding:10px;text-align:center"><b>${c.n}</b><div><span class="tag ${c.st==='live'?'ok':c.st==='called'?'warn':c.st==='blocked'?'bad':'mut'}">${c.st}</span></div></div>`).join('')}</div>
+  <h2 style="margin-top:16px">Needs attention</h2><p>${S.disputes.filter(d=>d.st!=='Resolved').length} disputes waiting at the desk.</p><p>${S.regs.filter(r=>r.pay==='Pending').length} payment pending, ${S.regs.filter(r=>!r.wv).length} waiver unsigned.</p></div></div>`};
+
+P.setup=()=>{const e=S.ev;return `<div class="top"><div><h1>Event setup</h1><p>Edit on the left. The public page updates on the right.</p></div><button class="btn" data-a="status" data-v="Published">${e.status==='Draft'?'Publish event':'Update published page'}</button></div>
+ <div class="grid g2"><div class="grid"><div class="card"><label class="l" style="margin-top:0">Event name</label><input class="in" data-b="name" value="${e.name}"><label class="l">Dates</label><input class="in" data-b="dates" value="${e.dates}"><label class="l">Venue</label><input class="in" data-b="venue" value="${e.venue}">
+  <div class="row" style="margin-top:12px"><label class="row"><input type="checkbox" data-b="waiver" ${e.waiver?'checked':''}> Require digital waiver</label><label class="row"><input type="checkbox" data-b="seed" ${e.seed?'checked':''}> Seed by DUPR</label></div></div>
+  <div class="card"><h2>Divisions</h2><table><tr><th>Name</th><th>Format</th><th>DUPR</th><th>Fee</th><th>Spots</th></tr>${S.divs.map(d=>`<tr><td>${d.n}${d.pilot?' <span class="tag">Pilot</span>':''}</td><td>${d.f}</td><td>${d.lo?d.lo+' to '+d.hi:'Open'}</td><td>$${d.fee}</td><td>${d.cap}</td></tr>`).join('')}</table>
+  <div class="row wrap" style="margin-top:12px"><input class="in" id="dn" placeholder="Division name" style="flex:2"><select class="in" id="df" style="flex:1"><option>Doubles</option><option>Singles</option><option>Mixed doubles</option><option>Dink Battle (pilot)</option></select><input class="in" id="dfee" placeholder="Fee" type="number" style="flex:.6"><button class="btn" data-a="adddiv">Add</button></div></div></div>
+  <div class="pv"><div class="hero"><h2>${e.name}</h2><div>${e.dates}</div><div>${e.venue}</div></div><div style="padding:18px"><h3 style="margin-bottom:8px">Divisions</h3>${S.divs.map(d=>`<div class="row sp" style="padding:8px 0;border-bottom:1px solid var(--line)"><span>${d.n}${d.pilot?' <span class="tag">Pilot format</span>':''}</span><b>$${d.fee}</b></div>`).join('')}
+  <p style="margin:12px 0 4px">Presented by ${S.sp.map(s=>s.n).join(', ')}</p>${e.waiver?'<p>Digital waiver signed at registration.</p>':''}<button class="btn" style="margin-top:12px;width:100%">Register now</button><p style="margin-top:8px;font-size:12.5px">${e.status==='Draft'?'Draft. Not visible to players yet.':'Published. Visible in the Dinkster app Events tab.'}</p></div></div></div>`};
+
+P.regs=()=>{const gross=pay()*60,fee=Math.round(gross*.10);return `<div class="top"><div><h1>Registrations</h1><p>Mixed Doubles 3.5 to 4.0, 3 teams on the waitlist</p></div><div class="row"><button class="btn" data-a="autoseed">Auto-seed by DUPR</button><button class="btn ghost" data-a="msg" data-v="Export started. CSV will download shortly.">Export</button></div></div>
+ <div class="grid g3" style="margin-bottom:14px"><div class="card kpi"><p>Gross entries</p><b>$${gross}</b></div><div class="card kpi"><p>Platform fee, 10%</p><b>$${fee}</b></div><div class="card kpi"><p>Organizer net before processing fees</p><b>$${gross-fee}</b></div></div>
+ <div class="card"><table><tr><th>Seed</th><th>Team</th><th>Average DUPR</th><th>Waiver</th><th>Payment</th><th></th></tr>${S.regs.map((r,i)=>`<tr><td>${r.seed||'Unseeded'}</td><td><b>${r.n}</b></td><td>${r.d.toFixed(2)}</td><td><span class="tag ${r.wv?'ok':'warn'}">${r.wv?'Signed':'Missing'}</span></td><td><span class="tag ${r.pay==='Paid'?'ok':r.pay==='Refunded'?'mut':'warn'}">${r.pay}</span></td><td>${r.pay==='Paid'?`<button class="btn ghost sm" data-a="refund" data-v="${i}">Refund</button>`:r.pay==='Pending'?`<button class="btn ghost sm" data-a="msg" data-v="Reminder sent to ${r.n}.">Remind</button>`:''}</td></tr>`).join('')}</table></div>`};
+
+P.sponsors=()=>`<div class="top"><div><h1>Sponsors</h1><p>Logos show on the event page, court board, and player app. Court naming rights show on every court call.</p></div></div>
+ <div class="grid g2"><div class="card"><table><tr><th>Sponsor</th><th>Tier</th><th>Court naming</th></tr>${S.sp.map((s,i)=>`<tr><td><b>${s.n}</b></td><td>${s.tier}</td><td><select class="in" data-a-change="spcourt" data-i="${i}"><option value="">None</option>${S.courts.map(c=>`<option value="${c.n}" ${s.court===c.n?'selected':''}>Court ${c.n}</option>`).join('')}</select></td></tr>`).join('')}</table>
+ <div class="row" style="margin-top:12px"><input class="in" id="spn" placeholder="Sponsor name"><button class="btn" data-a="addsp">Add sponsor</button></div></div>
+ <div class="card"><h2>How players see it</h2>${S.sp.filter(s=>s.court).map(s=>`<div class="card" style="background:var(--bg);margin-bottom:8px"><b>${sp(s.court)}</b><p>Court call: Report to ${sp(s.court)}</p></div>`).join('')||'<p>Assign a court to a sponsor to preview a named court call.</p>'}</div></div>`;
+
+P.board=()=>`<div class="top"><div><h1>Court board</h1><p>Live courts, calls, and referee scores. ${cnt('SCHEDULED')} Mixed matches still scheduled.</p></div><div class="row"><span class="tag">${fmt(S.now)}</span><button class="btn ghost" data-a="askcp" data-v="Court 3 has a wet spot. Move its upcoming matches to other courts.">Court 3 wet spot</button></div></div>
+ <div class="courts">${S.courts.map(c=>`<div class="court ${c.st}"><div class="row sp"><h3>${sp(c.n)}</h3><span class="tag ${c.st==='live'?'ok':c.st==='called'?'warn':c.st==='blocked'?'bad':'mut'}">${c.st}</span></div>
+  ${c.t?`<p>${c.t}</p>`:'<p>Available</p>'}
+  ${c.st==='live'?`<div class="sc">${c.sc[0]} : ${c.sc[1]}</div><p>Ref ${c.ref}, since ${c.since}</p>`:''}
+  ${c.m&&S.matches.find(m=>m.id===c.m)?`<p>${S.matches.find(m=>m.id===c.m).rules}</p>`:''}
+  <div class="row wrap" style="margin-top:auto">
+  ${c.st==='open'?`<button class="btn sm" data-a="callnext" data-v="${c.n}">Call next match</button><button class="btn ghost sm" data-a="block" data-v="${c.n}">Block</button>`:''}
+  ${c.st==='called'?`<button class="btn sm" data-a="startc" data-v="${c.n}">Start match</button>`:''}
+  ${c.st==='live'?`<button class="btn sm" data-a="kiosk" data-v="${c.n}">Open kiosk</button>`:''}
+  ${c.st==='blocked'?`<button class="btn sm ghost" data-a="reopen" data-v="${c.n}">Reopen</button>`:''}</div></div>`).join('')}</div>`;
+
+P.disputes=()=>`<div class="top"><div><h1>Disputes</h1><p>The desk decides. Copilot only drafts the summary.</p></div></div>
+ ${S.disputes.map(d=>`<div class="card" style="margin-bottom:12px"><div class="row sp"><div><h3>${d.m}, Court ${d.c}</h3><p>${d.t}. Raised by ${d.by}.</p></div><span class="tag ${d.st==='Resolved'?'ok':d.st==='Escalated'?'bad':'warn'}">${d.st}</span></div>
+ ${d.sum?`<div class="prop"><b>Copilot draft summary</b><p style="color:var(--ink)">${d.sum}</p></div>`:''}
+ ${d.res?`<p style="margin-top:8px"><b>Decision:</b> ${d.res}</p>`:`<div class="row wrap" style="margin-top:10px"><button class="btn ghost sm" data-a="dsum" data-v="${d.id}">Draft summary</button>${d.st==='Open'?`<button class="btn ghost sm" data-a="desc" data-v="${d.id}">Escalate</button>`:''}${d.opts.map(o=>`<button class="btn sm" data-a="dres" data-v="${d.id}" data-r="${o}">${o}</button>`).join('')}</div>`}</div>`).join('')}`;
+
+P.incidents=()=>`<div class="top"><div><h1>Incidents</h1><p>Injuries, equipment, and conduct logged by court.</p></div></div>
+ <div class="grid g21"><div class="card"><table><tr><th>Time</th><th>Court</th><th>Type</th><th>Notes</th></tr>${S.inc.map(i=>`<tr><td>${i.t}</td><td>${i.c}</td><td><span class="tag mut">${i.ty}</span></td><td>${i.n}</td></tr>`).join('')}</table></div>
+ <div class="card"><h2>Log an incident</h2><label class="l" style="margin-top:0">Court</label><select class="in" id="ic">${S.courts.map(c=>`<option>${c.n}</option>`).join('')}</select><label class="l">Type</label><select class="in" id="it"><option>Injury</option><option>Equipment</option><option>Conduct</option><option>Other</option></select><label class="l">Notes</label><textarea class="in" id="in" rows="3"></textarea><button class="btn" style="margin-top:10px" data-a="addinc">Save incident</button></div></div>`;
+
+P.card=()=>{const m=S.matches.find(x=>x.id==='M107'),R=S.rv;
+ return `<div class="top"><div><h1>Referee scorecard</h1><p>Assigned: ${sp(3)}, M107, Lowe / Shah vs Moss / Ito</p></div><span class="tag ${m.st==='COMPLETED'?'ok':''}">${m.st}</span></div>
+ <div class="card" style="max-width:560px">${m.st==='COMPLETED'?`<h2>Final score locked</h2><p>Completed matches cannot be edited. Ask the court desk to open a correction.</p><p style="margin-top:8px"><b>${R.sets.filter(s=>s[0]||s[1]).map(s=>s.join('-')).join(', ')}</b> recorded as referee score. Referee scores outrank self-reported scores.</p>`:
+ `<p>Rules: ${m.rules}. Best of 3.</p>${R.sets.map((s,i)=>`<div class="row sp" style="margin:12px 0"><b>Game ${i+1}</b><div class="row"><input class="in" type="number" min="0" max="30" style="width:76px" data-sc="${i}-0" value="${s[0]}"><span>to</span><input class="in" type="number" min="0" max="30" style="width:76px" data-sc="${i}-1" value="${s[1]}"></div></div>`).join('')}
+ ${R.err?`<p style="color:var(--danger);font-weight:600">${R.err}</p>`:''}<button class="btn" style="margin-top:8px" data-a="submitref">Submit final score</button><button class="btn ghost" style="margin-left:8px" data-a="msg" data-v="Dispute flagged to the desk.">Flag dispute</button>`}</div>`};
+
+P.log=()=>`<div class="top"><div><h1>Change log</h1><p>Every rule pivot is recorded with who made it and what changed. Completed matches never appear here.</p></div></div>
+ <div class="card">${S.log.length?`<table><tr><th>Time</th><th>Actor</th><th>Tool</th><th>Matches</th><th>Before</th><th>After</th><th></th></tr>${S.log.map((l,i)=>`<tr><td>${l.t}</td><td>${l.actor}</td><td><code>${l.tool}</code></td><td>${l.n}</td><td>${l.before}</td><td>${l.after}</td><td>${l.rolled?'<span class="tag mut">Rolled back</span>':`<button class="btn ghost sm" data-a="rollback" data-v="${i}">Roll back</button>`}</td></tr>`).join('')}</table>`:'<p>No changes yet. Ask Copilot to pivot a rule and confirm to see an entry.</p>'}</div>`;
+
+/* ---------- copilot ---------- */
+const CH={org:['Set up a 2 day doubles tournament with 3 divisions, 16 teams each, 8 courts','Courts are running behind. Switch the remaining pool matches in Mixed Doubles 3.5 to 4.0 to games to 9, win by 2.','Auto seed Mixed Doubles 3.5 to 4.0 by DUPR','Add a Dink Battle pilot division','Change the rules on the finished matches','Undo the last change','Tell players about the schedule change'],
+ desk:['Court 3 has a wet spot. Move its upcoming matches to other courts.','Summarize the open disputes','Courts are running behind. Switch the remaining pool matches in Mixed Doubles 3.5 to 4.0 to games to 9, win by 2.','Tell players about the schedule change']};
+P.copilot=()=>{
+ if(!S.chat.length)S.chat.push({b:1,h:S.role==='org'?'I can draft a tournament from a sentence, pivot rules live, seed divisions, and alert players. I propose first and change nothing until you confirm.':'I can suggest court moves, draft dispute summaries, and flag delays. The desk makes every final call.'});
+ return `<div class="top"><div><h1>Copilot</h1><p>${S.role==='org'?'Organizer copilot':'Desk copilot'}. Proposes, previews impact, then waits for you.</p></div><span class="tag mut">Completed matches are locked</span></div>
+ <div class="grid g21"><div class="card"><div class="chat" id="chat">${S.chat.map(m=>`<div class="msg ${m.b?'b':'u'}">${m.h}</div>`).join('')}</div>
+  <div class="row" style="margin-top:12px"><input class="in" id="ci" placeholder="Describe what you need"><button class="btn" data-a="send">Send</button></div></div>
+ <div class="card"><h2>Try these</h2>${(CH[S.role]).map(q=>`<button class="chip" data-a="askcp" data-v="${q}">${q}</button>`).join('')}<hr style="border:0;border-top:1px solid var(--line);margin:12px 0"><h3>Guardrails</h3><p>Never edits completed matches. Overrides only scheduled or pending matches. Shows finish-time change before you confirm. Logs every change and can roll it back.</p></div></div>`};
+
+function propCard(p){const t={dink:'add_pilot_division',draft:'draft_tournament',pivot:'apply_mid_tournament_rule_pivot',seed:'seed_division',move:'reassign_court',alert:'trigger_schedule_delta_alert',undo:'rollback_change'}[p.type];
+ const st=p.st==='proposed'?`<div class="row" style="margin-top:8px"><button class="btn" data-a="confirm" data-v="${p.id}">Confirm</button><button class="btn ghost" data-a="reject" data-v="${p.id}">Reject</button></div>`:`<span class="tag ${p.st==='executed'?'ok':'mut'}" style="margin-top:8px;display:inline-block">${p.st==='executed'?'Executed':'Rejected'}</span>`;
+ return `<div class="prop"><div class="row sp"><b>Proposal</b><code>${t}</code></div>${p.body}${st}</div>`}
+function ask(q){S.chat.push({h:q});let r;const m=q.toLowerCase();
+ if(/dink battle/.test(m)){const p=add('dink',`<p style="color:var(--ink)">Add <b>Dink Battle Pilot, Open</b> as a pilot division: doubles, 16 teams, $40 entry, flagged Pilot on the event page.</p><p>Rule as described: after the 5th shot of a rally the court shrinks to half court. Dinks decide the point. Lobs and hard shots land out.</p><pre>add_division({format:"DINK_BATTLE", pilot:true,
+  scoring:{shrinkAfterShot:5, courtScale:0.5}})</pre><p><b>Open rule questions:</b> which half or what depth counts as half court, how serves and the kitchen work, how line calls are made after the shrink.</p>`,{});r='Pilot division drafted. Nothing is published until you confirm.'+propCard(p)}
+ else if(/finished|completed|already played|already finished/.test(m)&&/(change|edit|rule|score)/.test(m)){const ids=S.matches.filter(x=>x.st==='COMPLETED').map(x=>x.id);
+  r=`I cannot do that. <span class="tag bad">Rejected by guardrail</span><br>${ids.length} matches (${ids[0]} to ${ids[ids.length-1]}) are COMPLETED. Completed results are locked for every user and for Copilot. If a result is wrong, the desk can open a correction on the match.`}
+ else if(/set up|create|draft|tournament/.test(m)&&/tournament|divisions|teams/.test(m)){const n=Math.min(5,+((m.match(/(\d+)\s*divisions?/)||[])[1]||3)),t=+((m.match(/(\d+)\s*teams/)||[])[1]||16),c=+((m.match(/(\d+)\s*courts/)||[])[1]||8);
+  const per=Math.round(t/4)*6+Math.round(t/2),tot=per*n,mins=Math.round(tot*24/c),names=['Mixed Doubles 3.5 to 4.0',"Men's Doubles 4.0 and up","Women's Doubles 3.5 to 4.0",'Social Doubles 3.0 to 3.5','Singles Open'].slice(0,n);
+  const p=add('draft',`<p style="color:var(--ink)">${names.join(', ')}.<br>${t} teams per division, pools of 4 then playoffs: ${per} matches per division, ${tot} total.<br>Estimated play time on ${c} courts: ${Math.floor(mins/60)} h ${mins%60} min. Fits two days with room to spare.</p><pre>draft_tournament({divisions:${n}, teams:${t}, courts:${c}, scoring:"STANDARD"})</pre>`,{names,t});r=`Here is a draft. Setup took about 4 minutes of conversation.`+propCard(p)}
+ else if(/(to 9|pivot|behind|rule)/.test(m)){const v=pvw('A');
+  if(!v.aff.length)r='Every remaining Mixed match already plays to 9. Nothing to change.';else{
+  const p=add('pivot',`<p style="color:var(--ink)">Apply <b>${SHORT}</b> to ${v.aff.length} Mixed Doubles 3.5 to 4.0 matches (${cnt('SCHEDULED')} scheduled, ${cnt('PENDING')} pending).</p>
+  <p>Skipped: ${v.done} completed (locked), ${v.live} in progress (rules stay as started).</p><p><b>Projected finish: ${fmt(v.from)} to ${fmt(v.to)}</b> (${v.saved} minutes sooner)</p><pre>apply_mid_tournament_rule_pivot(
+  match_ids: [${v.aff.slice(0,3).map(x=>x.id).join(', ')}, ... ${v.aff.length} total],
+  new_scoring_json: {mode:"TARGET_SCORE", target:9, win_by:2})</pre>`,{ids:v.aff.map(x=>x.id),saved:v.saved});r='This only touches matches that have not started.'+propCard(p)}}
+ else if(/seed/.test(m)){const p=add('seed',`<p style="color:var(--ink)">Seed 16 teams in Mixed Doubles 3.5 to 4.0 by average DUPR, from ${DU[0].toFixed(2)} down to ${DU[15].toFixed(2)}. Top four split across pools.</p>`,{});r='Seeding proposal ready.'+propCard(p)}
+ else if(/wet|move|court\s*\d/.test(m)){const up=S.matches.filter(x=>x.st==='SCHEDULED').slice(0,3);const p=add('move',`<p style="color:var(--ink)">Block Court 3 after the current match. Move ${up.map(x=>x.id).join(', ')} to Courts 6 and 7. Players get a court call with the new court.</p><p>Court 3 stays live until M107 ends.</p>`,{});r='Court 3 has a live match, so I would not block it right now.'+propCard(p)}
+ else if(/dispute|summar/.test(m)){const o=S.disputes.filter(d=>d.st!=='Resolved');r=o.length?`${o.length} open: `+o.map(d=>`${d.m} on Court ${d.c}: ${d.t}`).join('. ')+'. Open Disputes to draft a summary for each. The decision stays with the desk.':'No open disputes.'}
+ else if(/undo|rollback|roll back/.test(m)){const i=S.log.findIndex(l=>!l.rolled);if(i<0)r='There is nothing to roll back.';else{const l=S.log[i];const p=add('undo',`<p style="color:var(--ink)">Restore ${l.n} matches to "${l.before}". Projected finish returns ${l.saved} minutes later.</p>`,{i});r='I can undo the latest change.'+propCard(p)}}
+ else if(/alert|tell|notify|players/.test(m)){const p=add('alert',`<p style="color:var(--ink)">Send to 56 players in Mixed Doubles 3.5 to 4.0: "Remaining pool matches now play to 9, win by 2. Your court call will show the updated rules."</p>`,{});r='Draft alert below.'+propCard(p)}
+ else r='I can draft a tournament, pivot rules, seed a division, move matches off a court, summarize disputes, or alert players.';
+ S.chat.push({b:1,h:r});render()}
+function add(type,body,data){const p={id:++S.pid,type,body,data,st:'proposed'};S.props[p.id]=p;return p}
+function exec(p){const D=p.data;tick();
+ if(p.type==='pivot'){D.ids.forEach(id=>{const m=S.matches.find(x=>x.id===id);if(['SCHEDULED','PENDING'].includes(m.st)){m.prev=m.rules;m.rules=SHORT;m.rv++}});S.proj.A-=D.saved;S.log.unshift({t:fmt(S.now),actor:'Copilot, approved by organizer',tool:'apply_mid_tournament_rule_pivot',n:D.ids.length,before:'To 11, win by 2',after:SHORT,saved:D.saved,ids:D.ids,rolled:false});toast(`Rules updated for ${D.ids.length} matches. Projected finish ${fmt(S.proj.A)}.`)}
+ if(p.type==='undo'){const l=S.log[D.i];l.ids.forEach(id=>{const m=S.matches.find(x=>x.id===id);if(m.st!=='COMPLETED'&&m.st!=='IN_PROGRESS'){m.rules=l.before;m.rv++}});S.proj.A+=l.saved;l.rolled=true;toast('Change rolled back.')}
+ if(p.type==='draft'){S.divs=D.names.map((n,i)=>({id:'ABCDE'[i],n,f:/Singles/.test(n)?'Singles':'Doubles',lo:0,hi:5,fee:60,cap:D.t}));toast('Draft saved. Review it under Event setup.')}
+ if(p.type==='seed'){autoseed(true)}
+ if(p.type==='dink'){S.divs.push({id:'DB',n:'Dink Battle Pilot, Open',f:'Dink Battle (pilot)',lo:0,hi:5.5,fee:40,cap:16,pilot:true});toast('Pilot division added. Review it under Event setup.')}
+ if(p.type==='move'){S.courts.find(c=>c.n===6).st='called';S.courts.find(c=>c.n===6).t='M110  Reyes / Tran vs Cruz / Lee';toast('Court 6 called. Court 3 will close after M107.')}
+ if(p.type==='alert'){toast('Alert sent to 56 players.')}
+ p.st='executed'}
+function autoseed(q){[...S.regs].sort((a,b)=>b.d-a.d).forEach((r,i)=>r.seed=i+1);if(!q)toast('Seeds assigned by DUPR.')}
+
+/* ---------- kiosk ---------- */
+function kiosk(n){const c=S.courts.find(x=>x.n===n);if(!c)return;$('#ov').innerHTML=`<div class="ov" data-a="kclose"><div class="tablet" role="dialog" aria-modal="true"><div class="in2"><div class="row sp"><div><h1>${sp(n)}</h1><p>${c.t}</p></div><button class="btn ghost" data-a="kx">Close kiosk</button></div>
+ <div class="grid g2" style="margin:18px 0">${[0,1].map(i=>`<div class="card" style="text-align:center"><p>Team ${i+1}</p><div class="sc" style="font-size:72px">${c.sc[i]}</div><div class="row" style="justify-content:center"><button class="btn ghost" data-a="kpt" data-n="${n}" data-i="${i}" data-v="-1">Minus</button><button class="btn" data-a="kpt" data-n="${n}" data-i="${i}" data-v="1">Plus one</button></div></div>`).join('')}</div>
+ <div class="row wrap"><button class="btn danger" data-a="msg" data-v="Desk has been called to ${sp(n)}.">Call desk</button><button class="btn ghost" data-a="msg" data-v="Injury report started for Court ${n}.">Report injury</button><button class="btn pop" data-a="kend" data-v="${n}">End match</button></div><p style="margin-top:10px">Tablet mode. Scores entered here are referee scores.</p></div></div></div>`}
+
+/* ---------- render ---------- */
+function render(){renderNav();$('#main').innerHTML=P[S.page]();const c=$('#chat');if(c)c.scrollTop=c.scrollHeight}
+const A={
+ role(d){S.role=d.v;S.page=NAV[d.v][0][0];render()},page(d){S.page=d.v;render()},
+ status(d){S.ev.status=d.v;toast(d.v==='Live'?'Event is live. Court desk and player app are active.':'Event '+d.v.toLowerCase()+'.');render()},
+ adddiv(){const n=$('#dn').value.trim();if(!n)return toast('Enter a division name.');S.divs.push({id:'X'+S.divs.length,n,f:$('#df').value,pilot:/pilot/.test($('#df').value),lo:0,hi:5,fee:+$('#dfee').value||50,cap:16});render()},
+ autoseed(){autoseed()},render(){render()},
+ refund(d){S.regs[+d.v].pay='Refunded';toast('Refund issued through Stripe. Platform fee reversed.');render()},
+ msg(d){toast(d.v)},
+ addsp(){const n=$('#spn').value.trim();if(!n)return;S.sp.push({n,tier:'Community',court:null});render()},
+ callnext(d){const m=S.matches.find(x=>x.st==='SCHEDULED');const c=S.courts.find(x=>x.n===+d.v);if(!m)return toast('No scheduled matches left.');m.st='PENDING';m.court=c.n;c.st='called';c.m=m.id;c.t=`${m.id}  Team ${m.id.slice(1)} vs Team ${+m.id.slice(1)+1}`;toast(`Court call sent for ${m.id} to ${sp(c.n)}. Push notifications delivered to 4 players.`);render()},
+ startc(d){const c=S.courts.find(x=>x.n===+d.v);const m=S.matches.find(x=>x.id===c.m);if(m)m.st='IN_PROGRESS';c.st='live';c.sc=[0,0];c.ref='R. Gill';c.since=fmt(S.now);render()},
+ block(d){S.courts.find(c=>c.n===+d.v).st='blocked';render()},reopen(d){S.courts.find(c=>c.n===+d.v).st='open';render()},
+ kiosk(d){kiosk(+d.v)},kx(){$('#ov').innerHTML=''},kclose(d,e){if(e.target.classList.contains('ov'))$('#ov').innerHTML=''},
+ kpt(d){const c=S.courts.find(x=>x.n===+d.n);c.sc[+d.i]=Math.max(0,c.sc[+d.i]+ +d.v);kiosk(+d.n);render()},
+ kend(d){const c=S.courts.find(x=>x.n===+d.v);const m=S.matches.find(x=>x.id===c.m);if(m)m.st='COMPLETED';c.st='open';c.t='';$('#ov').innerHTML='';toast('Match completed with referee score. Locked.');render()},
+ dsum(d){const x=S.disputes.find(y=>y.id===d.v);x.sum=x.id==='D1'?'Score was 10-10 when the call was made. Referee R. Gill ruled the ball in. Team Lowe / Shah disagrees. No video available. Options: uphold the call or replay the point.':'Players self-reported 11-8. Referee recorded 11-9. Referee score outranks self-reported score. Suggest confirming the referee score and notifying both teams.';render()},
+ desc(d){S.disputes.find(y=>y.id===d.v).st='Escalated';render()},
+ dres(d){const x=S.disputes.find(y=>y.id===d.v);x.res=d.r+', decided by the desk at '+fmt(S.now);x.st='Resolved';toast('Dispute resolved and both teams notified.');render()},
+ addinc(){const n=$('#in').value.trim();if(!n)return toast('Add a note describing what happened.');tick();S.inc.unshift({t:fmt(S.now),c:$('#ic').value,ty:$('#it').value,n});render()},
+ submitref(){const R=S.rv;const bad=R.sets.filter(s=>(s[0]||s[1])&&(Math.max(...s)<11||Math.abs(s[0]-s[1])<2));const played=R.sets.filter(s=>s[0]||s[1]);const w=[0,1].map(i=>played.filter(s=>s[i]>s[1-i]).length);
+  if(!played.length)return(R.err='Enter at least one game.',render());if(bad.length)return(R.err=`${bad[0].join('-')} is not a valid final. Games go to 11 and are won by 2.`,render());if(Math.max(...w)<2)return(R.err='Best of 3 needs one team to win 2 games.',render());
+  R.err='';const m=S.matches.find(x=>x.id==='M107');m.st='COMPLETED';const c=S.courts.find(x=>x.n===3);c.st='open';c.t='';toast('Final score saved as referee score. Match locked.');render()},
+ askcp(d){S.page='copilot';if(S.role==='ref')S.role='desk';render();ask(d.v)},
+ send(){const i=$('#ci');if(i.value.trim())ask(i.value.trim())},
+ confirm(d){const p=S.props[+d.v];exec(p);const o=S.chat.find(m=>m.h&&m.h.includes('data-v="'+d.v+'"'));if(o)o.h=o.h.replace(/<div class="prop">[\s\S]*<\/div>$/,propCard(p));render()},
+ reject(d){const p=S.props[+d.v];p.st='rejected';S.chat.forEach(m=>{if(m.h&&m.h.includes('data-v="'+d.v+'"'))m.h=m.h.replace(/<div class="prop">[\s\S]*<\/div>$/,propCard(p))});render()},
+ rollback(d){const l=S.log[+d.v];l.ids.forEach(id=>{const m=S.matches.find(x=>x.id===id);if(!['COMPLETED','IN_PROGRESS'].includes(m.st)){m.rules=l.before;m.rv++}});S.proj.A+=l.saved;l.rolled=true;toast('Change rolled back.');render()}
+};
+document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(t&&A[t.dataset.a])A[t.dataset.a](t.dataset,e)});
+document.addEventListener('input',e=>{const el=e.target;
+ if(el.dataset.b){const b=el.dataset.b,v=el.type==='checkbox'?el.checked:el.value;S.ev[b]=v;if(el.type==='checkbox'){render();return}const pos=el.selectionStart;render();const n=document.querySelector(`[data-b=${b}]`);n.focus();n.setSelectionRange(pos,pos)}
+ if(el.dataset.sc){const[i,j]=el.dataset.sc.split('-').map(Number);S.rv.sets[i][j]=+el.value||0}});
+document.addEventListener('change',e=>{const el=e.target;if(el.dataset.aChange==='spcourt'){S.sp[+el.dataset.i].court=el.value?+el.value:null;render()}});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='ci')A.send()});
+$('#theme').addEventListener('change',e=>{document.body.dataset.theme=e.target.value});
+render();
+</script>
+</body>
+</html>

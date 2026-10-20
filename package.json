@@ -1,0 +1,24 @@
+{
+  "name": "dinkster-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dinkster: Pickleball-first social sports app and tournament platform",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:mobile": "npm run --workspace=@dinkster/mobile start",
+    "dev:web": "npm run --workspace=@dinkster/web dev",
+    "build:mobile": "npm run --workspace=@dinkster/mobile build",
+    "build:web": "npm run --workspace=@dinkster/web build",
+    "db:generate": "npm run --workspace=@dinkster/database generate",
+    "db:push": "npm run --workspace=@dinkster/database push",
+    "db:studio": "npm run --workspace=@dinkster/database studio",
+    "lint": "npm run --workspaces --if-present lint",
+    "test": "npm run --workspaces --if-present test"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

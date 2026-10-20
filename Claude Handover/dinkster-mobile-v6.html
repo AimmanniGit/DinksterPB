@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Dinkster mobile mockup v6</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Tokens copied from v3 so themes match the approved palettes */
+body{--g:#1D9E75;--gm:#5DCAA5;--gl:#E8F7F1;--gd:#0A5C43;--am:#EF9F27;--al:#FEF3E2;--aml:#FAC775;--rd:#E24B4A;--rl:#FEF0F0;--bl:#3B82F6;--bll:#EFF6FF;--bld:#1d4ed8;--ink:#111;--ink2:#333;--ink3:#666;--ink4:#aaa;--sf:#f8f7f3;--sf2:#f2f1ec;--sf3:#e8e6df;--cd:#fff;--brm:rgba(0,0,0,.12);--r:16px;--body-bg:#dedad2}
+body[data-theme=genz1]{--g:#A855F7;--gm:#C084FC;--gl:#F5F0FF;--gd:#6B21A8;--am:#F43F8E;--al:#FFF0F7;--aml:#F9A8D4;--rd:#EF4444;--rl:#FEF2F2;--bl:#06B6D4;--bll:#ECFEFF;--bld:#0E7490;--ink:#0F0A1E;--ink2:#1E1040;--ink3:#5B4B8A;--ink4:#9B87C0;--sf:#FAF8FF;--sf2:#F3EEFF;--sf3:#E9E0FF;--brm:rgba(168,85,247,.18);--r:20px;--body-bg:#1A0533}
+body[data-theme=genz2]{--g:#10B981;--gm:#34D399;--gl:#ECFDF5;--gd:#065F46;--am:#F59E0B;--al:#FFFBEB;--aml:#FDE68A;--rd:#F43F5E;--rl:#FFF1F2;--bl:#38BDF8;--bll:#F0F9FF;--bld:#0284C7;--ink:#111827;--ink2:#1F2937;--ink3:#6B7280;--ink4:#9CA3AF;--sf:#FAFFFE;--sf2:#F0FDF9;--sf3:#DCFCE7;--brm:rgba(16,185,129,.16);--r:24px;--body-bg:#D1FAE5}
+body[data-theme=mil1]{--g:#1E40AF;--gm:#3B82F6;--gl:#EFF6FF;--gd:#1E3A8A;--am:#D97706;--al:#FFFBEB;--aml:#FCD34D;--rd:#DC2626;--rl:#FEF2F2;--bl:#0891B2;--bll:#ECFEFF;--bld:#155E75;--ink:#0F172A;--ink2:#1E293B;--ink3:#475569;--ink4:#94A3B8;--sf:#F8FAFC;--sf2:#F1F5F9;--sf3:#E2E8F0;--brm:rgba(15,23,42,.12);--r:12px;--body-bg:#E2E8F0}
+body[data-theme=mil2]{--g:#6B7C5E;--gm:#8FA07E;--gl:#F2F5EE;--gd:#3D4F33;--am:#C0714A;--al:#FBF0EA;--aml:#E4A882;--rd:#B94040;--rl:#FBF0F0;--bl:#5B7FA6;--bll:#EEF3F9;--bld:#2E5481;--ink:#1C1917;--ink2:#292524;--ink3:#57534E;--ink4:#A8A29E;--sf:#FAFAF9;--sf2:#F5F4F1;--sf3:#EAE8E3;--brm:rgba(28,25,23,.12);--r:14px;--body-bg:#E7E4DD}
+*{box-sizing:border-box;margin:0;padding:0}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+body{--fd:'Syne',system-ui,sans-serif;--fn:'DM Sans',system-ui,sans-serif;--mo:'DM Mono',ui-monospace,monospace;
+ --bg:var(--sf);--surface:var(--cd);--muted:var(--ink3);--line:var(--brm);--accent:var(--gd);--ainv:#fff;--pop:var(--am);--onpop:#111;--danger:var(--rd);
+ font-family:var(--fn);background:var(--body-bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:12px;padding:14px;transition:background .3s}
+.bar{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;align-items:center;max-width:980px}
+.bar .t{font-family:var(--fd);font-weight:800;font-size:18px;margin-right:6px;color:var(--g)}
+.bar .t small{font-family:var(--mo);font-weight:500;font-size:11px;color:var(--muted);margin-left:6px}
+body[data-theme=genz1] .bar .t small,body[data-theme=genz1] .bar button,body[data-theme=genz1] .bar select{color:#fff}
+.bar button,.bar select{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--ink)}
+body[data-theme=genz1] .bar button,body[data-theme=genz1] .bar select{background:#2a1050;border-color:#4b2a80}
+.bar button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.device{position:relative;width:390px;height:800px;border-radius:46px;border:10px solid #000;overflow:hidden;background:var(--bg);color:var(--ink);box-shadow:0 30px 80px #0006;flex:none}
+.device[data-dev=ipad]{width:1000px;height:680px;border-radius:30px}
+.screen{display:flex;flex-direction:column;height:100%}
+.status{display:flex;justify-content:space-between;padding:10px 24px 4px;font-size:13px;font-weight:600;flex:none}
+.device[data-dev=ipad] .status{display:none}
+.main{flex:1;min-height:0;display:flex;flex-direction:column;position:relative}
+.view{flex:1;overflow:auto;padding:6px 18px 24px}
+.cpbtn{position:absolute;top:2px;right:12px;width:40px;height:40px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;z-index:5}
+.tabbar{display:flex;border-top:1px solid var(--line);background:var(--surface);flex:none;padding-bottom:6px}
+.tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 4px;font-size:11px;color:var(--muted)}
+.tabbar button.on{color:var(--accent);font-weight:700}
+.device[data-dev=ipad] .screen{flex-direction:row}
+.device[data-dev=ipad] .tabbar{order:-1;flex-direction:column;width:96px;border-top:0;border-right:1px solid var(--line);padding:20px 0;gap:6px;justify-content:flex-start}
+.device[data-dev=ipad] .view{padding:14px 32px 24px}
+.device[data-dev=ipad] .split{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+h1{font-family:var(--fd);font-size:26px;line-height:1.1;font-weight:800;letter-spacing:-.02em;margin:6px 44px 12px 0}
+h2{font-family:var(--fd);font-size:17px;font-weight:700;margin:16px 0 8px}
+h3{font-size:15px;font-weight:700}
+p,.sm{font-size:13.5px;color:var(--muted);line-height:1.4}
+.mono{font-family:var(--mo)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:10px}
+.card.tint{background:var(--gl);border-color:transparent}
+.row{display:flex;align-items:center;gap:10px}.sp{justify-content:space-between}.grow{flex:1;min-width:0}.wrap{flex-wrap:wrap}
+.btn{background:var(--accent);color:var(--ainv);border-radius:14px;padding:12px 16px;font-weight:700;font-size:15px;text-align:center}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.pop{background:var(--pop);color:var(--onpop)}
+.btn.sm{padding:7px 12px;font-size:13px;border-radius:10px}
+.btn.big{padding:16px 12px;font-size:16px;border-radius:18px}
+.btn[disabled]{opacity:.4;pointer-events:none}
+.btn.danger{background:#b42318;color:#fff}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px;margin-bottom:12px}
+.seg button{flex:1;padding:8px 6px;border-radius:9px;font-size:13.5px;font-weight:600;color:var(--muted)}
+.seg button.on{background:var(--accent);color:var(--ainv)}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:12.5px;font-weight:600;margin:0 6px 6px 0}
+.chip.on{background:var(--accent);color:var(--ainv);border-color:var(--accent)}
+.chip[disabled]{opacity:.55}
+.tag{font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:8px;background:var(--aml);color:#111;white-space:nowrap}
+.tag.mut{background:var(--sf3);color:var(--ink2)}.tag.ok{background:var(--gl);color:var(--gd)}.tag.warn{background:var(--al);color:#7a4a00}.tag.bad{background:var(--rl);color:#a02020}
+.av{width:42px;height:42px;border-radius:50%;background:var(--accent);color:var(--ainv);display:grid;place-items:center;font-family:var(--fd);font-weight:800;flex:none}
+.av.lg{width:68px;height:68px;font-size:24px}.av.sm{width:34px;height:34px;font-size:13px}
+.big-n{font-family:var(--fd);font-weight:800;font-size:68px;line-height:1;letter-spacing:-.04em}
+input.in,select.in{width:100%;background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:11px 12px;font-size:15px}
+label.l{font-size:12.5px;font-weight:700;color:var(--muted);display:block;margin:10px 0 4px}
+.sb{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.team{background:var(--surface);border:2px solid var(--line);border-radius:20px;padding:14px;text-align:center}
+.team.srv{border-color:var(--gd);box-shadow:0 0 0 4px var(--gl)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--am);border:1.5px solid var(--ink);margin-right:6px}
+.call{text-align:center;font-family:var(--mo);font-size:28px;font-weight:500;margin:10px 0 2px}
+.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.slots button{border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 0;font-size:12.5px;font-weight:600;display:flex;flex-direction:column;align-items:center;line-height:1.25}
+.slots button small{font-size:11px;color:var(--muted);font-weight:500}
+.slots button.on{background:var(--accent);color:var(--ainv);border-color:var(--accent)}.slots button.on small{color:#ffffffcc}
+.slots button[disabled]{opacity:.4}
+.map{position:relative;height:230px;border-radius:18px;overflow:hidden;border:1px solid var(--line);background:
+ linear-gradient(90deg,transparent 48%,#fff9 48%,#fff9 52%,transparent 52%),linear-gradient(0deg,transparent 58%,#fff9 58%,#fff9 62%,transparent 62%),
+ radial-gradient(circle at 25% 30%,var(--gl) 0 16%,transparent 17%),radial-gradient(circle at 78% 70%,var(--gl) 0 12%,transparent 13%),radial-gradient(ellipse at 70% 22%,var(--bll) 0 14%,transparent 15%),var(--sf3)}
+.pin{position:absolute;transform:translate(-50%,-100%);background:var(--ink);color:#fff;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:700;border:2px solid #fff;box-shadow:0 2px 6px #0004}
+.pin.free{background:var(--gd)}.pin.in{border-radius:6px}.pin.sel{background:var(--am);color:#111;z-index:2}
+.ov{position:absolute;inset:0;background:#0007;display:flex;align-items:flex-end;z-index:20}
+.device[data-dev=ipad] .ov{align-items:center;justify-content:center}
+.sheet{background:var(--bg);border-radius:24px 24px 0 0;width:100%;max-height:90%;overflow:auto;padding:18px 18px 28px}
+.device[data-dev=ipad] .sheet{width:520px;border-radius:24px}
+.grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 12px}
+.toast{position:absolute;left:16px;right:64px;top:44px;background:#111;color:#fff;padding:12px 14px;border-radius:14px;font-size:13.5px;z-index:40;box-shadow:0 8px 24px #0006;animation:dn .25s ease-out}
+.toast.push{background:var(--am);color:#111}
+@keyframes dn{from{transform:translateY(-16px);opacity:0}to{transform:none;opacity:1}}
+.coin{width:112px;height:112px;border-radius:50%;margin:14px auto;background:var(--am);display:grid;place-items:center;font-family:var(--fd);font-weight:800;font-size:30px;color:#111;border:4px solid var(--ink);transition:transform 1s}
+.msg{max-width:88%;padding:10px 12px;border-radius:16px;margin-bottom:8px;font-size:14px;line-height:1.35}
+.msg.u{background:var(--accent);color:#fff;margin-left:auto;border-bottom-right-radius:4px}
+.msg.b{background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:4px}
+.watch{width:200px;height:240px;border-radius:52px;background:#000;border:8px solid #2b2b2b;margin:8px auto;color:#fff;padding:16px 12px;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:6px}
+.watch .w{font-family:var(--fd);font-size:42px;font-weight:800}
+.pc{position:relative;height:372px}
+.pcard.back{transform:scale(.95) translateY(14px);opacity:.65;pointer-events:none;touch-action:auto;justify-content:flex-end}
+.stamp{position:absolute;top:16px;padding:3px 10px;border:3px solid;border-radius:8px;font-family:var(--fd);font-weight:800;font-size:18px;opacity:0;transform:rotate(-10deg);pointer-events:none;background:var(--surface)}
+.stamp.r{right:14px;color:var(--gd);border-color:var(--gd)}.stamp.l{left:14px;color:var(--ink2);border-color:var(--ink2)}
+.scroll{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px;scrollbar-width:none}.scroll .chip{margin:0;white-space:nowrap;flex:none}
+.unread{width:10px;height:10px;border-radius:50%;background:var(--am);flex:none}
+.pcard{position:absolute;inset:0;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:8px;touch-action:none;cursor:grab}
+.round{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;border:1.5px solid var(--line);background:var(--surface)}
+.round.go{background:var(--accent);color:#fff;border-color:var(--accent)}.round.st{background:var(--am);color:#111;border-color:var(--am)}
+hr{border:0;border-top:1px solid var(--line);margin:10px 0}
+.livepill{margin-right:46px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--accent);color:#fff;border-radius:14px;padding:10px 14px;margin-bottom:10px;font-weight:700;font-size:14px}
+.sw{background:var(--al);border:1px solid var(--aml);border-radius:12px;padding:10px 12px;margin:10px 0;color:#7a4a00;font-size:13.5px}
+.wv{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;height:110px;overflow:auto;font-size:12.5px;color:var(--muted);line-height:1.45}
+:focus-visible{outline:3px solid var(--am);outline-offset:2px}
+@media(max-width:520px){body{padding:0;gap:0}.device{width:100%;height:calc(100vh - 84px);border-radius:0;border:0}.bar{padding:6px}.bar .nm{display:none}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body data-theme="default">
+<div class="bar" id="bar">
+ <span class="t">Dinkster<small>mobile v6</small></span>
+ <button data-a="dev" data-v="phone" class="on nm">iPhone</button>
+ <button data-a="dev" data-v="ipad" class="nm">iPad</button>
+ <select id="theme" aria-label="Theme"><optgroup label="Default"><option value="default">Green Court</option></optgroup><optgroup label="Gen Z"><option value="genz1">Neon Rave</option><option value="genz2">Y2K Pastel</option></optgroup><optgroup label="Millennial"><option value="mil1">Clean Slate</option><option value="mil2">Warm Studio</option></optgroup></select>
+ <button data-a="watch">Apple Watch</button>
+</div>
+<div class="device" id="device" data-dev="phone">
+ <div class="screen">
+  <div class="status"><span>9:41</span><span>5G</span></div>
+  <div class="main"><button class="cpbtn" data-a="copilot" aria-label="Open Dinkster Copilot" id="cpb"></button><div class="view" id="view"></div></div>
+  <nav class="tabbar" id="tabbar" aria-label="Main"></nav>
+ </div>
+ <div id="ovh"></div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const ICON={
+ home:'<path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/>',
+ ball:'<circle cx="12" cy="12" r="9"/><g fill="currentColor" stroke="none"><circle cx="12" cy="6.6" r="1.1"/><circle cx="7.8" cy="9.2" r="1.1"/><circle cx="16.2" cy="9.2" r="1.1"/><circle cx="12" cy="12" r="1.1"/><circle cx="6.8" cy="13.6" r="1.1"/><circle cx="17.2" cy="13.6" r="1.1"/><circle cx="9.4" cy="16.6" r="1.1"/><circle cx="14.6" cy="16.6" r="1.1"/></g>',
+ users:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M17 14c2.5 0 4.5 2 4.5 4.5"/>',
+ pin:'<path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+ trophy:'<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5v1a3 3 0 0 0 3 3M16 6h3v1a3 3 0 0 1-3 3M12 13v4M8 20h8"/>',
+ me:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>',
+ spark:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/>',
+ back:'<path d="M15 5l-7 7 7 7"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>',check:'<path d="M5 12l5 5 9-10"/>',
+ cards:'<rect x="6" y="7" width="12" height="14" rx="2.5"/><path d="M9 4h8a2 2 0 0 1 2 2v10"/>',
+ chat:'<path d="M4 5h16v11H9l-5 4z"/>',
+ heart:'<path d="M12 20s-7-4.6-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.4-7 10-7 10z"/>',
+ star:'<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 17l-5.2 2.7 1-5.9-4.3-4.1 5.9-.8z"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',qr:'<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v6h-4M14 18h2"/>',
+ share:'<path d="M12 15V4M8 8l4-4 4 4M5 13v6h14v-6"/>'};
+const ic=(n,s=22)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[n]}</svg>`;
+const ini=n=>n.split(/\s+/).filter(Boolean).map(x=>x[0]).join('').toUpperCase();
+
+/* ---------- data (names, venues and numbers follow v3) ---------- */
+const ME={n:'Alex Johnson',i:'AJ',id:'DK-X7K2P',dupr:3.5,ntrp:4.0};
+const PL=[
+ {n:'Maya Rivera',id:'DK-4Q7M2',d:3.8,mi:'0.8 mi',f:'singles doubles',a:'mornings',ver:true,likes:true,vibe:['Social','Dink-heavy'],lf:'A regular doubles crew, weekday mornings',q:'Best part of pickleball',ans:'Coffee after a long rally game.',why:'Both free weekday mornings, 0.8 mi apart',g:112},
+ {n:'Jordan Chen',id:'DK-9HX2P',d:4.0,mi:'1.4 mi',f:'doubles',a:'weekends',ver:false,likes:false,vibe:['Competitive','Fast hands'],lf:'Weekend doubles at 4.0',q:'Hot take',ans:'The third shot drop is overrated.',why:'Close level, both play weekends',g:203},
+ {n:'Sam Kim',id:'DK-7PQ4N',d:3.5,mi:'2.1 mi',f:'singles',a:'evenings',ver:false,likes:false,vibe:['Newer player','Patient'],lf:'Singles practice with someone patient',q:'Looking forward to',ans:'Finally mastering the kitchen line.',why:'Same DUPR, both free evenings',g:38},
+ {n:'Priya Nair',id:'DK-2MC8R',d:4.2,mi:'2.8 mi',f:'doubles',a:'all-day',ver:true,likes:true,vibe:['Competitive','Calm under pressure'],lf:'A partner for tournament prep',q:'Pickleball superpower',ans:'Staying calm at 10-10.',why:'You have played together before',g:176},
+ {n:'Carlos Mendez',id:'DK-5RT9K',d:3.7,mi:'3.2 mi',f:'doubles',a:'weekends',ver:false,likes:false,vibe:['Social','Weekend warrior'],lf:'Open play and post-game tacos',q:'Perfect Saturday',ans:'Open play at 9, tacos at noon.',why:'Both play Saturday mornings',g:81},
+ {n:'Dana Cruz',id:'DK-3LV6T',d:3.6,mi:'3.6 mi',f:'singles doubles',a:'weeknights',ver:false,likes:true,vibe:['Social','Team player'],lf:'Mixed doubles and new friends',q:'Hot take',ans:'Mixed doubles nights are the best nights.',why:'3 mutual connections',g:64}];
+const PF={all:['All',()=>true],liked:['Liked you',p=>p.likes],lvl:['My level',p=>Math.abs(p.d-ME.dupr)<=0.5],wk:['Weekends',p=>p.a==='weekends'],si:['Singles',p=>p.f.includes('singles')],do:['Doubles',p=>p.f.includes('doubles')]};
+const SUG=[['Tonight 6:30 PM','Zilker Park Courts','Free'],['Tomorrow 8:00 AM','Barton Springs Pickleball','$18 per hour, split two ways'],['Sat 9:00 AM','Mueller Park Courts','Free']];
+const OG=[{t:'Casual 4.0+',w:'Tomorrow 8 AM',v:'Barton Springs Pickleball',n:'3 of 4',h:'Jordan Chen'},{t:'Mixed social 3.0 to 3.5',w:'Tonight 6:30 PM',v:'Zilker Park Courts',n:'2 of 4',h:'Carlos Mendez'},{t:'Beginner friendly',w:'Sat 9 AM',v:'Mueller Park Courts',n:'1 of 4',h:'Sam Kim'}];
+const CT=[
+ {i:0,n:'Zilker Park Courts',t:'free',in:false,mi:'0.6 mi',c:4,x:26,y:44,info:'open 6am to 10pm, lighted',o:'3 courts open now'},
+ {i:1,n:'Barton Springs Pickleball',t:'paid',in:false,mi:'1.2 mi',c:6,x:62,y:30,r:18,r2:24,star:'4.8',info:'open 7am to 9pm',o:'4 slots today'},
+ {i:2,n:'East Side Indoor Courts',t:'paid',in:true,mi:'1.8 mi',c:8,x:46,y:74,r:28,r2:38,star:'4.9',info:'climate controlled',o:'6 slots today'},
+ {i:3,n:'Mueller Park Courts',t:'free',in:false,mi:'2.4 mi',c:2,x:80,y:62,info:'open 6am to dusk, no lights',o:'first come first served'},
+ {i:4,n:'South Lamar Rec Center',t:'paid',in:true,mi:'0.9 mi',c:4,x:16,y:76,r:22,r2:30,star:'4.7',info:'pro lighting',o:'2 slots tonight'}];
+const SLOT=[['9:00 AM',null],['10:00 AM',null],['11:00 AM',0],['12:00 PM',4],['2:00 PM',4],['4:00 PM',0],['5:00 PM',6],['6:00 PM',6],['7:00 PM',null]];
+const BEN=[
+ {k:'wellhub',lab:'WellHub',v:'Pickleland via WellHub',loc:'Pflugerville',s:[['9:00 AM','3.5+'],['10:30 AM','4.0+'],['12:00 PM','full'],['2:00 PM','3.5+'],['4:00 PM','all']],cta:'Book via WellHub'},
+ {k:'wellhub',lab:'WellHub',v:'Pickleball Kingdom via WellHub',loc:'2.1 mi',s:[['8:00 AM','open'],['11:00 AM','3.0+'],['1:00 PM','3.5+'],['3:00 PM','full'],['5:00 PM','4.0+']],cta:'Book via WellHub'},
+ {k:'classpass',lab:'ClassPass',v:'Pickleland via ClassPass',loc:'uses credits',s:[['9:00 AM','3 cr'],['11:00 AM','3 cr'],['6:00 PM','4 cr']],cta:'Book via ClassPass'},
+ {k:'insurance',lab:'Insurance',v:'The Picklr',loc:'Aetna eligible, 1.4 mi',s:[['10:00 AM','open'],['12:00 PM','3.5+'],['4:00 PM','all'],['6:00 PM','full']],cta:'Book and save for Aetna'}];
+/* ---------- state ---------- */
+const S={tab:'discover',flow:'main',device:'phone',mode:'player',
+ cfg:{fmt:'doubles',gm:'classic',to:11,bo:1,ea:null,eb:null},
+ slots:[{n:'Alex Johnson',d:3.5,host:true},{n:'Maya Rivera',d:3.8},{n:'Jordan Chen',d:4.0},null],
+ gform:false,code:'D-7741',join:'',host:true,
+ toss:{pick:null,res:null,win:null},
+ dc:{mode:'people',i:0,f:'all'},met:1,newConn:0,cv:null,og:{},
+ crew:[{n:'Priya Nair',st:'proposed',msgs:[{m:0,t:'Great to match! Thursday 6:30 PM at Zilker work for you?'}],prop:{w:'Thu 6:30 PM',v:'Zilker Park Courts',by:0,acc:false}},{n:'Sam Kim',st:'played',msgs:[{m:1,t:'Good games Tuesday!'},{m:0,t:'Same time next week?'}],g:2},{n:'Carlos Mendez',st:'new',msgs:[],unread:true}],
+ ct:{seg:'find',f:'all',sel:null,ben:'all',es:null,claimed:{},bk:{d:'Today',slot:null,dur:1,pay:'apple'}},
+ H:[{vs:'J. Tran and K. Lee',r:'W',sc:'11-6',w:'Sun',k:'Casual',y:'Synced to DUPR'},
+    {vs:'S. Kim and C. Mendez',r:'L',sc:'9-11',w:'Fri',k:'Casual',y:'Synced to DUPR'},
+    {vs:'M. Rivera and P. Nair',r:'W',sc:'11-8',w:'Wed',k:'Casual',y:'Synced to DUPR'}],
+ base:{games:47,wins:29},bookings:[],chat:[],G:null,undo:[],toastT:0,wv:'score'};
+const tn=()=>{const s=S.slots,f=S.cfg.fmt==='doubles';
+ const nm=(a,b)=>f?`${a?ini(a.n):'?'} & ${b?ini(b.n):'?'}`:`${a?ini(a.n):'?'}`;
+ return [S.cfg.ea||nm(s[0],s[1]),S.cfg.eb||(f?nm(s[2],s[3]):nm(s[1]))]};
+const ready=()=>S.cfg.fmt==='doubles'?S.slots.every(Boolean):!!(S.slots[0]&&S.slots[1]);
+function newGame(first){const c=S.cfg,n=tn();
+ S.G={fmt:c.fmt,mode:c.gm,shots:0,n,to:c.to,bo:c.bo,sets:[],cur:[0,0],first,srv:first,sn:c.fmt==='doubles'?2:1,over:false,host:S.host,rallies:0,souts:0,sw:false};S.undo=[]}
+const need=g=>Math.ceil(g.bo/2),wins=g=>[0,1].map(i=>g.sets.filter(s=>s[i]>s[1-i]).length);
+function callout(){const g=S.G,a=g.cur[g.srv],b=g.cur[1-g.srv];return g.fmt==='doubles'?`${a}-${b}-${g.sn}`:`${a}-${b}`}
+function rally(w){const g=S.G;if(!g||g.over)return;S.undo.push(JSON.stringify(g));g.shots=0;g.rallies++;
+ if(w===g.srv)g.cur[w]++;else if(g.fmt==='doubles'&&g.sn===1)g.sn=2;else{g.srv=1-g.srv;g.sn=1;g.souts++}
+ endCheck()}
+function endCheck(){const g=S.G,[a,b]=g.cur;
+ if(!g.sw&&Math.max(a,b)===6){g.sw=true;g.swb=true}
+ if(Math.max(a,b)>=g.to&&Math.abs(a-b)>=2){g.sets.push([a,b]);const w=wins(g);
+  if(Math.max(...w)>=need(g)){g.over=true;finish()}
+  else{g.cur=[0,0];g.first=1-g.first;g.srv=g.first;g.sn=g.fmt==='doubles'?2:1;g.sw=false;g.swb=false;g.setUp=true}}}
+function finish(){const g=S.G,w=wins(g),won=w[0]>w[1];const row={vs:g.n[1],r:won?'W':'L',sc:g.sets.map(s=>s.join('-')).join(', '),w:'Now',k:g.mode==='dink'?'Dink Battle':'Casual',y:'Queued for DUPR'};
+ S.H.unshift(row);S.base.games++;if(won)S.base.wins++;setTimeout(()=>{row.y='Synced to DUPR';if(S.tab==='me')render()},2200)}
+
+/* ---------- views ---------- */
+const hRow=h=>`<div class="card row"><span class="tag ${h.r==='W'?'ok':'mut'}" style="width:28px;text-align:center">${h.r}</span><div class="grow"><h3>${h.vs}</h3><p>${h.w}, ${h.k}, ${h.sc}</p></div><span class="tag mut">${h.y}</span></div>`;
+const back=(v,t)=>`<div class="row"><button data-a="flow" data-v="${v}" aria-label="Back">${ic('back')}</button><h1 style="margin:0 44px 0 0">${t}</h1></div>`;
+function pill(){const g=S.G;if(!g||g.over||S.flow==='score'&&S.tab==='play')return'';return `<button class="livepill" style="width:calc(100% - 46px)" data-a="resume"><span>Live game ${S.code}, ${g.cur[0]}-${g.cur[1]}</span><span>Resume</span></button>`}
+
+function vPlay(){const f=S.flow,c=S.cfg;
+ if(f==='main'){const pr=S.crew.find(x=>x.prop&&x.prop.acc);
+ return `<div class="row" style="margin:6px 44px 6px 0"><div class="av">${ME.i}</div><div><h3>gm, Alex</h3><p class="mono" style="font-size:12px">${ME.id}</p></div></div>
+ <div style="margin:8px 0"><span class="chip on">Pickleball</span><span class="chip" disabled>Tennis <span class="tag mut">Phase 2</span></span><span class="chip" disabled>Badminton <span class="tag mut">Phase 3</span></span></div>
+ ${pill()}
+ <div class="card tint"><p>${pr?'Planned game':'Tonight'}</p><div class="row sp"><div><h3>${pr?pr.n+', '+pr.prop.w:'Open play, Barton Springs'}</h3><p>${pr?pr.prop.v+', D-7741':'6:30 PM, 3 of 4 joined, Maya and Jordan are in'}</p></div><button class="btn sm" data-a="${pr?'startwith':'flow'}" data-v="${pr?pr.n:'lobby'}">Lobby</button></div></div>
+ <h2>Quick actions</h2><div class="two">
+  <button class="card" style="text-align:left" data-a="flow" data-v="lobby"><h3>New game</h3><p>Set up lobby and teams</p></button>
+  <button class="card" style="text-align:left" data-a="flow" data-v="join"><h3>Join with D code</h3><p>Enter a code like D-7741</p></button>
+  <button class="card" style="text-align:left" data-a="flow" data-v="toss"><h3>Coin toss</h3><p>Who serves first</p></button>
+  <button class="card" style="text-align:left" data-a="tab" data-v="courts"><h3>Find a court</h3><p>Free, indoor, bookable</p></button></div>
+ <h2>Recent games</h2>${S.H.slice(0,4).map(hRow).join('')}`}
+ if(f==='lobby'){const t=tn(),d=c.fmt==='doubles';
+  return `${back('main','Lobby')}<div class="seg" style="margin-top:12px"><button class="${d?'on':''}" data-a="fmt" data-v="doubles">Doubles 2v2</button><button class="${!d?'on':''}" data-a="fmt" data-v="singles">Singles 1v1</button></div>
+  <div class="card row sp"><div><p>Your D code</p><div class="mono" style="font-size:32px;font-weight:500;letter-spacing:.08em">${S.code}</div></div><button class="btn sm ghost" data-a="copy">Copy</button></div>
+  <h3 style="margin:6px 0">Players</h3>
+  ${S.slots.slice(0,d?4:2).map((p,i)=>p?`<div class="card row"><div class="av sm">${ini(p.n)}</div><div class="grow"><h3>${p.n}${p.host?' (you)':''}</h3><p>${p.d} DUPR${p.host?', host':''}${p.guest?', guest, no app':''}</p></div>${p.host?'<span class="tag ok">Watch</span>':'<span class="tag ok">Ready</span>'}</div>`:`<div class="card row" style="border-style:dashed"><div class="av sm" style="background:var(--sf3);color:var(--ink3)">?</div><div class="grow"><h3>Waiting for player</h3><p>Share your D code</p></div><button class="btn sm ghost" data-a="simjoin" data-v="${i}">Simulate join</button></div>`).join('')}
+  ${S.gform?`<div class="row" style="margin-bottom:10px"><input class="in" id="gname" placeholder="Guest name" maxlength="24"><button class="btn sm" data-a="addguest">Add</button></div>`:`<button class="btn ghost sm" style="width:100%;margin-bottom:10px" data-a="gform">${ic('plus',16)} Add guest player, no app needed</button>`}
+  <label class="l">Team names (initials by default, tap to edit)</label><div class="two"><input class="in" data-b="ea" value="${t[0]}" aria-label="Team 1 name"><input class="in" data-b="eb" value="${t[1]}" aria-label="Team 2 name"></div>
+  <label class="l">Game type</label><div class="seg"><button class="${c.gm==='classic'?'on':''}" data-a="gm" data-v="classic">Classic</button><button class="${c.gm==='dink'?'on':''}" data-a="gm" data-v="dink">Dink Battle <span class="tag" style="margin-left:4px">Pilot</span></button></div>
+  ${c.gm==='dink'?'<div class="card tint"><h3>Dink Battle</h3><p>After the 5th shot of a rally, the court shrinks to half court. Dinks decide the point. Lobs and hard shots land out.</p></div>':''}
+  <div class="two"><div><label class="l" style="margin-top:0">Game to</label><div class="seg"><button class="${c.to===11?'on':''}" data-a="to" data-v="11">11</button><button class="${c.to===15?'on':''}" data-a="to" data-v="15">15</button></div></div><div><label class="l" style="margin-top:0">Match</label><div class="seg"><button class="${c.bo===1?'on':''}" data-a="bo" data-v="1">1 game</button><button class="${c.bo===3?'on':''}" data-a="bo" data-v="3">Best of 3</button></div></div></div>
+  <div class="card tint"><h3>How this game works</h3><p>Team names default to player initials. Singles: the server keeps serving until they lose the point. Doubles: two-server rule. Host override changes the score without telling other players. Apple Watch tap-to-score works in Phase 1.</p></div>
+  <button class="btn" style="width:100%" ${ready()?'':'disabled'} data-a="flow" data-v="toss">${ready()?'Start game, go to toss':'Waiting for players'}</button>
+  <button class="btn ghost" style="width:100%;margin-top:8px" ${ready()?'':'disabled'} data-a="skiptoss">Skip toss, start scoring</button>`}
+ if(f==='join')return `${back('main','Join a game')}
+  <p style="margin:10px 0">Got a D code? Type it in. Your keyboard opens on its own.</p>
+  <label class="l" for="dcode">D code</label>
+  <div class="row" style="gap:0"><span class="card mono" style="margin:0;border-radius:12px 0 0 12px;border-right:0;padding:9px 12px;font-size:24px;font-weight:500">D-</span><input id="dcode" class="in mono" style="border-radius:0 12px 12px 0;font-size:24px;letter-spacing:.14em;text-transform:uppercase" maxlength="8" inputmode="text" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="go" placeholder="7741" value="${S.join}"></div>
+  <p style="margin:6px 0 14px">Example: D-7741. Pasting a full code works too.</p>
+  <button class="btn" id="jbtn" style="width:100%" ${S.join.length<4?'disabled':''} data-a="doJoin">Join game</button>
+  <button class="btn ghost" style="width:100%;margin-top:8px" data-a="toast" data-v="Camera opens here to scan a game QR code.">${ic('qr',16)} Scan QR code instead</button>`;
+ if(f==='jlobby')return `${back('main','Lobby D-'+S.join)}<div class="card" style="margin-top:12px"><h3>Hosted by Maya Rivera</h3><p>Doubles to 11. Team names are set by the host.</p></div>
+  <div class="card row"><div class="av sm">${ME.i}</div><div class="grow"><h3>You</h3><p>${ME.id}</p></div><span class="tag ok">Ready</span></div>
+  <p style="margin:10px 0">Waiting for the host to start.</p><button class="btn" style="width:100%" data-a="hostStart">Simulate host start</button>`;
+ if(f==='toss'){const T=S.toss,t=tn();
+  let b='';
+  if(!T.res)b=`<p>${t[0]} picks. ${t[1]} gets the other side.</p><div class="two" style="margin:12px 0"><button class="btn ${T.pick==='Heads'?'':'ghost'}" data-a="tpick" data-v="Heads">Heads</button><button class="btn ${T.pick==='Tails'?'':'ghost'}" data-a="tpick" data-v="Tails">Tails</button></div><div class="coin" id="coin">?</div><button class="btn" style="width:100%" ${T.pick?'':'disabled'} data-a="flip">${T.pick?'Flip coin':'Pick heads or tails first'}</button>`;
+  else b=`<div class="coin">${T.res}</div><div class="card tint" style="text-align:center"><h2 style="margin-top:0">${t[T.win]} wins the toss</h2><p>${t[0]} called ${T.pick}. It landed ${T.res}.</p></div>
+   <p style="margin:8px 0">${t[T.win]}, pick one:</p><div class="grid" style="display:grid;gap:8px"><button class="btn" data-a="tchoice" data-v="serve">Serve first</button><button class="btn ghost" data-a="tchoice" data-v="receive">Receive first</button><button class="btn ghost" data-a="tchoice" data-v="side">Pick side, other team serves</button></div>`;
+  return `${back('lobby','Coin toss')}<div style="margin-top:12px"></div>${b}`}
+ if(f==='score')return vScore()}
+
+function vScore(){const g=S.G,w=wins(g),multi=g.bo>1;
+ return `<div class="row sp" style="margin:6px 44px 4px 0"><div><h3>${g.mode==='dink'?'Dink Battle ':''}${g.fmt==='doubles'?'Doubles':'Singles'}, to ${g.to}${multi?', best of 3':''}</h3><p class="mono" style="font-size:12px">${S.code} ${g.host?'host':'player'}</p></div></div>
+ ${multi?`<div style="margin:6px 0">${[0,1,2].map(i=>`<span class="chip ${i===g.sets.length?'on':''}">Set ${i+1}${g.sets[i]?' '+g.sets[i].join('-'):''}</span>`).join('')}</div>`:''}
+ ${g.swb?`<div class="sw row sp"><span>Switch ends. First team reached 6.</span><button data-a="dimsw" aria-label="Dismiss">${ic('x',18)}</button></div>`:''}
+ ${g.setUp?`<div class="sw row sp"><span>Next set. ${g.n[g.srv]} serves first.</span><button data-a="dimset" aria-label="Dismiss">${ic('x',18)}</button></div>`:''}
+ <div class="sb">${[0,1].map(i=>`<div class="team ${g.srv===i?'srv':''}"><p style="font-weight:700;color:var(--ink)">${g.srv===i?'<span class="dot"></span>':''}${g.n[i]}</p><div class="big-n">${g.cur[i]}</div>${multi?`<p>Sets ${w[i]}</p>`:''}</div>`).join('')}</div>
+ <div class="call" aria-live="polite">${callout()}</div>
+ <p style="text-align:center;margin-bottom:10px">${g.n[g.srv]} serving${g.fmt==='doubles'?', server '+g.sn:''}</p>
+ <div class="two">${[0,1].map(i=>`<button class="btn ${i?'ghost':''} big" data-a="rally" data-v="${i}">${g.n[i]} won the rally</button>`).join('')}</div>
+ ${g.mode==='dink'?dinkPanel(g):''}
+ <div class="two" style="margin-top:10px"><button class="btn ghost sm" data-a="undo">Undo</button><button class="btn ghost sm" data-a="sideout">Side out</button></div>
+ <div class="two" style="margin-top:8px">${g.host?'<button class="btn ghost sm" data-a="override">Host override</button>':'<button class="btn ghost sm" disabled>Host override</button>'}<button class="btn ghost sm" data-a="watch">Show on Watch</button></div>
+ <div class="card" style="margin-top:12px"><div class="row sp"><div class="mono"><b>${g.rallies}</b> rallies</div><div class="mono"><b>${g.souts}</b> side outs</div><div class="mono">${g.fmt==='doubles'?'2v2':'1v1'}</div></div></div>
+ <div class="card"><h3>Share this game ${S.code}</h3><div class="row wrap" style="margin-top:8px"><button class="chip" data-a="toast" data-v="iMessage invite ready to send.">iMessage</button><button class="chip" data-a="toast" data-v="AirDrop sheet opened.">AirDrop</button><button class="chip" data-a="toast" data-v="QR code shown for ${S.code}.">QR code</button><button class="chip" data-a="copy">Copy code</button></div></div>
+ <button class="btn ghost sm" style="width:100%" data-a="leave">Back home, keep game live</button>`}
+function courtSvg(half){const x=half?50:0,w=half?100:200;return `<svg viewBox="0 0 200 90" width="100%" height="64" preserveAspectRatio="none" role="img" aria-label="${half?'Half court in play':'Full court in play'}"><rect width="200" height="90" rx="6" fill="var(--gl)" stroke="var(--line)"/><rect x="${x}" y="4" width="${w}" height="82" rx="4" fill="var(--gm)" opacity=".9"/><line x1="100" y1="0" x2="100" y2="90" stroke="var(--ink)" stroke-width="2"/><line x1="65" y1="0" x2="65" y2="90" stroke="var(--ink)" opacity=".35"/><line x1="135" y1="0" x2="135" y2="90" stroke="var(--ink)" opacity=".35"/></svg>`}
+function dinkPanel(g){const half=g.shots>=5;return `<div class="card" style="margin-top:10px"><div class="row sp"><h3>${half?'Half court is live':'Full court'}</h3><span class="tag ${half?'':'mut'}">Shot ${g.shots}</span></div>${courtSvg(half)}<p style="margin:6px 0">${half?'Lobs and hard shots land out. Dinks decide the point.':'Court shrinks to half court after the 5th shot.'}</p>
+ <div class="two"><button class="btn sm ghost" data-a="shot">Add shot</button><button class="btn sm ghost" data-a="shot0">Reset count</button></div>
+ ${half?`<div class="two" style="margin-top:8px">${[0,1].map(i=>`<button class="btn sm danger" data-a="outby" data-v="${i}">Out by ${g.n[i]}</button>`).join('')}</div>`:''}</div>`}
+
+const dlist=()=>PL.filter(PF[S.dc.f][1]);
+function vDiscover(){const D=S.dc,coach=S.mode==='coach',L=dlist(),p=L[D.i],nx=L[D.i+1];
+ const seg=`<div class="seg"><button class="${D.mode==='people'?'on':''}" data-a="dmode" data-v="people">${coach?'Clients':'People'}</button><button class="${D.mode==='games'?'on':''}" data-a="dmode" data-v="games">Open games</button></div>`;
+ const goal=`<div class="card tint row sp"><div><h3>Meet 3 new players this week</h3><p>${Math.min(S.met,3)} of 3 so far. ${S.crew.length} in your crew.</p></div><div class="row" style="gap:4px">${[0,1,2].map(i=>`<span class="dot" style="margin:0;background:${i<S.met?'var(--gd)':'var(--sf3)'}"></span>`).join('')}</div></div>`;
+ if(D.mode==='games')return `<h1>${coach?'Find clients':'Meet players'}</h1>${seg}<p style="margin-bottom:8px">Games forming near you. Join one and meet the group.</p>${OG.map((g,i)=>`<div class="card"><div class="row sp"><div class="grow"><h3>${g.t}</h3><p>${g.w}, ${g.v}</p><p>Hosted by ${g.h}, ${g.n} joined</p></div><button class="btn sm ${S.og[i]?'ghost':''}" data-a="joingame" data-v="${i}">${S.og[i]?'Requested':'Join'}</button></div></div>`).join('')}<button class="btn ghost" style="width:100%" data-a="flow" data-v="lobby">Start an open game</button>${goal}`;
+ const chips=`<div class="scroll">${Object.entries(PF).map(([k,v])=>`<button class="chip ${D.f===k?'on':''}" data-a="df" data-v="${k}">${v[0]}${k==='liked'?' ('+PL.filter(x=>x.likes).length+')':''}</button>`).join('')}</div>`;
+ const card=!p?`<div class="card" style="margin-top:8px"><h3>You are caught up</h3><p>No more players for this filter. Try another one, or check Open games.</p></div><button class="btn ghost" data-a="dreset">Start over</button>`:
+ `<div class="pc"><div class="pcard back">${nx?`<h3>${nx.n}</h3><p>${nx.d.toFixed(1)} DUPR, ${nx.mi}</p>`:''}</div>
+  <div class="pcard" id="pcard"><span class="stamp r" id="sr">LET'S PLAY</span><span class="stamp l" id="sl">PASS</span>
+  <div class="row"><div class="av lg">${ini(p.n)}</div><div class="grow"><h2 style="margin:0">${p.n}</h2><p>${p.mi}, Austin, TX, ${p.g} games</p><p class="mono" style="font-size:12px">${p.id}</p></div></div>
+  <div class="row wrap"><span class="tag">${p.d.toFixed(1)} DUPR</span>${p.ver?'<span class="tag ok">Verified</span>':''}${p.likes?'<span class="tag ok">Liked you</span>':''}${p.vibe.map(v=>`<span class="tag mut">${v}</span>`).join('')}</div>
+  <div class="card tint" style="margin:2px 0"><p>Looking for</p><h3>${p.lf}</h3></div>
+  <div class="card" style="margin:0"><p>${p.q}</p><h3>${p.ans}</h3></div>
+  <p style="margin-top:auto"><b style="color:var(--ink)">Why you match:</b> ${p.why}</p></div></div>
+  <div class="row" style="justify-content:center;gap:18px;margin-top:12px"><button class="round" data-a="pass" aria-label="Pass">${ic('x',26)}</button><button class="round st" data-a="superm" aria-label="Super match">${ic('star',26)}</button><button class="round go" data-a="like" aria-label="${coach?'Offer session':'Let us play'}">${ic('heart',26)}</button></div>
+  <p style="text-align:center;margin-top:6px">Swipe right to play, left to pass, star to stand out.</p>`;
+ const lk=PL.filter(x=>x.likes&&!S.crew.some(c=>c.n===x.n));
+ const liked=`<h2>Liked you</h2>${lk.map(x=>`<div class="card row"><div class="av sm">${ini(x.n)}</div><div class="grow"><h3>${x.n}</h3><p>${x.d.toFixed(1)} DUPR, ${x.mi}</p></div><button class="btn sm" data-a="likeN" data-v="${x.n}">${coach?'Offer':"Let's play"}</button></div>`).join('')||'<p>Everyone who liked you is already in your crew.</p>'}`;
+ return `<h1>${coach?'Find clients':'Meet players'}</h1>${seg}${chips}<div class="split"><div>${card}</div><div>${goal}${liked}</div></div>`}
+function vCrew(){
+ if(S.cv)return vChat(S.crew.find(c=>c.n===S.cv));
+ const tg={new:['New match','ok'],proposed:['Game proposed',''],planned:['Game planned','ok'],played:['Played together','mut']};
+ return `<h1>Your crew</h1><p style="margin-bottom:10px">Matches turn into games. Say hi, pick a time, play.</p>${S.crew.map(c=>{const last=c.msgs[c.msgs.length-1];return `<button class="card row" style="width:100%;text-align:left" data-a="chat" data-v="${c.n}"><div class="av">${ini(c.n)}</div><div class="grow"><div class="row sp"><h3>${c.n}</h3><span class="tag ${tg[c.st][1]}">${tg[c.st][0]}</span></div><p>${last?last.t:'Say hi to start the conversation'}</p></div>${c.unread?'<span class="unread" aria-label="Unread"></span>':''}</button>`}).join('')||'<p>Swipe right on Discover to start your crew.</p>'}`}
+function vChat(c){const p=PL.find(x=>x.n===c.n)||{d:3.5};const pr=c.prop;
+ const ice=['Dinks or drives?','Free this week?','Which courts do you like?'];
+ return `<div class="row"><button data-a="chatback" aria-label="Back">${ic('back')}</button><div class="av sm">${ini(c.n)}</div><div class="grow"><h3>${c.n}</h3><p>${p.d.toFixed(1)} DUPR</p></div><span style="width:44px"></span></div>
+ <div id="msgs" style="margin:12px 0;min-height:140px">${c.msgs.map(m=>`<div class="msg ${m.m?'u':'b'}">${m.t}</div>`).join('')||'<p>You matched. Break the ice.</p>'}</div>
+ ${pr?`<div class="card tint"><p>${pr.acc?'Game planned':pr.by===0?'Game proposed to you':'Game proposed'}</p><h3>${pr.w}, ${pr.v}</h3><p>D-7741</p>${pr.acc?`<button class="btn sm" style="margin-top:8px" data-a="startwith" data-v="${c.n}">Open lobby</button>`:pr.by===0?`<div class="two" style="margin-top:8px"><button class="btn sm" data-a="accprop" data-v="${c.n}">Accept</button><button class="btn sm ghost" data-a="toast" data-v="Declined. ${c.n} can propose another time.">Decline</button></div>`:'<p style="margin-top:6px">Waiting for a reply.</p>'}</div>`:''}
+ <div class="scroll">${ice.map(q=>`<button class="chip" data-a="qmsg" data-v="${q}">${q}</button>`).join('')}</div>
+ <div class="row"><input class="in" id="msgin" placeholder="Message ${c.n.split(' ')[0]}" aria-label="Message" maxlength="200"><button class="btn sm" data-a="msgsend">Send</button></div>
+ ${!pr||c.st==='played'?`<button class="btn" style="width:100%;margin-top:10px" data-a="propose" data-v="${c.n}">${c.st==='played'?'Play again':'Propose a game'}</button>`:''}`}
+
+function vCourts(){const C=S.ct,coach=S.mode==='coach';
+ const seg=`<div class="seg"><button class="${C.seg==='find'?'on':''}" data-a="ctseg" data-v="find">${coach?'My sessions':'Find courts'}</button><button class="${C.seg==='ben'?'on':''}" data-a="ctseg" data-v="ben">Benefits</button></div>`;
+ if(C.seg==='ben'){const tabs=[['all','All'],['wellhub','WellHub'],['classpass','ClassPass'],['insurance','Insurance']];
+  return `<h1>Your eligible sessions</h1>${seg}<p style="margin-bottom:8px">WellHub, ClassPass, and Aetna linked, 3 venues nearby.</p><div>${tabs.map(t=>`<button class="chip ${C.ben===t[0]?'on':''}" data-a="benf" data-v="${t[0]}">${t[1]}</button>`).join('')}</div>
+  ${BEN.map((b,bi)=>({b,bi})).filter(x=>C.ben==='all'||x.b.k===C.ben).map(({b,bi})=>`<div class="card"><div class="row sp"><h3>${b.v}</h3><span class="tag ok">${b.lab}</span></div><p style="margin-bottom:8px">${b.loc}</p><div class="slots">${b.s.map((s,si)=>`<button class="${C.es===bi+'-'+si?'on':''}" ${s[1]==='full'?'disabled':''} data-a="es" data-v="${bi}-${si}">${s[0]}<small>${s[1]}</small></button>`).join('')}</div>${C.es&&C.es.startsWith(bi+'-')?`<button class="btn" style="width:100%;margin-top:10px" data-a="toast" data-v="${b.cta}: opening ${b.lab}.">${b.cta}</button>`:''}</div>`).join('')}
+  <div class="card tint"><h3>$0 today if you use WellHub</h3><p>You have 8 WellHub check-ins left this month. Pickleland and Pickleball Kingdom both have eligible open play today.</p></div>
+  <div class="card"><h3>Notes on benefits</h3><p>WellHub: check in on the WellHub app at the facility, or the venue is not paid.<br>Ladies Night, 4.0+, and 4.6+ sessions are not eligible for WellHub at Pickleland.<br>ClassPass bookings must be made through ClassPass.<br>Aetna: keep your receipt and submit the form at aetna.com.</p></div>`}
+ if(coach)return `<h1>Coaching</h1>${seg}<div class="card"><div class="row sp"><div><p>Your coaching rate</p><h2 style="margin:0">$65 / hr</h2></div><button class="btn sm ghost" data-a="toast" data-v="Edit rate opens here.">Edit rate</button></div><div style="margin-top:8px"><span class="chip">Drills</span><span class="chip">Match play</span><span class="chip">Video review</span><span class="chip">Tournament prep</span><span class="chip">Group clinic</span></div></div>
+  <h2>Today</h2><div class="card row"><div class="av sm">MR</div><div class="grow"><h3>Maya Rivera</h3><p>9:00 AM, 1 hr, Pickleland Court 3, Drills</p></div><span class="tag ok">Paid $65</span></div>
+  <div class="card row"><div class="av sm">JC</div><div class="grow"><h3>Jordan Chen</h3><p>11:30 AM, 1.5 hr, East Side Court 2, Match play</p></div><span class="tag warn">Unpaid $97.50</span></div>
+  <div class="card row" style="border-style:dashed"><div class="grow"><h3>Open slot</h3><p>2:00 PM, any venue</p></div><button class="btn sm" data-a="toast" data-v="Availability shared with your clients.">Share availability</button></div>
+  <h2>This month</h2><div class="two"><div class="card"><p>Sessions</p><div class="big-n" style="font-size:34px">12</div></div><div class="card"><p>Earned</p><div class="big-n" style="font-size:34px">$780</div></div></div>`;
+ const f=C.f,list=CT.filter(c=>f==='all'||(f==='free'&&c.t==='free')||(f==='in'&&c.in)||(f==='out'&&!c.in)||(f==='now'&&c.o!==''));
+ return `<h1>Courts</h1>${seg}<div>${[['all','All'],['free','Free'],['in','Indoor'],['out','Outdoor'],['now','Available now']].map(x=>`<button class="chip ${f===x[0]?'on':''}" data-a="cf" data-v="${x[0]}">${x[1]}</button>`).join('')}</div>
+ <div class="split"><div class="map">${list.map(c=>`<button class="pin ${c.t} ${c.in?'in':''} ${C.sel===c.i?'sel':''}" style="left:${c.x}%;top:${c.y}%" data-a="pick" data-v="${c.i}" aria-label="${c.n}">${c.t==='free'?'Free':'$'+c.r}</button>`).join('')}</div>
+ <div>${list.map(c=>`<div class="card"><div class="row sp"><div class="grow"><h3>${c.n}</h3><p>${c.mi}, ${c.c} courts, ${c.info}${c.star?', '+c.star+' rating':''}</p><p>${c.in?'Indoor':'Outdoor'}, ${c.o}</p></div><span class="tag ${c.t==='free'?'ok':''}">${c.t==='free'?'Free':'$'+c.r+' to $'+c.r2}</span></div><button class="btn sm" style="margin-top:8px" data-a="${c.t==='free'?'claim':'pick'}" data-v="${c.i}">${c.t==='free'?(C.claimed[c.i]?'Court claimed':'Claim court'):'Book'}</button></div>`).join('')||'<p>No courts match. Try another filter.</p>'}</div></div>`}
+
+function vMe(){const coach=S.mode==='coach',gm=S.base.games,wn=S.base.wins;
+ return `<div class="row" style="margin:6px 44px 12px 0"><div class="av lg">${ME.i}</div><div class="grow"><h1 style="margin:0;font-size:22px">${ME.n}</h1><p>Austin, TX, member since Mar 2026</p><span class="tag">${ME.dupr.toFixed(1)} DUPR</span> <span class="tag mut">${S.H[0].y}</span></div></div>
+ <div class="seg"><button class="${!coach?'on':''}" data-a="mode" data-v="player">Player mode</button><button class="${coach?'on':''}" data-a="mode" data-v="coach">Coach mode</button></div>
+ <div class="two"><div class="card"><p>Games</p><div class="big-n" style="font-size:34px">${gm}</div></div><div class="card"><p>Win rate</p><div class="big-n" style="font-size:34px">${Math.round(wn/gm*100)}%</div></div></div>
+ <div class="card row sp"><div><p>Dinkster ID, permanent</p><div class="mono" style="font-size:20px;font-weight:500">${ME.id}</div></div><span class="tag ok">${12+S.newConn} connects</span></div>
+ <h2>Sports</h2><div class="card"><div class="row sp"><div><h3>Pickleball</h3><p>3.5 DUPR verified, DUPR #12345678</p></div><span class="tag ok">Live</span></div><hr><div class="row sp"><div><h3>Tennis</h3><p>4.0 NTRP, manual</p></div><span class="tag mut">Phase 2</span></div><hr><div class="row sp"><div><h3>Badminton</h3><p>Available in Phase 3</p></div><span class="tag mut">Phase 3</span></div></div>
+ <h2>Memberships and benefits</h2><div class="card"><div class="row sp"><div><h3>WellHub</h3><p>Employer benefit, 8 check-ins left this month</p></div><span class="tag ok">Linked</span></div><hr><div class="row sp"><div><h3>ClassPass</h3><p>14 credits remaining</p></div><span class="tag ok">Linked</span></div><hr><div class="row sp"><div><h3>Aetna Fitness</h3><p>Up to $1,200 per year reimbursement</p></div><span class="tag ok">Linked</span></div><hr><div class="row sp"><div><h3>SilverSneakers</h3><p>Free weekday sessions at select venues</p></div><span class="tag ok">Linked</span></div><hr><div class="row sp"><div><h3>Pickleland Member</h3><p>Unlimited play, 1 guest pass per month</p></div><span class="tag ok">Linked</span></div></div>
+ <button class="btn ghost sm" style="width:100%" data-a="toast" data-v="Add a membership or benefit opens here.">${ic('plus',16)} Add membership or benefit</button>
+ ${coach?`<h2>Coach profile</h2><div class="card"><div class="row sp"><h3>Rate</h3><b>$65 per hour</b></div><p>This month: $780 earned, 12 sessions, 4.9 rating, 8 clients.</p><div style="margin-top:8px"><span class="chip">Drills</span><span class="chip">Match play</span><span class="chip">Video review</span><span class="chip">Tournament prep</span></div></div>`:''}
+ <h2>Match history</h2>${S.H.map(hRow).join('')}
+ ${S.bookings.length?`<h2>Court bookings</h2>`+S.bookings.map(b=>`<div class="card"><h3>${b.n}</h3><p>${b.d}, ${b.s}, ${b.h} hr, $${b.tot}, ${b.id}</p></div>`).join(''):''}
+ <h2>Watch and alerts</h2><div class="two"><button class="btn ghost" data-a="watch">Open Watch</button><button class="btn ghost" data-a="toast" data-v="Court calls and score alerts are on.">Alerts on</button></div>
+`}
+
+/* ---------- render ---------- */
+const TABS=[['discover','Discover','cards'],['play','Play','ball'],['courts','Courts','pin'],['crew','Crew','chat'],['me','Profile','me']];
+function render(){
+ $('#tabbar').innerHTML=TABS.map(t=>`<button class="${S.tab===t[0]?'on':''}" ${S.tab===t[0]?'aria-current="page"':''} data-a="tab" data-v="${t[0]}">${ic(t[2])}<span>${t[1]}</span></button>`).join('');
+ const v={discover:vDiscover,play:vPlay,courts:vCourts,crew:vCrew,me:vMe}[S.tab]();
+ const lp=S.tab!=='play'?pill():'';
+ $('#view').innerHTML=lp+v;$('#cpb').innerHTML=ic('spark',20);
+ document.querySelectorAll('.seg button,.chip').forEach(b=>{if(b.hasAttribute('data-a')||b.closest('.seg'))b.setAttribute('aria-pressed',b.classList.contains('on'))});
+ bindSwipe();const dc=$('#dcode');if(dc)dc.focus()}
+function toast(m,push){clearTimeout(S.toastT);const old=$('.toast');if(old)old.remove();const t=document.createElement('div');t.className='toast'+(push?' push':'');t.setAttribute('role','status');t.innerHTML=m;$('#device').appendChild(t);S.toastT=setTimeout(()=>t.remove(),push?6000:3000)}
+function sheet(h){$('#ovh').innerHTML=`<div class="ov" data-a="ovclose"><div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${h}</div></div>`}
+const closeSheet=()=>{$('#ovh').innerHTML=''};
+
+/* ---------- sheets ---------- */
+function courtSheet(i){const c=CT[i],B=S.ct.bk,coach=S.mode==='coach';
+ let h=`<div class="row sp"><h2 style="margin:0">${c.n}</h2><button data-a="close" aria-label="Close">${ic('x')}</button></div><p>${c.c} courts, ${c.in?'indoor':'outdoor'}, $${c.r} to $${c.r2} per hour</p>`;
+ const sl=SLOT.find(s=>s[0]===B.slot),hrs=B.dur,rate=sl&&sl[1]!==null?c.r+(sl[1]-0)*(c.r2-c.r)/6:c.r,sub=+(rate*hrs).toFixed(2),fee=+(sub*.10).toFixed(2),tot=+(sub+fee).toFixed(2);
+ h+=`<label class="l">Day</label><div>${['Today','Tomorrow','Sat Oct 24'].map(d=>`<button class="chip ${B.d===d?'on':''}" data-a="bk" data-k="d" data-v="${d}">${d}</button>`).join('')}</div>
+ <label class="l">Pick a time</label><div class="slots">${SLOT.map(s=>{const p=s[1]===null?null:Math.round(c.r+s[1]*(c.r2-c.r)/6);return `<button class="${B.slot===s[0]?'on':''}" ${p===null?'disabled':''} data-a="bk" data-k="slot" data-v="${s[0]}">${s[0]}<small>${p===null?'booked':'$'+p+'/hr'}</small></button>`}).join('')}</div>
+ <label class="l">Duration</label><div>${[1,1.5,2].map(d=>`<button class="chip ${B.dur===d?'on':''}" data-a="bk" data-k="dur" data-v="${d}">${d} hr</button>`).join('')}</div>
+ <label class="l">Pay with</label><div>${[['apple','Apple Pay'],['card','Card'],['link','Link']].map(p=>`<button class="chip ${B.pay===p[0]?'on':''}" data-a="bk" data-k="pay" data-v="${p[0]}">${p[1]}</button>`).join('')}</div>
+ <div class="card" style="margin-top:8px"><div class="row sp"><span>Court rate</span><span>$${rate.toFixed(0)}/hr</span></div><div class="row sp"><span>Duration</span><span>${hrs} hrs</span></div><div class="row sp"><span>Platform fee, 10%</span><span>$${fee.toFixed(2)}</span></div><hr><div class="row sp"><b>Total</b><b>$${tot.toFixed(2)}</b></div></div>
+ <button class="btn" style="width:100%" ${B.slot?'':'disabled'} data-a="book" data-v="${i}">${B.slot?'Confirm and pay $'+tot.toFixed(2):'Pick a time'}</button>`;
+ if(coach)h+=`<button class="btn ghost" style="width:100%;margin-top:8px" data-a="toast" data-v="Court held for your next client session.">Hold for a client session</button>`;
+ return h}
+function confirmSheet(b){sheet(`<div style="text-align:center"><div style="color:var(--gd)">${ic('check',48)}</div><h2 style="margin-top:4px">Court booked</h2><p>${b.n}, ${b.d} ${b.s}, ${b.h} hrs</p><div class="mono" style="font-size:22px;margin:10px 0">${b.id}</div><p>$${b.tot} charged. Calendar invite sent.</p></div>
+ <button class="btn" style="width:100%;margin-top:14px" data-a="startlobby">Start lobby</button><button class="btn ghost" style="width:100%;margin-top:8px" data-a="close">Done</button>`)}
+function copilotSheet(){
+ if(!S.chat.length)S.chat.push({b:1,h:'I can log a score from a message, find a game, or find a partner. Try: <i>We beat JC and SK on court 4, 11-9, 8-11, 12-10</i>'});
+ sheet(`<div class="row sp"><h2 style="margin:0">Dinkster Copilot</h2><button data-a="close" aria-label="Close">${ic('x')}</button></div>
+ <div id="chat" style="margin:12px 0;max-height:300px;overflow:auto">${S.chat.map(m=>`<div class="msg ${m.b?'b':'u'}">${m.h}</div>`).join('')}</div>
+ <div>${['We beat JC and SK on court 4, 11-9, 8-11, 12-10','Find a game tonight','Find me a 3.5 partner for Thursday evening','What is Dink Battle?'].map(q=>`<button class="chip" data-a="ask" data-v="${q}">${q}</button>`).join('')}</div>
+ <div class="row" style="margin-top:8px"><input class="in" id="ci" placeholder="Type a score or a question" aria-label="Message"><button class="btn sm" data-a="send">Send</button></div>`);
+ const c=$('#chat');if(c)c.scrollTop=c.scrollHeight;$('#ci').addEventListener('keydown',e=>{if(e.key==='Enter')A.send()})}
+function parse(t){const sets=[...t.matchAll(/(\d{1,2})\s*[-:]\s*(\d{1,2})/g)].map(m=>[+m[1],+m[2]]);if(!sets.length)return null;
+ const court=(t.match(/court\s*(\d+)/i)||[])[1];const opp=(t.match(/(?:beat|defeated|lost to|vs\.?|against)\s+([A-Za-z0-9 &.']+?)(?:\s+on\s+court|\s+at\s+|,|\s+\d)/i)||[])[1];
+ const mine=sets.filter(s=>s[0]>s[1]).length,theirs=sets.length-mine;const bad=sets.filter(s=>Math.max(...s)<11||Math.abs(s[0]-s[1])<2);
+ const said=/\b(beat|won|defeated)\b/i.test(t)?'W':/\b(lost|fell)\b/i.test(t)?'L':null;
+ return {sets,court,opp:opp||'Opponent',res:mine>theirs?'W':'L',bad,mismatch:said&&said!==(mine>theirs?'W':'L')}}
+function reply(q){const p=parse(q);
+ if(p){S.pending=p;return `Here is what I read:<div class="card" style="margin:8px 0"><b>${p.res==='W'?'Win':'Loss'} vs ${p.opp}</b><br>${p.court?'Court '+p.court+'<br>':''}${p.sets.map(s=>s.join('-')).join(', ')}</div>${p.bad.length?'<span class="tag warn">Check: '+p.bad.map(s=>s.join('-')).join(', ')+' is not a valid final score</span><br>':''}${p.mismatch?'<span class="tag warn">Your wording and the scores disagree</span><br>':''}<button class="btn sm" style="margin-top:8px" data-a="submitScore">Submit as self-reported</button>`}
+ if(/dink/i.test(q))return 'Dink Battle is a play variation. After the 5th shot of a rally, the court shrinks to half court, so dinks decide the point and lobs or hard shots land out. Pick it under Game type when you set up a lobby.';
+ if(/partner|find me/i.test(q))return 'Two good fits: Maya Rivera (3.8, free weekday mornings) already liked you. Dana Cruz (3.6, weeknights) has 3 mutual connections. Open Discover to swipe on them.';
+ if(/find|tonight|game/i.test(q))return 'Three options near you tonight: open play at Barton Springs, 6:30 PM, 3 of 4 joined. Pickleland open play, 7:00 PM, covered by WellHub. The Picklr, 8:00 PM, Aetna eligible.';
+ return 'I can log a score, find a game, or find you a partner.'}
+function watchSheet(v){v=v||S.wv;S.wv=v;const g=S.G||{n:['AJ & MR','JC & SK'],cur:[4,3],srv:0,sn:2,fmt:'doubles'};const sh=n=>n.replace(/\s/g,'');
+ const face={score:`<div style="font-size:12px;opacity:.75">${g.n[0]} vs ${g.n[1]}</div><div class="w">${g.cur[0]}-${g.cur[1]}</div><div style="font-size:13px">${g.n[g.srv]} serving, server ${g.sn}</div><div class="row" style="justify-content:center;margin-top:6px"><button class="btn sm" data-a="wp" data-v="0">+${sh(g.n[0])}</button><button class="btn sm ghost" style="color:#fff;border-color:#666" data-a="wp" data-v="1">+${sh(g.n[1])}</button></div>`,
+ comp:`<div style="font-size:12px;opacity:.75">Dinkster, live</div><div class="w" style="font-size:36px">${g.cur[0]}-${g.cur[1]}</div><div class="mono" style="font-size:12px">${callout2(g)}</div>`,
+ note:`<div style="font-size:12px;opacity:.75">Game invite</div><div style="font-size:17px;font-weight:700">Maya R. is hosting D-7741</div><div style="font-size:13px">Starts in 10 min</div><div class="row" style="justify-content:center;margin-top:6px"><button class="btn sm" data-a="toast" data-v="Joined D-7741.">Join</button><button class="btn sm ghost" style="color:#fff;border-color:#666" data-a="wv" data-v="score">Dismiss</button></div>`}[v];
+ sheet(`<div class="row sp"><h2 style="margin:0">Apple Watch</h2><button data-a="close" aria-label="Close">${ic('x')}</button></div><div class="watch">${face}</div>
+ ${v==='score'?'<button class="btn ghost sm" style="width:100%;margin-bottom:10px" data-a="wundo">Undo last point (Digital Crown)</button>':''}
+ <div class="seg"><button class="${v==='score'?'on':''}" data-a="wv" data-v="score">Score</button><button class="${v==='comp'?'on':''}" data-a="wv" data-v="comp">Complication</button><button class="${v==='note'?'on':''}" data-a="wv" data-v="note">Notification</button></div>`)}
+function callout2(g){const a=g.cur[g.srv],b=g.cur[1-g.srv];return g.fmt==='doubles'?`${a}-${b}-${g.sn}`:`${a}-${b}`}
+function endSheet(){const g=S.G,w=wins(g),won=w[0]>w[1];sheet(`<div style="text-align:center"><h2 style="margin-top:0">${g.n[won?0:1]} won ${g.sets.map(s=>s.join('-')).join(', ')}</h2><p>Saved to match history. DUPR sync is queued.</p></div><button class="btn" style="width:100%;margin-top:14px" data-a="endgo">Done</button><button class="btn ghost" style="width:100%;margin-top:8px" data-a="rematch">New game, same players</button><button class="btn ghost" style="width:100%;margin-top:8px" data-a="addcrew">Add ${g.n[1]} to your crew</button>`)}
+
+/* ---------- actions ---------- */
+const A={
+ dev(d){S.device=d.v==='ipad'?'ipad':'phone';$('#device').dataset.dev=S.device;document.querySelectorAll('[data-a=dev]').forEach(b=>b.classList.toggle('on',b.dataset.v===d.v));render()},
+ tab(d){S.tab=d.v;if(d.v!=='crew')S.cv=null;render()},
+ flow(d){S.flow=d.v;S.tab='play';if(d.v==='join')S.join='';if(d.v==='toss'){S.toss={pick:null,res:null,win:null};S.host=true}if(d.v==='lobby'&&!(S.G&&S.G.host===false))S.host=true;render()},
+ resume(){S.tab='play';S.flow='score';render()},
+ copy(){toast('D code '+S.code+' copied. Share it so others can join.')},
+ fmt(d){S.cfg.fmt=d.v;S.cfg.ea=null;S.cfg.eb=null;render()},to(d){S.cfg.to=+d.v;render()},bo(d){S.cfg.bo=+d.v;render()},gm(d){S.cfg.gm=d.v;render()},
+ simjoin(d){const p=PL.find(x=>!S.slots.some(y=>y&&y.n===x.n))||PL[2];S.slots[+d.v]={n:p.n,d:p.d};toast(p.n+' joined with '+S.code+'.');render()},
+ gform(){S.gform=true;render()},
+ addguest(){const i=$('#gname');const n=i&&i.value.trim();if(!n)return toast('Enter the guest name.');const k=S.slots.findIndex((s,x)=>!s&&x<(S.cfg.fmt==='doubles'?4:2));if(k<0){S.gform=false;return toast('Lobby is full.')}S.slots[k]={n,d:3.0,guest:true};S.gform=false;render()},
+ skiptoss(){S.host=true;newGame(0);S.flow='score';render()},
+ doJoin(){S.flow='jlobby';render()},
+ hostStart(){S.host=false;S.cfg.ea='AJ & MR';S.cfg.eb='JC & SK';newGame(0);S.flow='score';render()},
+ tpick(d){S.toss.pick=d.v;render()},
+ flip(){const r=Math.random()<.5?'Heads':'Tails';const c=$('#coin');if(c)c.style.transform='rotateY(1080deg)';setTimeout(()=>{S.toss.res=r;S.toss.win=S.toss.pick===r?0:1;render()},1000)},
+ tchoice(d){const w=S.toss.win,first=d.v==='serve'?w:1-w;newGame(first);S.flow='score';render();toast(tn()[first]+' serves first.')},
+ rally(d){rally(+d.v);render();if(S.G.over)endSheet()},
+ undo(){if(S.undo.length){S.G=JSON.parse(S.undo.pop());render()}},
+ sideout(){const g=S.G;S.undo.push(JSON.stringify(g));g.srv=1-g.srv;g.sn=1;g.souts++;render()},
+ dimsw(){S.G.swb=false;render()},dimset(){S.G.setUp=false;render()},
+ shot(){S.G.shots++;render()},shot0(){S.G.shots=0;render()},outby(d){A.rally({v:String(1-+d.v)})},
+ override(){const g=S.G;sheet(`<h2 style="margin-top:0">Host override</h2><p>Scores update for everyone without a notice. Use it to fix a mistake.</p>${[0,1].map(i=>`<div class="row sp" style="margin:12px 0"><b>${g.n[i]}</b><div class="row"><button class="btn sm ghost" data-a="ovs" data-i="${i}" data-v="-1" aria-label="Minus one">-</button><b id="os${i}" style="min-width:24px;text-align:center">${g.cur[i]}</b><button class="btn sm ghost" data-a="ovs" data-i="${i}" data-v="1" aria-label="Plus one">+</button></div></div>`).join('')}<button class="btn" style="width:100%" data-a="ovsave">Save score</button>`)},
+ ovs(d){const g=S.G;g.cur[+d.i]=Math.max(0,g.cur[+d.i]+ +d.v);$('#os'+d.i).textContent=g.cur[+d.i]},
+ ovsave(){closeSheet();endCheck();render();toast('Score updated. Other players see the new score with no notice.');if(S.G.over)endSheet()},
+ leave(){S.flow='main';render()},
+ endgo(){closeSheet();S.flow='main';S.G=null;render()},
+ rematch(){closeSheet();S.flow='toss';S.toss={pick:null,res:null,win:null};render()},
+ close(){closeSheet()},ovclose(d,e){if(e.target.classList.contains('ov'))closeSheet()},toast(d){toast(d.v)},
+ watch(){watchSheet()},wv(d){watchSheet(d.v)},
+ wp(d){if(!S.G){S.cfg.ea=null;S.cfg.eb=null;newGame(0)}rally(+d.v);watchSheet();render()},
+ wundo(){A.undo();watchSheet()},
+ dmode(d){S.dc.mode=d.v;render()},df(d){S.dc.f=d.v;S.dc.i=0;render()},dreset(){S.dc.i=0;render()},
+ pass(){S.dc.i++;render()},
+ like(){const p=dlist()[S.dc.i];if(!p)return;S.dc.i++;if(p.likes)doMatch(p);else{toast(`Sent to ${p.n}. We will tell you if they like you back.`);render()}},
+ superm(){const p=dlist()[S.dc.i];if(!p)return;S.dc.i++;if(p.likes)doMatch(p);else{toast(`Super match sent. ${p.n} sees you first.`);render()}},
+ likeN(d){const p=PL.find(x=>x.n===d.v);doMatch(p)},
+ joingame(d){S.og[+d.v]=true;toast(`Request sent to ${OG[+d.v].h}. You will get a push when you are in.`);render()},
+ chat(d){closeSheet();const c=S.crew.find(x=>x.n===d.v);if(c)c.unread=false;S.tab='crew';S.cv=d.v;render()},chatback(){S.cv=null;render()},
+ qmsg(d){sendMsg(d.v)},msgsend(){const i=$('#msgin');if(i&&i.value.trim())sendMsg(i.value.trim())},
+ propose(d){closeSheet();sheet(`<div class="row sp"><h2 style="margin:0">Propose a game</h2><button data-a="close" aria-label="Close">${ic('x')}</button></div><p style="margin:6px 0 10px">Pick a time and place for you and ${d.v}. A D code is sent with it.</p>${SUG.map((x,i)=>`<button class="card" style="width:100%;text-align:left" data-a="sendprop" data-v="${d.v}" data-i="${i}"><h3>${x[0]}</h3><p>${x[1]}, ${x[2]}</p></button>`).join('')}`)},
+ sendprop(d){closeSheet();const c=crewOf(d.v),x=SUG[+d.i];c.prop={w:x[0],v:x[1],by:1,acc:false};c.st='proposed';c.msgs.push({m:1,t:`Want to play ${x[0]} at ${x[1]}? Code D-7741.`});S.tab='crew';S.cv=d.v;render();
+  setTimeout(()=>{c.prop.acc=true;c.st='planned';c.msgs.push({m:0,t:'Count me in.'});if(S.tab==='crew'&&S.cv===d.v)render();toast(`<b>${d.v} accepted.</b> D-7741 is ready.`,true)},1600)},
+ accprop(d){const c=crewOf(d.v);c.prop.acc=true;c.st='planned';c.msgs.push({m:1,t:'Works for me!'});render();toast('Game planned. D-7741 is ready.')},
+ startwith(d){const p=PL.find(x=>x.n===d.v)||{d:3.5};closeSheet();S.slots=[{n:'Alex Johnson',d:3.5,host:true},{n:d.v,d:p.d},null,null];S.cfg.ea=null;S.cfg.eb=null;S.host=true;S.tab='play';S.flow='lobby';render()},
+ addcrew(){S.newConn++;S.met++;toast('Added to your crew.')},
+ ctseg(d){S.ct.seg=d.v;render()},benf(d){S.ct.ben=d.v;S.ct.es=null;render()},es(d){S.ct.es=S.ct.es===d.v?null:d.v;render()},
+ cf(d){S.ct.f=d.v;render()},claim(d){S.ct.claimed[+d.v]=!S.ct.claimed[+d.v];toast(S.ct.claimed[+d.v]?'Court claimed for 90 minutes. Others see it as taken.':'Claim released.');render()},
+ pick(d){S.ct.sel=+d.v;S.ct.bk.slot=null;render();sheet(courtSheet(+d.v))},
+ bk(d){S.ct.bk[d.k]=d.k==='dur'?+d.v:d.v;sheet(courtSheet(S.ct.sel))},
+ book(d){const c=CT[+d.v],B=S.ct.bk,sl=SLOT.find(s=>s[0]===B.slot),rate=c.r+(sl[1])*(c.r2-c.r)/6,tot=+(rate*B.dur*1.1).toFixed(2);
+  const b={n:c.n+' Court 2',d:B.d,s:B.slot,h:B.dur,tot:tot.toFixed(2),id:'BK-'+(4000+Math.floor(Math.random()*5999))};S.bookings.push(b);S.ct.bk.slot=null;render();confirmSheet(b)},
+ startlobby(){closeSheet();A.flow({v:'lobby'})},
+ mode(d){S.mode=d.v;S.ct.seg='find';render()},
+ copilot(){copilotSheet()},ask(d){chat(d.v)},send(){const i=$('#ci');if(i&&i.value.trim())chat(i.value.trim())},
+ submitScore(){const p=S.pending;if(!p)return;S.H.unshift({vs:p.opp,r:p.res,sc:p.sets.map(s=>s.join('-')).join(', '),w:'Now',k:p.court?'Court '+p.court:'Casual',y:'Waiting for confirmation'});S.chat.push({b:1,h:'Submitted. The other side and the host can confirm. DUPR syncs after confirmation.'});S.pending=null;copilotSheet();render()},
+};
+const crewOf=n=>{let c=S.crew.find(x=>x.n===n);if(!c){c={n,st:'new',msgs:[]};S.crew.unshift(c)}return c};
+function doMatch(p){crewOf(p.n);S.met++;S.newConn++;render();closeSheet();sheet(`<div style="text-align:center"><h2 style="margin-top:0">It is a match</h2><p>You and ${p.n} both want to play.</p><div class="row" style="justify-content:center;gap:0;margin:14px 0"><div class="av lg">${ME.i}</div><div class="av lg" style="margin-left:-14px;border:3px solid var(--bg)">${ini(p.n)}</div></div><p>${p.why}</p></div><button class="btn" style="width:100%;margin-top:12px" data-a="propose" data-v="${p.n}">Propose a game</button><button class="btn ghost" style="width:100%;margin-top:8px" data-a="chat" data-v="${p.n}">Say hi</button><button class="btn ghost" style="width:100%;margin-top:8px" data-a="close">Keep swiping</button>`)}
+function sendMsg(t){const c=S.crew.find(x=>x.n===S.cv);c.msgs.push({m:1,t});render();const m=/free|week|when|time/i.test(t)?'Thursday evening works for me.':/dink|drive/i.test(t)?'Dinks all day. Soft game wins.':/court/i.test(t)?'Barton Springs and Zilker mostly.':'Sounds good!';
+ setTimeout(()=>{c.msgs.push({m:0,t:m});if(S.tab==='crew'&&S.cv===c.n)render()},900)}
+function chat(q){S.chat.push({h:q});S.chat.push({b:1,h:reply(q)});copilotSheet()}
+
+document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t)return;const a=t.dataset.a;if(A[a])A[a](t.dataset,e)});
+document.addEventListener('input',e=>{const el=e.target;
+ if(el.id==='dcode'){let r=el.value.toUpperCase().trim();if(r.startsWith('D-')||(r.length>4&&r[0]==='D'))r=r.replace(/^D-?/,'');const v=r.replace(/[^A-Z0-9]/g,'').slice(0,4);el.value=v;S.join=v;$('#jbtn').disabled=v.length<4;return}
+ const b=el.dataset.b;if(!b)return;const v=el.type==='checkbox'?el.checked:el.value;
+ if(b==='ea'||b==='eb'){S.cfg[b]=v;return}
+});
+document.addEventListener('keydown',e=>{if(e.target.id==='dcode'&&e.key==='Enter'&&S.join.length===4)A.doJoin()});
+$('#theme').addEventListener('change',e=>{document.body.dataset.theme=e.target.value});
+function bindSwipe(){const c=$('#pcard');if(!c)return;let x0=null,dx=0;const sr=$('#sr'),sl=$('#sl');
+ c.addEventListener('pointerdown',e=>{x0=e.clientX;c.setPointerCapture(e.pointerId)});
+ c.addEventListener('pointermove',e=>{if(x0===null)return;dx=e.clientX-x0;c.style.transform=`translateX(${dx}px) rotate(${dx/18}deg)`;sr.style.opacity=dx>0?Math.min(1,dx/90):0;sl.style.opacity=dx<0?Math.min(1,-dx/90):0});
+ c.addEventListener('pointerup',()=>{if(x0===null)return;x0=null;if(dx>90)A.like();else if(dx<-90)A.pass();else{c.style.transform='';sr.style.opacity=0;sl.style.opacity=0}dx=0})}
+render();
+</script>
+</body>
+</html>

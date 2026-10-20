@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --g: #1D9E75;
+  --gm: #5DCAA5;
+  --gl: #E8F7F1;
+  --gd: #0A5C43;
+  --am: #EF9F27;
+  --al: #FEF3E2;
+  --aml: #FAC775;
+  --rd: #E24B4A;
+  --rl: #FEF0F0;
+  --bl: #3B82F6;
+  --ink: #111111;
+  --ink2: #333333;
+  --ink3: #666666;
+  --sf: #f8f7f3;
+  --sf3: #e8e6df;
+  --cd: #ffffff;
+  --brm: rgba(0, 0, 0, 0.12);
+  --r: 16px;
+}

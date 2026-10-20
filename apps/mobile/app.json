@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "Dinkster",
+    "slug": "dinkster",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1D9E75"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.dinkster.mobile",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Dinkster uses your location to discover courts and nearby players at your venue.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1D9E75"
+      },
+      "package": "app.dinkster.mobile"
+    },
+    "plugins": [
+      [
+        "@bacons/apple-targets",
+        {
+          "appleTeamId": "APPLE_TEAM_ID_PLACEHOLDER"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "EAS_PROJECT_ID_PLACEHOLDER"
+      }
+    }
+  }
+}

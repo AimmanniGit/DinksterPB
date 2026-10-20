@@ -1,0 +1,406 @@
+// Dinkster Unified Schema | Supabase Postgres | Prisma
+// One Match record serves casual games (Wing 1) and tournament play (Wings 2, 3, 4).
+// tournamentId is null for casual games.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ---------- Enums ----------
+
+enum UserRole {
+  PLAYER
+  COACH
+  ORGANIZER
+  REFEREE
+  COURT_DESK
+  ADMIN
+}
+
+enum TournamentStatus {
+  DRAFT
+  PUBLISHED
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum DivisionFormat {
+  SINGLES
+  DOUBLES
+  MIXED_DOUBLES
+}
+
+enum DivisionGender {
+  OPEN
+  MEN
+  WOMEN
+}
+
+enum RegistrationStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  WAITLISTED
+  WITHDRAWN
+  REFUNDED
+}
+
+enum MatchStatus {
+  SCHEDULED
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  DISPUTED
+  CANCELLED
+}
+
+enum ScoringMode {
+  STANDARD
+  TARGET_SCORE
+  SWISS_BLITZ
+  DINK_BATTLE // Pilot format: court shrinks to half court after 5th shot
+}
+
+enum ScoreSource {
+  SELF_REPORTED
+  REFEREE
+  HOST_OVERRIDE
+  IMPORTED
+}
+
+enum PaymentStatus {
+  REQUIRES_ACTION
+  SUCCEEDED
+  FAILED
+  PARTIALLY_REFUNDED
+  REFUNDED
+}
+
+enum DisputeStatus {
+  OPEN
+  ESCALATED
+  RESOLVED
+}
+
+enum ActorType {
+  USER
+  COPILOT
+  SYSTEM
+}
+
+enum CopilotSurface {
+  ORGANIZER
+  DESK
+  PLAYER
+}
+
+enum ToolCallStatus {
+  PROPOSED
+  CONFIRMED
+  EXECUTED
+  REJECTED
+  FAILED
+}
+
+// ---------- Identity ----------
+
+model User {
+  id            String     @id @default(uuid()) @db.Uuid
+  dinksterId    String     @unique // format DK-XXXXX
+  authId        String     @unique @db.Uuid // Supabase auth.users.id
+  displayName   String
+  email         String     @unique
+  roles         UserRole[] @default([PLAYER])
+  duprId        String?
+  duprRating    Decimal?   @db.Decimal(4, 3)
+  stripeAccount String?    // Connect account for organizers
+  createdAt     DateTime   @default(now())
+
+  organizedTournaments Tournament[]       @relation("Organizer")
+  registrations        Registration[]     @relation("Entrant")
+  partnerRegistrations Registration[]     @relation("Partner")
+  participations       MatchParticipant[]
+  refAssignments       RefAssignment[]
+  waivers              Waiver[]
+  copilotSessions      CopilotSession[]
+}
+
+// ---------- Venues ----------
+
+model Venue {
+  id          String       @id @default(uuid()) @db.Uuid
+  name        String
+  address     String?
+  courts      Court[]
+  tournaments Tournament[]
+}
+
+model Court {
+  id       String  @id @default(uuid()) @db.Uuid
+  venueId  String  @db.Uuid
+  label    String  // e.g. "Court 4"
+  isActive Boolean @default(true)
+
+  venue     Venue      @relation(fields: [venueId], references: [id])
+  matches   Match[]
+  sponsors  Sponsor[]
+  incidents Incident[]
+
+  @@unique([venueId, label])
+}
+
+// ---------- Tournaments (Wing 3) ----------
+
+model Tournament {
+  id             String           @id @default(uuid()) @db.Uuid
+  organizerId    String           @db.Uuid
+  venueId        String?          @db.Uuid
+  name           String
+  slug           String           @unique
+  status         TournamentStatus @default(DRAFT)
+  startsAt       DateTime
+  endsAt         DateTime
+  platformFeeBps Int              @default(1000) // 10.00%
+  createdAt      DateTime         @default(now())
+
+  organizer       User             @relation("Organizer", fields: [organizerId], references: [id])
+  venue           Venue?           @relation(fields: [venueId], references: [id])
+  divisions       Division[]
+  matches         Match[]
+  sponsors        Sponsor[]
+  waivers         Waiver[]
+  incidents       Incident[]
+  changes         MatchChangeLog[]
+  copilotSessions CopilotSession[]
+}
+
+model Division {
+  id            String         @id @default(uuid()) @db.Uuid
+  tournamentId  String         @db.Uuid
+  name          String
+  format        DivisionFormat
+  gender        DivisionGender @default(OPEN)
+  skillMin      Decimal?       @db.Decimal(4, 3)
+  skillMax      Decimal?       @db.Decimal(4, 3)
+  ageMin        Int?
+  ageMax        Int?
+  entryFeeCents Int            @default(0)
+  capacity      Int?
+  scoringMode   ScoringMode    @default(STANDARD)
+  scoringConfig Json           @default("{}")
+
+  tournament    Tournament     @relation(fields: [tournamentId], references: [id])
+  registrations Registration[]
+  matches       Match[]
+}
+
+model Registration {
+  id         String             @id @default(uuid()) @db.Uuid
+  divisionId String             @db.Uuid
+  userId     String             @db.Uuid
+  partnerId  String?            @db.Uuid
+  status     RegistrationStatus @default(PENDING_PAYMENT)
+  seed       Int?
+  createdAt  DateTime           @default(now())
+
+  division Division  @relation(fields: [divisionId], references: [id])
+  user     User      @relation("Entrant", fields: [userId], references: [id])
+  partner  User?     @relation("Partner", fields: [partnerId], references: [id])
+  payment  Payment?
+
+  @@unique([divisionId, userId])
+}
+
+model Payment {
+  id                    String        @id @default(uuid()) @db.Uuid
+  registrationId        String        @unique @db.Uuid
+  stripePaymentIntentId String        @unique
+  amountCents           Int
+  platformFeeCents      Int
+  refundedCents         Int           @default(0)
+  status                PaymentStatus @default(REQUIRES_ACTION)
+  createdAt             DateTime      @default(now())
+
+  registration Registration @relation(fields: [registrationId], references: [id])
+}
+
+model Waiver {
+  id           String   @id @default(uuid()) @db.Uuid
+  tournamentId String   @db.Uuid
+  userId       String   @db.Uuid
+  version      String
+  signedAt     DateTime @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
+
+  @@unique([tournamentId, userId, version])
+}
+
+model Sponsor {
+  id           String  @id @default(uuid()) @db.Uuid
+  tournamentId String  @db.Uuid
+  name         String
+  logoUrl      String?
+  tier         String?
+  courtId      String? @db.Uuid // court naming rights
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id])
+  court      Court?     @relation(fields: [courtId], references: [id])
+}
+
+// ---------- Matches (shared by all wings) ----------
+
+model Match {
+  id               String       @id @default(uuid()) @db.Uuid
+  tournamentId     String?      @db.Uuid // null = casual game (Wing 1)
+  divisionId       String?      @db.Uuid
+  courtId          String?      @db.Uuid
+  round            Int?
+  status           MatchStatus  @default(SCHEDULED)
+  scoringMode      ScoringMode  @default(STANDARD)
+  customRuleConfig Json?        // live rule override (Wing 4)
+  rulesVersion     Int          @default(1)
+  version          Int          @default(1) // optimistic lock
+  scheduledAt      DateTime?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  resultSource     ScoreSource?
+  createdAt        DateTime     @default(now())
+
+  tournament   Tournament?        @relation(fields: [tournamentId], references: [id])
+  division     Division?          @relation(fields: [divisionId], references: [id])
+  court        Court?             @relation(fields: [courtId], references: [id])
+  participants MatchParticipant[]
+  sets         ScoreSet[]
+  refs         RefAssignment[]
+  disputes     Dispute[]
+  incidents    Incident[]
+  changes      MatchChangeLog[]
+
+  @@index([tournamentId, status])
+  @@index([courtId, scheduledAt])
+}
+
+model MatchParticipant {
+  matchId String @db.Uuid
+  userId  String @db.Uuid
+  side    Int    // 1 or 2
+
+  match Match @relation(fields: [matchId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@id([matchId, userId])
+}
+
+model ScoreSet {
+  id          String      @id @default(uuid()) @db.Uuid
+  matchId     String      @db.Uuid
+  setNumber   Int
+  side1Score  Int
+  side2Score  Int
+  source      ScoreSource
+  enteredById String?     @db.Uuid
+  createdAt   DateTime    @default(now())
+
+  match Match @relation(fields: [matchId], references: [id])
+
+  @@unique([matchId, setNumber, source])
+}
+
+model RefAssignment {
+  id         String   @id @default(uuid()) @db.Uuid
+  matchId    String   @db.Uuid
+  refereeId  String   @db.Uuid
+  assignedAt DateTime @default(now())
+
+  match   Match @relation(fields: [matchId], references: [id])
+  referee User  @relation(fields: [refereeId], references: [id])
+
+  @@unique([matchId, refereeId])
+}
+
+// ---------- Court Desk (Wing 2) ----------
+
+model Dispute {
+  id           String        @id @default(uuid()) @db.Uuid
+  matchId      String        @db.Uuid
+  raisedById   String        @db.Uuid
+  status       DisputeStatus @default(OPEN)
+  note         String?
+  resolution   String?
+  resolvedById String?       @db.Uuid
+  createdAt    DateTime      @default(now())
+  resolvedAt   DateTime?
+
+  match Match @relation(fields: [matchId], references: [id])
+}
+
+model Incident {
+  id           String   @id @default(uuid()) @db.Uuid
+  tournamentId String   @db.Uuid
+  courtId      String?  @db.Uuid
+  matchId      String?  @db.Uuid
+  type         String   // INJURY, EQUIPMENT, CONDUCT, OTHER
+  notes        String
+  loggedById   String   @db.Uuid
+  createdAt    DateTime @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id])
+  court      Court?     @relation(fields: [courtId], references: [id])
+  match      Match?     @relation(fields: [matchId], references: [id])
+}
+
+// ---------- Agentic Copilot (Wing 4) ----------
+
+model MatchChangeLog {
+  id           String    @id @default(uuid()) @db.Uuid
+  matchId      String    @db.Uuid
+  tournamentId String?   @db.Uuid
+  actorType    ActorType
+  actorId      String?   @db.Uuid
+  toolCallId   String?   @db.Uuid
+  before       Json
+  after        Json
+  reason       String?
+  createdAt    DateTime  @default(now())
+
+  match      Match            @relation(fields: [matchId], references: [id])
+  tournament Tournament?      @relation(fields: [tournamentId], references: [id])
+  toolCall   CopilotToolCall? @relation(fields: [toolCallId], references: [id])
+
+  @@index([matchId, createdAt])
+}
+
+model CopilotSession {
+  id           String         @id @default(uuid()) @db.Uuid
+  userId       String         @db.Uuid
+  tournamentId String?        @db.Uuid
+  surface      CopilotSurface
+  createdAt    DateTime       @default(now())
+
+  user       User              @relation(fields: [userId], references: [id])
+  tournament Tournament?       @relation(fields: [tournamentId], references: [id])
+  toolCalls  CopilotToolCall[]
+}
+
+model CopilotToolCall {
+  id         String         @id @default(uuid()) @db.Uuid
+  sessionId  String         @db.Uuid
+  toolName   String
+  input      Json
+  preview    Json?
+  output     Json?
+  status     ToolCallStatus @default(PROPOSED)
+  createdAt  DateTime       @default(now())
+  executedAt DateTime?
+
+  session CopilotSession   @relation(fields: [sessionId], references: [id])
+  changes MatchChangeLog[]
+}
