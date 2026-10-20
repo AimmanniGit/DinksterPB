@@ -14,6 +14,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.dinkster.mobile",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Dinkster uses your location to discover courts and nearby players at your venue.",
         "ITSAppUsesNonExemptEncryption": false
@@ -36,7 +37,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "EAS_PROJECT_ID_PLACEHOLDER"
+        "projectId": "367e0b6c-e175-4edb-801e-403c37631467"
       }
     }
   }
