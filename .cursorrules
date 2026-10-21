@@ -1,0 +1,39 @@
+# Dinkster Cursor Rules & Instructions
+
+You are working on **Dinkster**, a pickleball-first social sports app and tournament platform.
+Achut is the founder and primary builder.
+
+## 1. Monorepo Architecture
+- `apps/mobile/`: React Native Expo SDK 51 mobile app for iOS and Apple Watch.
+- `apps/web/`: Next.js 14 App Router organizer and court desk web platform.
+- `packages/shared/`: Shared pure TypeScript scoring engine, locked types, and themes.
+- `packages/database/`: Prisma schema and Supabase PostgreSQL client.
+
+## 2. Locked Product Decisions & Conventions
+- **Identity & Codes**:
+  - Player IDs: Format `DK-XXXXX` (e.g. `DK-X7K2P`), permanent identifier.
+  - Game Join Codes: Format `D-XXXX` (e.g. `D-7741`), typed into native uppercase text field (no custom keypad).
+  - Team Names: Default to player initials (e.g. "AJ & MR" vs "JC & SK"), editable inline by host.
+- **Scoring Engine**:
+  - Doubles: Traditional two-server rule. Singles: server serves until losing rally.
+  - Side-out scoring by default.
+  - Side-switch prompt: When the first team reaches 6 points.
+  - Host Override: Silent adjustment that wins disputes without broadcasting alerts to opponents.
+  - Timed matches are NOT part of Dinkster.
+- **Play Variations**:
+  - Classic pickleball.
+  - Dink Battle (Pilot format): Court shrinks to half court after the 5th shot of a rally. Dinks decide the point, lobs/hard drives land out.
+- **Audience & Surface Segregation**:
+  - Wing 1 (Player App): Strictly for players and casual play.
+  - Wings 2, 3, 4 (Court Desk, Hosting, Copilot): Web platform for organizers and desk staff. Organizer features are suppressed from the mobile app.
+
+## 3. Cloud Services & Infrastructure
+- **Mobile (Wing 1)**: Firebase Firestore (`nam5` multi-region), Firebase Auth, Expo EAS Cloud Build (`projectId`: `367e0b6c-e175-4edb-801e-403c37631467`), `@bacons/apple-targets` for Apple Watch.
+- **Web (Wings 2, 3, 4)**: Next.js 14 App Router, Supabase PostgreSQL (`packages/database/prisma/schema.prisma`), Firebase App Hosting (`apps/web/apphosting.yaml`).
+- **Repository**: `https://github.com/AimmanniGit/DinksterPB` on branch `main`.
+
+## 4. Current State & Next Steps
+- The foundational monorepo, cloud setups, and Prisma schemas are 100% deployed.
+- Current active sprint is **Sprint 1 (Dual-Track)**:
+  - Mobile: Lobby, Join with `D-XXXX`, Coin Toss, Live Scorekeeper with Dink Battle panel.
+  - Web: Event Setup, Division Builder (saving to Supabase), Real-time 8-Court Desk Board.

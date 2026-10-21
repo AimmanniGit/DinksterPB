@@ -1,0 +1,19 @@
+---
+description: Dinkster Core Architectural Rules & Standards
+globs: **/*
+---
+
+# Dinkster Architecture & Coding Guidelines
+
+## Project Overview
+- **Monorepo**: Turborepo / npm workspaces with `apps/mobile`, `apps/web`, `packages/shared`, `packages/database`.
+- **Target Surfaces**: iOS & Apple Watch (mobile), Web & Tablet Kiosk (organizer/desk).
+
+## Key Directives
+1. Use `@dinkster/shared` for all scoring rules, types, and theme constants.
+2. In `apps/mobile`: Use `useGameStore` connected to `@dinkster/shared`.
+3. In `apps/web`: Use Next.js 14 App Router and `@dinkster/database` Prisma client.
+4. Player IDs are strictly `DK-XXXXX`.
+5. Game join codes are strictly `D-XXXX`.
+6. Host scoring override must remain silent to non-host players.
+7. Support the Dink Battle pilot variation (half-court after 5th shot).
