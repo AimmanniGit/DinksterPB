@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>823748527585-75208i61namik00fcspb2b8s4q65o06n.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.823748527585-75208i61namik00fcspb2b8s4q65o06n</string>
+	<key>API_KEY</key>
+	<string>AIzaSyAcjdKo6jSrFiLTryxdeKuaUic2C9yRzOM</string>
+	<key>GCM_SENDER_ID</key>
+	<string>823748527585</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>app.dinkster.mobile</string>
+	<key>PROJECT_ID</key>
+	<string>dinkster-pb</string>
+	<key>STORAGE_BUCKET</key>
+	<string>dinkster-pb.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:823748527585:ios:1c928c1e9f153ab1c4bea0</string>
+</dict>
+</plist>
