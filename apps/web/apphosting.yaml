@@ -1,0 +1,19 @@
+# Firebase App Hosting configuration for Next.js
+# See https://firebase.google.com/docs/app-hosting/configure
+
+runConfig:
+  minInstances: 0
+  maxInstances: 5
+  concurrency: 80
+  cpu: 1
+  memoryMiB: 512
+
+# Environment variables for Firebase App Hosting
+# Database secrets can also be linked through Google Cloud Secret Manager
+env:
+  - variable: NODE_ENV
+    value: "production"
+  - variable: DATABASE_URL
+    value: "postgresql://postgres.btqgiesjymlqfhtdoxyw:HelloDinksterPB%40166@aws-0-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+  - variable: DIRECT_URL
+    value: "postgresql://postgres.btqgiesjymlqfhtdoxyw:HelloDinksterPB%40166@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
