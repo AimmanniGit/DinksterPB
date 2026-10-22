@@ -138,7 +138,47 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
       return;
     }
 
-    // 5. Seeding & DUPR analytics
+    // 5. Executive Analytics: Multi-Division Cross-Registration Rate
+    if (/cross|multi|double|upsell|retention/i.test(qLower)) {
+      newMsgs.push({
+        fromBot: true,
+        text: `📈 **Multi-Division Cross-Registration Analytics**:\n\n• **Cross-Registration Rate**: **38.4%** of registered players entered 2+ divisions.\n• **Incremental Revenue Generated**: **+$1,440.00** gross player intake without acquiring new leads.\n• **Top Cross-Pairing**: Players who registered for *Mixed Doubles 3.5* also registered for *Men's/Women's Doubles 3.5* on opposite schedule days.\n• **Strategic Recommendation**: By scheduling Mixed Doubles on Saturday and Gender Doubles on Sunday, you eliminate court timing conflicts and maximize double-entry revenue.`,
+      });
+      setMessages(newMsgs);
+      return;
+    }
+
+    // 6. Executive Analytics: Financial Audit & Margin Analysis
+    if (/financial|audit|revenue|profit|margin|stripe|payout|p&l/i.test(qLower)) {
+      newMsgs.push({
+        fromBot: true,
+        text: `💰 **Executive Financial & Margin Audit**:\n\n• **Gross Player Entry Fees**: **$3,630.00** (16 of 16 teams confirmed).\n• **Sponsorship & Commercial Yield**: **$46,500.00** (Across 7 global and court-level brand deals).\n• **Total Portfolio Commercial Value**: **$50,130.00**.\n• **Dinkster Platform Take-Rate (10%)**: **$5,013.00**.\n• **Net Tournament Director Payout**: **$45,117.00**.\n• **Payout Settlement Engine**: Stripe Connect Express (Instant direct deposit settled).`,
+      });
+      setMessages(newMsgs);
+      return;
+    }
+
+    // 7. Executive Analytics: Court Utilization Bottlenecks & Pacing
+    if (/utilization|bottleneck|pacing|duration|throughput|heat/i.test(qLower)) {
+      newMsgs.push({
+        fromBot: true,
+        text: `⚡ **Court Operations & Throughput Velocity Audit**:\n\n• **Active Court Utilization**: **92.4%** across 8 competition hardcourts.\n• **Average Match Length**: **33.5 minutes** (Fastest: Court 1 at 24m; Longest: Court 3 at 44m).\n• **Turnover Latency**: **3.8 minutes** between match called and first serve.\n• **Peak Congestion Window**: 10:00 AM – 2:30 PM (Pool play round 2).\n• **Pacing Recommendation**: All courts are currently on schedule to conclude at 6:06 PM with zero match backlogs.`,
+      });
+      setMessages(newMsgs);
+      return;
+    }
+
+    // 8. General Analytics & Portfolio Overview
+    if (/analytics|report|kpi|overview|metrics|performance/i.test(qLower)) {
+      newMsgs.push({
+        fromBot: true,
+        text: `📊 **Executive Analytics Summary**:\n\n• **Portfolio Status**: 4 Tournaments tracked (1 Live, 1 Upcoming, 1 Draft, 1 Concluded).\n• **Total Portfolio Intake**: **$50,130.00** gross invoiced.\n• **Player Roster Fill**: **100%** capacity filled on live event.\n• **Court Efficiency**: **92.4%** active utilization rate.\n• **Sponsor Deliverables**: 7 of 7 partner assets verified (Jumbo TV, Court Banners, Portal Badges).\n\n💡 *Tip: You can open the dedicated **Executive Analytics** tab on your top navigation bar for visual charts and interactive heatmaps.*`,
+      });
+      setMessages(newMsgs);
+      return;
+    }
+
+    // 9. Seeding & DUPR analytics
     if (/seed|dupr|rating/i.test(qLower)) {
       newMsgs.push({
         fromBot: true,
@@ -289,11 +329,12 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
             </h3>
             <div className="flex flex-col gap-2">
               {[
+                'Analyze multi-division cross-registration revenue rate',
+                'Perform financial audit of gross revenue and director net payouts',
+                'Analyze court throughput bottlenecks and match duration pacing',
                 'Courts are running behind. Switch the remaining pool matches in Mixed Doubles 3.5 to 4.0 to games to 9, win by 2.',
                 'Add a Dink Battle pilot division',
                 'Court 3 has a wet spot. Move its upcoming matches to other courts.',
-                'How are seeds assigned by DUPR rating?',
-                'Change the rules on the finished matches',
               ].map((cmd, i) => (
                 <button
                   key={i}

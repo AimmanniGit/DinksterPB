@@ -72,6 +72,7 @@ import { CopilotView, ChangeLogView, AgenticTournamentCreator } from '../compone
 import { TvBroadcastView } from '../components/tv';
 import { BracketsPlayoffsView } from '../components/brackets';
 import { SponsorsManagementHub } from '../components/sponsors';
+import { ExecutiveAnalyticsHub } from '../components/analytics';
 import { CategorizedTournamentSwitcher } from '../components/navigation/CategorizedTournamentSwitcher';
 import { ActorRoleSwitcher } from '../components/rbac/ActorRoleSwitcher';
 import { PlatformFooter } from '../components/footer/PlatformFooter';
@@ -87,8 +88,9 @@ export default function DinksterV2Platform() {
   const [selectedTournamentId, setSelectedTournamentId] = useState<string | null>('tourn-austin-live');
   
   // Workspace Tab State (Clean V2 navigation tabs)
-  // 'overview' | 'desk' | 'players' | 'brackets' | 'sponsors' | 'settings' | 'copilot'
-  const [workspaceTab, setWorkspaceTab] = useState<'overview' | 'desk' | 'players' | 'brackets' | 'sponsors' | 'settings' | 'copilot'>('overview');
+  // 'overview' | 'desk' | 'players' | 'brackets' | 'sponsors' | 'analytics' | 'settings' | 'copilot'
+  const [workspaceTab, setWorkspaceTab] = useState<'overview' | 'desk' | 'players' | 'brackets' | 'sponsors' | 'analytics' | 'settings' | 'copilot'>('overview');
+  const [isFleetAnalyticsOpen, setIsFleetAnalyticsOpen] = useState(false);
 
   // RBAC Current Active Role Profile
   const [currentActorProfile, setCurrentActorProfile] = useState<UserActorProfile>(INITIAL_ACTOR_PROFILES.founder);
@@ -642,6 +644,23 @@ export default function DinksterV2Platform() {
                 </span>
               </button>
 
+              {/* Executive Analytics Tab (Founder & Director Exclusive) */}
+              {currentActorProfile.permissions.canViewAnalytics && (
+                <button
+                  type="button"
+                  onClick={() => setWorkspaceTab('analytics')}
+                  className={`py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition flex items-center gap-1.5 whitespace-nowrap ${
+                    workspaceTab === 'analytics'
+                      ? 'bg-blue-50 text-blue-900 font-bold border border-blue-200/70 shadow-2xs'
+                      : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                  title="Portfolio & Event Commercial Analytics (Founder & Director)"
+                >
+                  <BarChart3 size={14} className="text-blue-600" />
+                  <span>Executive Analytics</span>
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={() => setWorkspaceTab('settings')}
@@ -692,17 +711,46 @@ export default function DinksterV2Platform() {
       <main className="max-w-7xl mx-auto px-6 py-6 w-full flex-1">
         
         {/* ============================================================ */}
-        {/* VIEW 1: FLEET DIRECTORY (When no tournament selected) */}
+        {/* VIEW 1: FLEET DIRECTORY OR PORTFOLIO EXECUTIVE ANALYTICS */}
         {/* ============================================================ */}
         {!selectedTournamentId && (
           <div className="space-y-6">
-            <TournamentFleetDirectory
-              tournaments={tournaments}
-              activeTournamentId={selectedTournamentId}
-              onSelectTournament={handleSelectTournament}
-              onCreateTournament={handleCreateTournament}
-              actorProfile={currentActorProfile}
-            />
+            {isFleetAnalyticsOpen && currentActorProfile.permissions.canViewAnalytics ? (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <button
+                    type="button"
+                    onClick={() => setIsFleetAnalyticsOpen(false)}
+                    className="text-xs font-bold text-gray-700 hover:text-[#0A5C43] transition flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-gray-200 shadow-2xs"
+                  >
+                    <ArrowLeft size={13} />
+                    <span>Return to Fleet Directory</span>
+                  </button>
+                </div>
+                <ExecutiveAnalyticsHub
+                  tournaments={tournaments}
+                  sponsors={sponsors}
+                  divisions={divisions}
+                  selectedTournamentId={null}
+                  actorProfile={currentActorProfile}
+                  onSelectTournament={handleSelectTournament}
+                  onAskCopilot={(prompt) => {
+                    setCopilotInitialPrompt(prompt);
+                    setSelectedTournamentId(tournaments[0]?.id || 'tourn-austin-live');
+                    setWorkspaceTab('copilot');
+                  }}
+                />
+              </div>
+            ) : (
+              <TournamentFleetDirectory
+                tournaments={tournaments}
+                activeTournamentId={selectedTournamentId}
+                onSelectTournament={handleSelectTournament}
+                onCreateTournament={handleCreateTournament}
+                actorProfile={currentActorProfile}
+                onOpenAnalytics={() => setIsFleetAnalyticsOpen(true)}
+              />
+            )}
           </div>
         )}
 
@@ -951,6 +999,22 @@ export default function DinksterV2Platform() {
                   canManageSponsors={currentActorProfile.permissions.canManageEventSponsors}
                 />
               </div>
+            )}
+
+            {/* TAB: EXECUTIVE ANALYTICS (Founder & Director Exclusive) */}
+            {workspaceTab === 'analytics' && currentActorProfile.permissions.canViewAnalytics && (
+              <ExecutiveAnalyticsHub
+                tournaments={tournaments}
+                sponsors={sponsors}
+                divisions={divisions}
+                selectedTournamentId={selectedTournamentId}
+                actorProfile={currentActorProfile}
+                onSelectTournament={handleSelectTournament}
+                onAskCopilot={(prompt) => {
+                  setCopilotInitialPrompt(prompt);
+                  setWorkspaceTab('copilot');
+                }}
+              />
             )}
 
             {/* TAB: SETUP & SETTINGS */}

@@ -8,6 +8,7 @@ export type TabKey =
   | 'regs'
   | 'brackets'
   | 'sponsors'
+  | 'analytics'
   | 'copilot'
   | 'log'
   | 'board'
@@ -220,6 +221,7 @@ export interface UserActorProfile {
   avatarInitials: string;
   permissions: {
     canViewFinancials: boolean; // Gross revenue, entry fee intake, bank payouts
+    canViewAnalytics: boolean; // Executive analytics dashboard & reporting across tournaments
     canManageFleet: boolean; // Create, archive, delete tournaments across fleet
     canManageGlobalSponsors: boolean; // Manage company-wide annual sponsor deals
     canManageEventSponsors: boolean; // Manage tournament-level court/medal sponsors

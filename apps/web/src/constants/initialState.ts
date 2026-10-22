@@ -352,6 +352,7 @@ export const INITIAL_ACTOR_PROFILES: Record<string, UserActorProfile> = {
     avatarInitials: 'AJ',
     permissions: {
       canViewFinancials: true,
+      canViewAnalytics: true,
       canManageFleet: true,
       canManageGlobalSponsors: true,
       canManageEventSponsors: true,
@@ -370,6 +371,7 @@ export const INITIAL_ACTOR_PROFILES: Record<string, UserActorProfile> = {
     avatarInitials: 'MV',
     permissions: {
       canViewFinancials: true,
+      canViewAnalytics: true,
       canManageFleet: false,
       canManageGlobalSponsors: false,
       canManageEventSponsors: true,
@@ -388,6 +390,7 @@ export const INITIAL_ACTOR_PROFILES: Record<string, UserActorProfile> = {
     avatarInitials: 'RG',
     permissions: {
       canViewFinancials: false, // Financials hidden
+      canViewAnalytics: false, // Analytics hidden
       canManageFleet: false,
       canManageGlobalSponsors: false,
       canManageEventSponsors: false,
@@ -406,6 +409,7 @@ export const INITIAL_ACTOR_PROFILES: Record<string, UserActorProfile> = {
     avatarInitials: 'KP',
     permissions: {
       canViewFinancials: false, // Financials hidden
+      canViewAnalytics: false, // Analytics hidden
       canManageFleet: false,
       canManageGlobalSponsors: false,
       canManageEventSponsors: false,

@@ -38,6 +38,7 @@ interface TournamentFleetDirectoryProps {
   onSelectTournament: (tournamentId: string) => void;
   onCreateTournament: (newEvent: TournamentEvent) => void;
   actorProfile?: UserActorProfile;
+  onOpenAnalytics?: () => void;
 }
 
 export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> = ({
@@ -46,6 +47,7 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
   onSelectTournament,
   onCreateTournament,
   actorProfile,
+  onOpenAnalytics,
 }) => {
   const canViewFinancials = actorProfile ? actorProfile.permissions.canViewFinancials : true;
   const canManageFleet = actorProfile ? actorProfile.permissions.canManageFleet : true;
@@ -311,6 +313,18 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>Go to Live: {liveTournament.name.split(' ')[0]}</span>
               <ArrowRight size={13} />
+            </button>
+          )}
+
+          {canViewFinancials && onOpenAnalytics && (
+            <button
+              type="button"
+              onClick={onOpenAnalytics}
+              className="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-900 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
+              title="Launch Executive Analytics Dashboard"
+            >
+              <BarChart3 size={14} className="text-blue-700" />
+              <span>Executive Analytics</span>
             </button>
           )}
 
