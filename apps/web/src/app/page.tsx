@@ -12,24 +12,342 @@ import {
   Flame,
   AlertCircle,
   Clock,
+  ShieldCheck,
   CheckCircle2,
 } from 'lucide-react';
 
-export default function OrganizerDashboard() {
-  const [role, setRole] = useState<'org' | 'desk' | 'ref'>('org');
-  const [activeTab, setActiveTab] = useState('dash');
+import {
+  Role,
+  TabKey,
+  TournamentEvent,
+  Division,
+  Registration,
+  Sponsor,
+  TournamentMatch,
+  CourtDeskState,
+  Dispute,
+  Incident,
+  ChangeLogEntry,
+  CopilotProposal,
+} from '../types/organizer';
+
+import {
+  INITIAL_EVENT,
+  INITIAL_DIVISIONS,
+  INITIAL_REGISTRATIONS,
+  INITIAL_SPONSORS,
+  generateInitialMatches,
+  INITIAL_COURTS,
+  INITIAL_DISPUTES,
+  INITIAL_INCIDENTS,
+} from '../constants/initialState';
+
+import { EventSetupView } from '../components/setup/EventSetupView';
+import { CourtBoardView } from '../components/desk/CourtBoardView';
+import { DisputesView } from '../components/desk/DisputesView';
+import { RegistrationsView } from '../components/organizer/RegistrationsView';
+import { SponsorsView } from '../components/organizer/SponsorsView';
+import { RefereeScorecardView } from '../components/referee/RefereeScorecardView';
+import { CopilotView } from '../components/copilot/CopilotView';
+import { ChangeLogView } from '../components/copilot/ChangeLogView';
+
+export default function DinksterWebPlatform() {
+  const [role, setRole] = useState<Role>('org');
+  const [activeTab, setActiveTab] = useState<TabKey>('dash');
+  const [theme, setTheme] = useState('default');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Tournament Data State
+  const [event, setEvent] = useState<TournamentEvent>(INITIAL_EVENT);
+  const [divisions, setDivisions] = useState<Division[]>(INITIAL_DIVISIONS);
+  const [registrations, setRegistrations] = useState<Registration[]>(INITIAL_REGISTRATIONS);
+  const [sponsors, setSponsors] = useState<Sponsor[]>(INITIAL_SPONSORS);
+  const [matches, setMatches] = useState<TournamentMatch[]>(generateInitialMatches());
+  const [courts, setCourts] = useState<CourtDeskState[]>(INITIAL_COURTS);
+  const [disputes, setDisputes] = useState<Dispute[]>(INITIAL_DISPUTES);
+  const [incidents, setIncidents] = useState<Incident[]>(INITIAL_INCIDENTS);
+  const [changeLog, setChangeLog] = useState<ChangeLogEntry[]>([]);
+  const [copilotInitialPrompt, setCopilotInitialPrompt] = useState<string | undefined>(undefined);
+
+  // Time & Projections State
+  const [clockMinutes, setClockMinutes] = useState(13 * 60 + 42); // 1:42 PM
+  const [mixedProjectedOffset, setMixedProjectedOffset] = useState(18); // 18m behind
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const formatClock = (mins: number) => {
+    const h = Math.floor(mins / 60) % 24;
+    const m = mins % 60;
+    return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+  };
+
+  // ==========================================
+  // DISPATCHERS
+  // ==========================================
+  const handleCallNextMatch = (courtNumber: number) => {
+    const scheduled = matches.find((m) => m.status === 'SCHEDULED');
+    if (!scheduled) {
+      showToast('No more scheduled matches left in the pool.');
+      return;
+    }
+    scheduled.status = 'PENDING';
+    scheduled.court = courtNumber;
+
+    setCourts((prev) =>
+      prev.map((c) =>
+        c.number === courtNumber
+          ? {
+              ...c,
+              status: 'called',
+              matchTitle: `${scheduled.id}  Team ${scheduled.id.slice(1)} vs Team ${Number(scheduled.id.slice(1)) + 1}`,
+              matchId: scheduled.id,
+            }
+          : c
+      )
+    );
+    showToast(`Court call sent for ${scheduled.id} on Court ${courtNumber}. Push alerts broadcast.`);
+  };
+
+  const handleStartMatch = (courtNumber: number) => {
+    setCourts((prev) =>
+      prev.map((c) =>
+        c.number === courtNumber
+          ? {
+              ...c,
+              status: 'live',
+              score: [0, 0],
+              referee: 'R. Gill',
+              sinceTime: formatClock(clockMinutes),
+            }
+          : c
+      )
+    );
+    showToast(`Court ${courtNumber} is now LIVE.`);
+  };
+
+  const handleBlockCourt = (courtNumber: number) => {
+    setCourts((prev) =>
+      prev.map((c) => (c.number === courtNumber ? { ...c, status: 'blocked' } : c))
+    );
+    showToast(`Court ${courtNumber} blocked.`);
+  };
+
+  const handleReopenCourt = (courtNumber: number) => {
+    setCourts((prev) =>
+      prev.map((c) => (c.number === courtNumber ? { ...c, status: 'open' } : c))
+    );
+    showToast(`Court ${courtNumber} reopened.`);
+  };
+
+  const handleUpdateScore = (courtNumber: number, teamIdx: 0 | 1, delta: number) => {
+    setCourts((prev) =>
+      prev.map((c) => {
+        if (c.number === courtNumber && c.score) {
+          const newScore = [...c.score] as [number, number];
+          newScore[teamIdx] = Math.max(0, newScore[teamIdx] + delta);
+          return { ...c, score: newScore };
+        }
+        return c;
+      })
+    );
+  };
+
+  const handleEndMatch = (courtNumber: number) => {
+    setCourts((prev) =>
+      prev.map((c) =>
+        c.number === courtNumber
+          ? {
+              ...c,
+              status: 'open',
+              matchTitle: undefined,
+              score: undefined,
+              referee: undefined,
+              sinceTime: undefined,
+              matchId: undefined,
+            }
+          : c
+      )
+    );
+    showToast(`Court ${courtNumber} match ended. Final referee score locked.`);
+  };
+
+  const handleSimulateWetSpot = () => {
+    setRole('org');
+    setActiveTab('copilot');
+    setCopilotInitialPrompt('Court 3 has a wet spot. Move its upcoming matches to other courts.');
+  };
+
+  const handleAutoSeed = () => {
+    const sorted = [...registrations].sort((a, b) => b.avgDupr - a.avgDupr);
+    const seeded = sorted.map((r, i) => ({ ...r, seed: i + 1 }));
+    setRegistrations(seeded);
+    showToast('Seeds assigned to all 16 teams by DUPR.');
+  };
+
+  const handleRefund = (regId: string) => {
+    setRegistrations((prev) =>
+      prev.map((r) => (r.id === regId ? { ...r, paymentStatus: 'Refunded' } : r))
+    );
+    showToast('Refund processed via Stripe Connect. Platform fee reversed.');
+  };
+
+  const handleDraftDisputeSummary = (disputeId: string) => {
+    setDisputes((prev) =>
+      prev.map((d) =>
+        d.id === disputeId
+          ? {
+              ...d,
+              copilotSummary:
+                d.id === 'D1'
+                  ? 'Score was 10-10 on game point. Referee R. Gill called the baseline shot in. Player T. Lowe contends it landed deep. No camera review available. Recommend upholding referee call or playing let.'
+                  : 'Self-reported score was 11-8. Scorekeeper recorded 11-9. Referee score outranks self-reported score. Recommend confirming 11-9 and issuing prompt.',
+            }
+          : d
+      )
+    );
+  };
+
+  const handleEscalateDispute = (disputeId: string) => {
+    setDisputes((prev) =>
+      prev.map((d) => (d.id === disputeId ? { ...d, status: 'Escalated' } : d))
+    );
+    showToast('Dispute escalated to Tournament Director desk.');
+  };
+
+  const handleResolveDispute = (disputeId: string, decision: string) => {
+    setDisputes((prev) =>
+      prev.map((d) =>
+        d.id === disputeId
+          ? {
+              ...d,
+              status: 'Resolved',
+              decision: `${decision} (Decided at ${formatClock(clockMinutes)})`,
+            }
+          : d
+      )
+    );
+    showToast(`Dispute ${disputeId} resolved: "${decision}".`);
+  };
+
+  const handleConfirmProposal = (prop: CopilotProposal) => {
+    if (prop.type === 'pivot') {
+      const matchIds: string[] = prop.data.matchIds;
+      setMatches((prev) =>
+        prev.map((m) =>
+          matchIds.includes(m.id) && m.status !== 'COMPLETED' && m.status !== 'IN_PROGRESS'
+            ? { ...m, rules: 'To 9, win by 2', revision: m.revision + 1 }
+            : m
+        )
+      );
+
+      setMixedProjectedOffset((prev) => prev - prop.data.savedMinutes);
+
+      const entry: ChangeLogEntry = {
+        time: formatClock(clockMinutes),
+        actor: 'Organizer (Approved Copilot Proposal)',
+        tool: 'apply_mid_tournament_rule_pivot',
+        matchCount: matchIds.length,
+        before: 'To 11, win by 2',
+        after: 'To 9, win by 2',
+        savedMinutes: prop.data.savedMinutes,
+        matchIds,
+        isRolledBack: false,
+      };
+
+      setChangeLog((prev) => [entry, ...prev]);
+      showToast(`Rule pivot applied to ${matchIds.length} matches. Finish shifted 22 mins sooner.`);
+    }
+
+    if (prop.type === 'dink') {
+      setDivisions((prev) => [
+        ...prev,
+        {
+          id: `DB-${Date.now().toString().slice(-4)}`,
+          name: prop.data.name,
+          format: prop.data.format,
+          minDupr: 0,
+          maxDupr: 5.5,
+          entryFee: prop.data.fee,
+          teamCap: 16,
+          isPilot: true,
+        },
+      ]);
+      showToast('Pilot division added! Check Event Setup.');
+    }
+
+    if (prop.type === 'move') {
+      setCourts((prev) =>
+        prev.map((c) =>
+          c.number === 6
+            ? {
+                ...c,
+                status: 'called',
+                matchTitle: 'M110  Reyes / Tran vs Cruz / Lee',
+                matchId: 'M110',
+              }
+            : c
+        )
+      );
+      showToast('Match M110 moved to Court 6. Court 3 will block after M107.');
+    }
+
+    prop.status = 'executed';
+  };
+
+  const handleRejectProposal = (propId: number) => {
+    showToast('Proposal rejected.');
+  };
+
+  const handleRollback = (logIdx: number) => {
+    const entry = changeLog[logIdx];
+    if (!entry || entry.isRolledBack) return;
+
+    setMatches((prev) =>
+      prev.map((m) =>
+        entry.matchIds.includes(m.id) && m.status !== 'COMPLETED' && m.status !== 'IN_PROGRESS'
+          ? { ...m, rules: entry.before, revision: m.revision + 1 }
+          : m
+      )
+    );
+
+    setMixedProjectedOffset((prev) => prev + entry.savedMinutes);
+
+    setChangeLog((prev) =>
+      prev.map((item, idx) => (idx === logIdx ? { ...item, isRolledBack: true } : item))
+    );
+
+    showToast('Change rolled back to original rules.');
+  };
+
+  const handleRefFinalScore = (sets: [number, number][]) => {
+    setMatches((prev) =>
+      prev.map((m) =>
+        m.id === 'M107'
+          ? {
+              ...m,
+              status: 'COMPLETED',
+            }
+          : m
+      )
+    );
+    showToast('Score recorded as official referee score. Match M107 locked.');
+  };
 
   return (
-    <div className="min-h-screen grid grid-cols-[260px_1fr]">
+    <div className={`min-h-screen grid grid-cols-[260px_1fr] ${theme !== 'default' ? `theme-${theme}` : ''}`}>
       {/* Sidebar */}
-      <aside className="bg-[#0A5C43] text-white p-5 flex flex-col gap-3 sticky top-0 h-screen">
-        <div className="font-display font-extrabold text-2xl tracking-tight mb-2">
+      <aside className="bg-[#0A5C43] text-white p-5 flex flex-col gap-3 sticky top-0 h-screen select-none">
+        {/* Brand */}
+        <div className="font-display font-extrabold text-2xl tracking-tight mb-1">
           dink<span className="text-[#EF9F27]">ster</span>
-          <span className="text-xs font-mono font-normal ml-2 opacity-70">web v5</span>
+          <span className="text-xs font-mono font-normal ml-2 opacity-70">platform v5</span>
         </div>
 
-        {/* Role Selector */}
-        <div className="grid grid-cols-3 gap-1 bg-white/10 rounded-xl p-1 mb-3">
+        {/* Role Switcher */}
+        <div className="grid grid-cols-3 gap-1 bg-white/10 rounded-xl p-1 mb-2">
           {(['org', 'desk', 'ref'] as const).map((r) => (
             <button
               key={r}
@@ -38,7 +356,7 @@ export default function OrganizerDashboard() {
                 setActiveTab(r === 'org' ? 'dash' : r === 'desk' ? 'board' : 'card');
               }}
               className={`py-1.5 text-xs font-semibold rounded-lg capitalize transition-colors ${
-                role === r ? 'bg-[#EF9F27] text-black' : 'text-white/80 hover:bg-white/10'
+                role === r ? 'bg-[#EF9F27] text-black shadow-sm' : 'text-white/80 hover:bg-white/10'
               }`}
             >
               {r === 'org' ? 'Organizer' : r === 'desk' ? 'Desk' : 'Ref'}
@@ -79,12 +397,16 @@ export default function OrganizerDashboard() {
                 icon={<Sparkles size={18} />}
                 label="Copilot AI"
                 active={activeTab === 'copilot'}
-                onClick={() => setActiveTab('copilot')}
+                onClick={() => {
+                  setCopilotInitialPrompt(undefined);
+                  setActiveTab('copilot');
+                }}
               />
               <NavItem
                 icon={<ClipboardList size={18} />}
                 label="Change Log"
                 active={activeTab === 'log'}
+                badge={changeLog.length > 0 ? String(changeLog.length) : undefined}
                 onClick={() => setActiveTab('log')}
               />
             </>
@@ -102,7 +424,7 @@ export default function OrganizerDashboard() {
                 icon={<AlertCircle size={18} />}
                 label="Disputes"
                 active={activeTab === 'disputes'}
-                badge="2"
+                badge={disputes.filter((d) => d.status !== 'Resolved').length > 0 ? '2' : undefined}
                 onClick={() => setActiveTab('disputes')}
               />
               <NavItem
@@ -131,89 +453,275 @@ export default function OrganizerDashboard() {
         </nav>
 
         {/* Sidebar Footer */}
-        <div className="mt-auto text-xs opacity-70 flex items-center gap-2">
-          <Clock size={14} />
-          <span>Tournament Clock: 1:42 PM</span>
+        <div className="mt-auto flex flex-col gap-3 pt-3 border-t border-white/10 text-xs">
+          {/* Theme Palette Dropdown */}
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] uppercase font-bold text-white/60">Color Palette</span>
+            <select
+              value={theme}
+              onChange={(e) => setTheme(e.target.value)}
+              className="bg-white/10 border border-white/20 rounded-lg px-2.5 py-1.5 text-xs text-white"
+            >
+              <option value="default" className="text-black">
+                Green Court (Default)
+              </option>
+              <option value="genz1" className="text-black">
+                Neon Rave (Gen Z)
+              </option>
+              <option value="genz2" className="text-black">
+                Y2K Pastel (Gen Z)
+              </option>
+              <option value="mil1" className="text-black">
+                Clean Slate (Millennial)
+              </option>
+              <option value="mil2" className="text-black">
+                Warm Studio (Millennial)
+              </option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2 opacity-80">
+            <Clock size={14} />
+            <span>Tournament Clock: {formatClock(clockMinutes)}</span>
+          </div>
         </div>
       </aside>
 
       {/* Main Content Pane */}
-      <main className="p-8 overflow-y-auto">
-        <header className="flex justify-between items-center mb-6">
+      <main className="p-8 overflow-y-auto bg-[#FAF8F3]">
+        {/* Toast Notification */}
+        {toastMessage && (
+          <div className="fixed bottom-6 right-6 z-50 bg-[#0E2A20] text-white px-5 py-3 rounded-2xl shadow-xl border border-white/20 flex items-center gap-3 animate-bounce">
+            <CheckCircle2 size={18} className="text-[#5DCAA5]" />
+            <span className="text-xs font-bold">{toastMessage}</span>
+          </div>
+        )}
+
+        {/* VIEW: DASHBOARD */}
+        {activeTab === 'dash' && role === 'org' && (
           <div>
-            <h1 className="font-display font-bold text-3xl">Dink Masters Open</h1>
-            <p className="text-sm text-gray-600">Nov 7-8, 2026 &bull; Barton Springs Pickleball, Austin</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="px-3 py-1 bg-green-100 text-[#0A5C43] rounded-full text-xs font-bold border border-green-300">
-              Draft
-            </span>
-            <button className="px-4 py-2 bg-[#0A5C43] text-white rounded-xl font-bold text-sm hover:opacity-95">
-              Publish Event
-            </button>
-          </div>
-        </header>
-
-        {/* Top KPI Cards */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          <KpiCard label="Teams Paid" value="15 of 16" subtext="Mixed 3.5 to 4.0" />
-          <KpiCard label="Gross Revenue" value="$3,630" subtext="10% platform fee: $363" />
-          <KpiCard label="Matches Completed" value="6 of 24" subtext="Pool play in progress" />
-          <KpiCard label="Open Disputes" value="2" subtext="1 line call, 1 score diff" />
-        </div>
-
-        {/* Dual Column Content */}
-        <div className="grid grid-cols-[1.4fr_1fr] gap-6">
-          <section className="bg-white p-6 rounded-2xl border border-black/10 shadow-sm">
-            <h2 className="font-display font-bold text-xl mb-4">Projected Finish by Division</h2>
-            
-            <DivisionProgress
-              title="Mixed Doubles 3.5 to 4.0"
-              planned="6:10 PM"
-              projected="6:28 PM"
-              status="Behind"
-            />
-            <DivisionProgress
-              title="Men's Doubles 4.0 and up"
-              planned="5:25 PM"
-              projected="5:25 PM"
-              status="On plan"
-            />
-            <DivisionProgress
-              title="Singles Open"
-              planned="4:30 PM"
-              projected="4:30 PM"
-              status="On plan"
-            />
-
-            <div className="mt-6 p-4 bg-[#FEF3E2] border border-[#FAC775] rounded-xl flex items-center justify-between">
+            <header className="flex justify-between items-center mb-6">
               <div>
-                <p className="font-bold text-sm text-[#7A4A00]">Mixed 3.5 to 4.0 is running 18m behind</p>
-                <p className="text-xs text-[#7A4A00]">Shortening 14 upcoming pool matches to games to 9 win by 2 will save 22 mins.</p>
+                <h1 className="font-display font-bold text-3xl">{event.name}</h1>
+                <p className="text-sm text-gray-600">
+                  {event.dates} &bull; {event.venue}
+                </p>
               </div>
-              <button className="px-3 py-1.5 bg-[#EF9F27] text-black font-bold text-xs rounded-lg shadow-sm">
-                Ask Copilot
-              </button>
-            </div>
-          </section>
+              <div className="flex items-center gap-3">
+                <span className="px-3 py-1 bg-green-100 text-[#0A5C43] rounded-full text-xs font-bold border border-green-300">
+                  {event.status}
+                </span>
+                <button
+                  onClick={() => {
+                    const nextStatus = event.status === 'Draft' ? 'Published' : 'Live';
+                    setEvent({ ...event, status: nextStatus });
+                    showToast(`Tournament status updated to ${nextStatus}.`);
+                  }}
+                  className="px-4 py-2 bg-[#0A5C43] text-white rounded-xl font-bold text-sm hover:opacity-95 shadow-sm"
+                >
+                  {event.status === 'Draft' ? 'Publish Event' : 'Launch Tournament Live'}
+                </button>
+              </div>
+            </header>
 
-          <section className="bg-white p-6 rounded-2xl border border-black/10 shadow-sm">
-            <h2 className="font-display font-bold text-xl mb-4">Courts Status</h2>
-            <div className="grid grid-cols-4 gap-2 mb-4">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((c) => (
-                <div key={c} className="p-3 border rounded-xl text-center">
-                  <div className="font-bold text-sm">Court {c}</div>
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                    c <= 5 ? 'bg-green-100 text-green-800' : c === 8 ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600'
-                  }`}>
-                    {c <= 5 ? 'Live' : c === 8 ? 'Called' : 'Open'}
-                  </span>
-                </div>
-              ))}
+            {/* Top KPI Cards */}
+            <div className="grid grid-cols-4 gap-4 mb-6">
+              <KpiCard label="Teams Paid" value="15 of 16" subtext="Mixed 3.5 to 4.0" />
+              <KpiCard label="Gross Revenue" value="$3,630" subtext="10% platform fee: $363" />
+              <KpiCard
+                label="Matches Completed"
+                value={`${matches.filter((m) => m.status === 'COMPLETED').length} of ${matches.length}`}
+                subtext="Pool play in progress"
+              />
+              <KpiCard
+                label="Open Disputes"
+                value={String(disputes.filter((d) => d.status !== 'Resolved').length)}
+                subtext="1 line call, 1 score diff"
+              />
             </div>
-            <p className="text-xs text-gray-500">Court 2 presented by Volt Paddles &bull; Court 8 called for Johnson / Rivera</p>
-          </section>
-        </div>
+
+            {/* Dual Column Content */}
+            <div className="grid grid-cols-[1.4fr_1fr] gap-6">
+              <section className="bg-white p-6 rounded-2xl border border-black/10 shadow-sm">
+                <h2 className="font-display font-bold text-xl mb-4">Projected Finish by Division</h2>
+
+                <DivisionProgress
+                  title="Mixed Doubles 3.5 to 4.0"
+                  planned="6:10 PM"
+                  projected={mixedProjectedOffset > 0 ? `6:${10 + mixedProjectedOffset} PM` : '6:06 PM'}
+                  status={mixedProjectedOffset > 0 ? `${mixedProjectedOffset}m Behind` : 'On Plan'}
+                />
+                <DivisionProgress
+                  title="Men's Doubles 4.0 and up"
+                  planned="5:25 PM"
+                  projected="5:25 PM"
+                  status="On Plan"
+                />
+                <DivisionProgress
+                  title="Singles Open"
+                  planned="4:30 PM"
+                  projected="4:30 PM"
+                  status="On Plan"
+                />
+
+                {mixedProjectedOffset > 0 ? (
+                  <div className="mt-6 p-4 bg-[#FEF3E2] border border-[#FAC775] rounded-xl flex items-center justify-between">
+                    <div>
+                      <p className="font-bold text-sm text-[#7A4A00]">
+                        Mixed 3.5 to 4.0 is running {mixedProjectedOffset}m behind
+                      </p>
+                      <p className="text-xs text-[#7A4A00]">
+                        Shortening 14 upcoming pool matches to games to 9 win by 2 will save 22 mins.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setCopilotInitialPrompt(
+                          'Courts are running behind. Switch the remaining pool matches in Mixed Doubles 3.5 to 4.0 to games to 9, win by 2.'
+                        );
+                        setActiveTab('copilot');
+                      }}
+                      className="px-3.5 py-2 bg-[#EF9F27] text-black font-bold text-xs rounded-lg shadow-sm hover:opacity-90"
+                    >
+                      Ask Copilot
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-6 p-4 bg-[#E8F7F1] border border-[#5DCAA5] rounded-xl text-xs font-bold text-[#0A5C43]">
+                    ✓ Pool play rules successfully adjusted. All courts on target for 6:06 PM finish.
+                  </div>
+                )}
+              </section>
+
+              <section className="bg-white p-6 rounded-2xl border border-black/10 shadow-sm flex flex-col justify-between">
+                <div>
+                  <h2 className="font-display font-bold text-xl mb-4">Courts Overview</h2>
+                  <div className="grid grid-cols-4 gap-2 mb-4">
+                    {courts.map((c) => (
+                      <div key={c.number} className="p-2.5 border rounded-xl text-center">
+                        <div className="font-bold text-xs">Court {c.number}</div>
+                        <span
+                          className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider block mt-1 ${
+                            c.status === 'live'
+                              ? 'bg-green-100 text-[#0A5C43]'
+                              : c.status === 'called'
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-gray-100 text-gray-600'
+                          }`}
+                        >
+                          {c.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="text-xs text-gray-500 pt-3 border-t">
+                  Court 2 presented by Volt Paddles &bull; 2 courts available for assignments.
+                </div>
+              </section>
+            </div>
+          </div>
+        )}
+
+        {/* VIEW: SETUP */}
+        {activeTab === 'setup' && (
+          <EventSetupView
+            event={event}
+            divisions={divisions}
+            sponsors={sponsors}
+            onUpdateEvent={setEvent}
+            onAddDivision={(div) => {
+              setDivisions([...divisions, div]);
+              showToast(`Division "${div.name}" added.`);
+            }}
+            onPublish={() => {
+              setEvent({ ...event, status: 'Published' });
+              showToast('Tournament published and visible on Dinkster mobile.');
+            }}
+          />
+        )}
+
+        {/* VIEW: REGISTRATIONS */}
+        {activeTab === 'regs' && (
+          <RegistrationsView
+            registrations={registrations}
+            onAutoSeed={handleAutoSeed}
+            onRefund={handleRefund}
+          />
+        )}
+
+        {/* VIEW: SPONSORS */}
+        {activeTab === 'sponsors' && (
+          <SponsorsView
+            sponsors={sponsors}
+            onAddSponsor={(sp) => {
+              setSponsors([...sponsors, sp]);
+              showToast(`Sponsor "${sp.name}" added.`);
+            }}
+            onAssignCourt={(spIdx, courtNum) => {
+              const updated = [...sponsors];
+              updated[spIdx].courtAssigned = courtNum;
+              setSponsors(updated);
+              showToast(`Court ${courtNum ? courtNum : 'None'} assigned to ${updated[spIdx].name}.`);
+            }}
+          />
+        )}
+
+        {/* VIEW: COURT BOARD */}
+        {activeTab === 'board' && (
+          <CourtBoardView
+            courts={courts}
+            sponsors={sponsors}
+            matches={matches}
+            onCallNextMatch={handleCallNextMatch}
+            onStartMatch={handleStartMatch}
+            onBlockCourt={handleBlockCourt}
+            onReopenCourt={handleReopenCourt}
+            onUpdateScore={handleUpdateScore}
+            onEndMatch={handleEndMatch}
+            onSimulateWetSpot={handleSimulateWetSpot}
+          />
+        )}
+
+        {/* VIEW: DISPUTES & INCIDENTS */}
+        {(activeTab === 'disputes' || activeTab === 'incidents') && (
+          <DisputesView
+            disputes={disputes}
+            incidents={incidents}
+            onDraftSummary={handleDraftDisputeSummary}
+            onEscalate={handleEscalateDispute}
+            onResolveDispute={handleResolveDispute}
+            onAddIncident={(inc) => {
+              setIncidents([inc, ...incidents]);
+              showToast(`Incident logged for Court ${inc.courtNumber}.`);
+            }}
+          />
+        )}
+
+        {/* VIEW: REFEREE SCORECARD */}
+        {activeTab === 'card' && (
+          <RefereeScorecardView
+            match={matches.find((m) => m.id === 'M107')}
+            onSubmitFinalScore={handleRefFinalScore}
+            onFlagDispute={() => showToast('Dispute flagged to desk.')}
+          />
+        )}
+
+        {/* VIEW: COPILOT */}
+        {activeTab === 'copilot' && (
+          <CopilotView
+            role={role === 'org' ? 'org' : 'desk'}
+            matches={matches}
+            onConfirmProposal={handleConfirmProposal}
+            onRejectProposal={handleRejectProposal}
+            initialPrompt={copilotInitialPrompt}
+          />
+        )}
+
+        {/* VIEW: CHANGE LOG */}
+        {activeTab === 'log' && (
+          <ChangeLogView log={changeLog} onRollback={handleRollback} />
+        )}
       </main>
     </div>
   );
@@ -273,7 +781,7 @@ function DivisionProgress({
   projected: string;
   status: string;
 }) {
-  const isBehind = status === 'Behind';
+  const isBehind = status.toLowerCase().includes('behind');
   return (
     <div className="py-3 border-b last:border-0 flex justify-between items-center">
       <div>
