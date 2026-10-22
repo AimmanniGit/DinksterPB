@@ -193,33 +193,58 @@ export const CrewScreen: React.FC<CrewScreenProps> = ({
 
         {/* Messages Scroll */}
         <ScrollView style={styles.messagesScroll} contentContainerStyle={styles.messagesContent}>
-          {/* Active Proposal Card (if present) */}
+          {/* Active Proposal Card (if present) - Priority #2 */}
           {pr && (
-            <View style={styles.proposalCard}>
-              <Text style={styles.proposalTag}>
-                {pr.accepted ? 'Match Planned' : pr.proposedByMe ? 'Proposal Sent' : 'Game Proposed to You'}
-              </Text>
-              <Text style={styles.proposalTimeVenue}>{pr.when} &bull; {pr.venue}</Text>
-              <Text style={styles.proposalCode}>Game Code: D-7741</Text>
+            <View style={[styles.proposalCard, pr.accepted && styles.proposalCardAccepted]}>
+              {!pr.accepted ? (
+                <>
+                  <Text style={styles.proposalTag}>
+                    {pr.proposedByMe ? 'Proposal Sent' : 'Game Proposed to You'}
+                  </Text>
+                  <Text style={styles.proposalTimeVenue}>{pr.when} &bull; {pr.venue}</Text>
+                  <Text style={styles.proposalCode}>Game Code: D-7741</Text>
 
-              {pr.accepted ? (
-                <TouchableOpacity
-                  style={styles.openLobbyBtn}
-                  onPress={() => onStartLobby && onStartLobby(activeMember.name)}
-                >
-                  <Text style={styles.openLobbyText}>Open Match Lobby</Text>
-                </TouchableOpacity>
-              ) : !pr.proposedByMe ? (
-                <View style={styles.proposalActionRow}>
-                  <TouchableOpacity style={styles.acceptBtn} onPress={handleAcceptProposal}>
-                    <Text style={styles.acceptText}>Accept</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.declineBtn}>
-                    <Text style={styles.declineText}>Decline</Text>
-                  </TouchableOpacity>
-                </View>
+                  {!pr.proposedByMe ? (
+                    <View style={styles.proposalActionRow}>
+                      <TouchableOpacity style={styles.acceptBtn} onPress={handleAcceptProposal}>
+                        <Text style={styles.acceptText}>Accept & Schedule</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.declineBtn}>
+                        <Text style={styles.declineText}>Decline</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <Text style={styles.waitingReplyText}>Waiting for {activeMember.name.split(' ')[0]} to accept...</Text>
+                  )}
+                </>
               ) : (
-                <Text style={styles.waitingReplyText}>Waiting for reply...</Text>
+                /* Confirmed Scheduled Match Experience */
+                <View style={styles.scheduledConfirmedBox}>
+                  <View style={styles.confirmedHeaderRow}>
+                    <Text style={styles.confirmedBadgeText}>✓ Match Confirmed</Text>
+                    <Text style={styles.calendarSetText}>📅 Added to Calendar</Text>
+                  </View>
+
+                  <Text style={styles.confirmedTimeVenue}>{pr.when} &bull; {pr.venue}</Text>
+
+                  <View style={styles.joinCodePillRow}>
+                    <Text style={styles.joinCodeLabel}>Join Code:</Text>
+                    <View style={styles.joinCodePill}>
+                      <Text style={styles.joinCodePillText}>D-7741</Text>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.openLobbyBtn}
+                    onPress={() => onStartLobby && onStartLobby('D-7741')}
+                  >
+                    <Text style={styles.openLobbyText}>Enter Match Lobby (D-7741)</Text>
+                  </TouchableOpacity>
+
+                  <Text style={styles.reminderNoticeText}>
+                    🔔 Push notification active: We will alert both players 30 mins before game time.
+                  </Text>
+                </View>
               )}
             </View>
           )}
@@ -554,6 +579,71 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontWeight: '700',
     fontSize: 13,
+  },
+  proposalCardAccepted: {
+    backgroundColor: '#F3FAF7',
+    borderColor: '#0A5C43',
+    borderWidth: 1.5,
+  },
+  scheduledConfirmedBox: {
+    width: '100%',
+  },
+  confirmedHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  confirmedBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0A5C43',
+  },
+  calendarSetText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#1B5E20',
+    backgroundColor: '#E8F7F1',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  confirmedTimeVenue: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#111',
+    marginTop: 2,
+  },
+  joinCodePillRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 6,
+  },
+  joinCodeLabel: {
+    fontSize: 11,
+    color: '#666',
+    fontWeight: '600',
+  },
+  joinCodePill: {
+    backgroundColor: '#0A5C43',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  joinCodePillText: {
+    fontFamily: 'Courier',
+    fontSize: 12,
+    fontWeight: '900',
+    color: '#FFF',
+    letterSpacing: 1,
+  },
+  reminderNoticeText: {
+    fontSize: 10.5,
+    color: '#0A5C43',
+    marginTop: 8,
+    lineHeight: 14,
+    fontWeight: '500',
   },
   proposalActionRow: {
     flexDirection: 'row',

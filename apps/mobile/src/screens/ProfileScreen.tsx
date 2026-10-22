@@ -14,6 +14,18 @@ interface ProfileScreenProps {
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onOpenWatch }) => {
   const [mode, setMode] = useState<'player' | 'coach'>('player');
+  const [isSyncingDupr, setIsSyncingDupr] = useState(false);
+  const [lastSyncText, setLastSyncText] = useState('Synced 2h ago');
+  const [duprDoubles, setDuprDoubles] = useState(3.842);
+  const [duprSingles, setDuprSingles] = useState(3.615);
+
+  const handleSyncDupr = () => {
+    setIsSyncingDupr(true);
+    setTimeout(() => {
+      setIsSyncingDupr(false);
+      setLastSyncText('Just now &bull; Verified via DUPR API');
+    }, 1200);
+  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -61,6 +73,76 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onOpenWatch }) => 
         <View style={styles.kpiCard}>
           <Text style={styles.kpiLabel}>Win Rate</Text>
           <Text style={styles.kpiValue}>62%</Text>
+        </View>
+      </View>
+
+      {/* Official DUPR Verified Rating Card & 6-Month Trend (Priority #3) */}
+      <View style={styles.duprVerifiedCard}>
+        <View style={styles.duprCardHeader}>
+          <View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={styles.duprCardTitle}>Official DUPR Rating</Text>
+              <View style={styles.duprVerifiedPill}>
+                <Text style={styles.duprVerifiedPillText}>✓ Verified</Text>
+              </View>
+            </View>
+            <Text style={styles.duprCardSub}>Linked to DUPR-8X92KP &bull; {lastSyncText}</Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.syncDuprBtn, isSyncingDupr && styles.syncDuprBtnActive]}
+            onPress={handleSyncDupr}
+            disabled={isSyncingDupr}
+          >
+            <Text style={styles.syncDuprBtnText}>
+              {isSyncingDupr ? 'Syncing...' : '🔄 Sync DUPR'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Rating Split: Doubles vs Singles */}
+        <View style={styles.duprRatingGrid}>
+          <View style={styles.duprRatingBox}>
+            <Text style={styles.duprRatingType}>Doubles Rating</Text>
+            <Text style={styles.duprRatingBig}>{duprDoubles.toFixed(3)}</Text>
+            <Text style={styles.duprReliabilityText}>High Reliability &bull; 88%</Text>
+          </View>
+          <View style={styles.duprRatingBox}>
+            <Text style={styles.duprRatingType}>Singles Rating</Text>
+            <Text style={styles.duprRatingBig}>{duprSingles.toFixed(3)}</Text>
+            <Text style={styles.duprReliabilityText}>Med Reliability &bull; 74%</Text>
+          </View>
+        </View>
+
+        {/* 6-Month Rating Trend Bar Progression */}
+        <View style={styles.duprTrendSection}>
+          <View style={styles.trendHeaderRow}>
+            <Text style={styles.trendTitle}>6-Month Rating Progression</Text>
+            <Text style={styles.trendGrowthText}>📈 +0.64 DUPR</Text>
+          </View>
+          <View style={styles.trendBarsRow}>
+            {[
+              { month: 'Jun', rating: '3.20', height: 42 },
+              { month: 'Jul', rating: '3.38', height: 54 },
+              { month: 'Aug', rating: '3.52', height: 68 },
+              { month: 'Sep', rating: '3.65', height: 80 },
+              { month: 'Oct', rating: '3.74', height: 88 },
+              { month: 'Nov', rating: '3.84', height: 100 },
+            ].map((bar, i) => (
+              <View key={i} style={styles.trendBarCol}>
+                <Text style={styles.trendBarVal}>{bar.rating}</Text>
+                <View style={styles.trendBarTrack}>
+                  <View
+                    style={[
+                      styles.trendBarFill,
+                      { height: `${bar.height}%` },
+                      i === 5 ? styles.trendBarFillActive : {},
+                    ]}
+                  />
+                </View>
+                <Text style={styles.trendBarMonth}>{bar.month}</Text>
+              </View>
+            ))}
+          </View>
         </View>
       </View>
 
@@ -598,5 +680,156 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
+  },
+  duprVerifiedCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#0A5C43',
+    padding: 16,
+    marginBottom: 18,
+    shadowColor: '#0A5C43',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  duprCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  duprCardTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#0A5C43',
+  },
+  duprVerifiedPill: {
+    backgroundColor: '#E8F7F1',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#5DCAA5',
+  },
+  duprVerifiedPillText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#0A5C43',
+  },
+  duprCardSub: {
+    fontSize: 11.5,
+    color: '#666',
+    marginTop: 2,
+  },
+  syncDuprBtn: {
+    backgroundColor: '#0A5C43',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  syncDuprBtnActive: {
+    opacity: 0.6,
+  },
+  syncDuprBtnText: {
+    color: '#FFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  duprRatingGrid: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  duprRatingBox: {
+    flex: 1,
+    backgroundColor: '#F7FBF9',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
+    padding: 12,
+    alignItems: 'center',
+  },
+  duprRatingType: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#666',
+    textTransform: 'uppercase',
+  },
+  duprRatingBig: {
+    fontSize: 26,
+    fontWeight: '900',
+    color: '#0A5C43',
+    marginVertical: 4,
+    fontFamily: 'Courier',
+  },
+  duprReliabilityText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#1B5E20',
+  },
+  duprTrendSection: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 14,
+    padding: 12,
+  },
+  trendHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  trendTitle: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#444',
+  },
+  trendGrowthText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#0A5C43',
+  },
+  trendBarsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    height: 90,
+    paddingTop: 8,
+  },
+  trendBarCol: {
+    flex: 1,
+    alignItems: 'center',
+    height: '100%',
+    justifyContent: 'flex-end',
+  },
+  trendBarVal: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#666',
+    marginBottom: 4,
+    fontFamily: 'Courier',
+  },
+  trendBarTrack: {
+    width: 14,
+    height: 48,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 6,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  trendBarFill: {
+    width: '100%',
+    backgroundColor: '#5DCAA5',
+    borderRadius: 6,
+  },
+  trendBarFillActive: {
+    backgroundColor: '#0A5C43',
+  },
+  trendBarMonth: {
+    fontSize: 9.5,
+    fontWeight: '600',
+    color: '#888',
+    marginTop: 4,
   },
 });
