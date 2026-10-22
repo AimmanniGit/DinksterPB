@@ -437,4 +437,53 @@ export const INITIAL_BRACKET_DATA: Record<string, DivisionBracketData> = {
       },
     },
   },
+  C: {
+    divisionId: 'C',
+    divisionName: "Men's Pro Open Doubles",
+    tournamentType: 'Official Podium · Medal Ceremony Completed',
+    stage: 'concluded',
+    podium: {
+      gold: {
+        team: 'Ben Johns / Collin Johns',
+        seed: '#1 Seed',
+        club: 'Austin Champions Club',
+        score: 'Def. 11-9, 7-11, 11-8 in Gold Match',
+      },
+      silver: {
+        team: 'JW Johnson / Dylan Frazier',
+        seed: '#2 Seed',
+        club: 'Delray Beach Racquet Club',
+        score: 'Silver Medalist · Finals Runner-Up',
+      },
+      bronze: {
+        team: 'Federico Staksrud / Hayden Patriquin',
+        seed: '#4 Seed',
+        club: 'Naples Athletic Center',
+        score: 'Def. 11-6, 11-7 in Bronze Match',
+      },
+    },
+    pools: [],
+    playoffs: {
+      quarters: [],
+      semis: [],
+      bronze: {
+        id: 'c-bronze',
+        round: 'bronze',
+        title: '🥉 Bronze Medal Match',
+        court: 4,
+        status: 'COMPLETED',
+        team1: { name: 'Staksrud / Patriquin', seed: 4, score: 11, winner: true },
+        team2: { name: 'Tellez / Newman', seed: 3, score: 6, winner: false },
+      },
+      final: {
+        id: 'c-final',
+        round: 'final',
+        title: '🏆 Gold Championship Final',
+        court: 1,
+        status: 'COMPLETED',
+        team1: { name: 'Johns / Johns', seed: 1, score: 11, winner: true },
+        team2: { name: 'Johnson / Frazier', seed: 2, score: 9, winner: false },
+      },
+    },
+  },
 };

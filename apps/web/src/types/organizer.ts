@@ -58,10 +58,25 @@ export interface PlayoffMatchNode {
   status: 'SCHEDULED' | 'LIVE' | 'COMPLETED';
 }
 
+export interface PodiumAthlete {
+  team: string;
+  seed?: string;
+  club?: string;
+  score?: string;
+}
+
+export interface DivisionPodium {
+  gold: PodiumAthlete;
+  silver: PodiumAthlete;
+  bronze: PodiumAthlete;
+}
+
 export interface DivisionBracketData {
   divisionId: string;
   divisionName: string;
   tournamentType: string;
+  stage?: 'pools' | 'playoffs' | 'concluded';
+  podium?: DivisionPodium;
   pools: PoolGroup[];
   playoffs: {
     quarters: PlayoffMatchNode[];

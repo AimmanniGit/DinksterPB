@@ -28,6 +28,7 @@ import {
   PlayoffMatchNode,
 } from '../../types/organizer';
 import { INITIAL_BRACKET_DATA } from '../../constants/initialState';
+import { TvOlympicPodium } from './TvOlympicPodium';
 
 interface TvBroadcastViewProps {
   tournamentName?: string;
@@ -110,10 +111,11 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
   // Compute rotation screen sequence based on operator selections
   interface ScreenItem {
     id: string;
-    type: 'division' | 'live-courts';
+    type: 'division' | 'live-courts' | 'podium';
     title: string;
     subtitle: string;
     divisionData?: DivisionBracketData;
+    stageType?: 'pools' | 'playoffs' | 'concluded';
   }
 
   const screens: ScreenItem[] = useMemo(() => {
@@ -130,13 +132,19 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
     divisionList
       .filter((d) => selectedDivisionIds.includes(d.divisionId))
       .forEach((d) => {
+        const isConcluded = d.stage === 'concluded' || !!d.podium;
         const hasBracket = d.playoffs.semis.length > 0 || d.playoffs.quarters.length > 0;
         list.push({
           id: d.divisionId,
-          type: 'division',
+          type: isConcluded ? 'podium' : 'division',
           title: d.divisionName,
-          subtitle: hasBracket ? 'Playoff Progression & Medal Matches' : 'Round-Robin Pool Play Standings',
+          subtitle: isConcluded
+            ? 'Official Podium · Medal Ceremony Completed'
+            : hasBracket
+            ? 'Playoff Progression & Medal Matches'
+            : 'Round-Robin Pool Play Standings',
           divisionData: d,
+          stageType: isConcluded ? 'concluded' : hasBracket ? 'playoffs' : 'pools',
         });
       });
 
@@ -409,6 +417,88 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
                   </div>
                 );
               })}
+
+              {/* Quick Stage Jump Buttons */}
+              <div className="flex items-center gap-1.5 pl-3 border-l border-slate-700">
+                <span className="text-[10px] text-slate-400 uppercase font-black tracking-wider mr-1">Stage:</span>
+                {divisionList.some((d) => d.stage === 'concluded' || d.podium) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const div = divisionList.find((d) => d.stage === 'concluded' || d.podium);
+                      if (div) {
+                        if (!selectedDivisionIds.includes(div.divisionId)) {
+                          setSelectedDivisionIds((prev) => [...prev, div.divisionId]);
+                        }
+                        jumpToScreen(div.divisionId);
+                      }
+                    }}
+                    className={`px-2.5 py-1 text-[11px] font-extrabold rounded-lg flex items-center gap-1 transition ${
+                      currentScreen?.type === 'podium'
+                        ? 'bg-amber-400 text-black shadow-sm font-black'
+                        : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40'
+                    }`}
+                    title="Jump to 3D Olympic Medal Podium"
+                  >
+                    <span>🥇 Podium</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const div = divisionList.find((d) => (d.playoffs.semis.length > 0 || d.playoffs.quarters.length > 0) && d.stage !== 'concluded' && !d.podium);
+                    if (div) {
+                      if (!selectedDivisionIds.includes(div.divisionId)) {
+                        setSelectedDivisionIds((prev) => [...prev, div.divisionId]);
+                      }
+                      jumpToScreen(div.divisionId);
+                    }
+                  }}
+                  className={`px-2.5 py-1 text-[11px] font-extrabold rounded-lg flex items-center gap-1 transition ${
+                    currentScreen?.type === 'division' && (currentScreen?.divisionData?.playoffs?.semis?.length || 0) > 0
+                      ? 'bg-blue-400 text-black shadow-sm font-black'
+                      : 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40'
+                  }`}
+                  title="Jump to Playoff Bracket"
+                >
+                  <span>🏆 Playoffs</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const div = divisionList.find((d) => d.pools.length > 0 && d.stage !== 'concluded' && !d.podium);
+                    if (div) {
+                      if (!selectedDivisionIds.includes(div.divisionId)) {
+                        setSelectedDivisionIds((prev) => [...prev, div.divisionId]);
+                      }
+                      jumpToScreen(div.divisionId);
+                    }
+                  }}
+                  className={`px-2.5 py-1 text-[11px] font-extrabold rounded-lg flex items-center gap-1 transition ${
+                    currentScreen?.type === 'division' && (currentScreen?.divisionData?.pools?.length || 0) > 0
+                      ? 'bg-emerald-400 text-black shadow-sm font-black'
+                      : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40'
+                  }`}
+                  title="Jump to Active Pools"
+                >
+                  <span>📊 Pools</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIncludeLiveCourts(true);
+                    jumpToScreen('screen-live-courts');
+                  }}
+                  className={`px-2.5 py-1 text-[11px] font-extrabold rounded-lg flex items-center gap-1 transition ${
+                    currentScreen?.type === 'live-courts'
+                      ? 'bg-purple-400 text-black shadow-sm font-black'
+                      : 'bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40'
+                  }`}
+                  title="Jump to Live Courts"
+                >
+                  <span>🏟️ Courts</span>
+                </button>
+              </div>
             </div>
 
             {/* Collapse toggle button for advanced row */}
@@ -594,12 +684,27 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
         <div className="flex items-center gap-3">
           {/* Status Indicator Pill */}
           <span className="px-3 py-1.5 rounded-xl bg-white/10 text-xs font-extrabold flex items-center gap-1.5 border border-white/10">
-            <span className="w-2 h-2 rounded-full bg-emerald-400" />
-            {currentScreen?.type === 'live-courts'
-              ? 'Court Scoreboard'
-              : currentScreen?.divisionData?.playoffs?.semis?.length
-              ? 'Playoffs & Medals'
-              : 'Pool Play'}
+            {currentScreen?.type === 'podium' ? (
+              <span className="flex items-center gap-1.5 text-amber-300">
+                <Trophy size={14} className="text-amber-400" />
+                Medal Ceremony
+              </span>
+            ) : currentScreen?.type === 'live-courts' ? (
+              <span className="flex items-center gap-1.5 text-emerald-400">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Court Scoreboard
+              </span>
+            ) : currentScreen?.divisionData?.playoffs?.semis?.length ? (
+              <span className="flex items-center gap-1.5 text-blue-400">
+                <span className="w-2 h-2 rounded-full bg-blue-400" />
+                Playoffs & Medals
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 text-emerald-400">
+                <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                Pool Play
+              </span>
+            )}
           </span>
 
           {/* Fullscreen Button */}
@@ -694,8 +799,18 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
         <div className="max-w-[1500px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 mb-6 border-b border-white/10">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-amber-400 text-black">
-                {currentScreen?.type === 'live-courts' ? 'Active Action' : 'Tournament Stage'}
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider ${
+                currentScreen?.type === 'podium'
+                  ? 'bg-amber-400 text-black shadow-[0_0_12px_rgba(251,191,36,0.5)]'
+                  : currentScreen?.type === 'live-courts'
+                  ? 'bg-emerald-400 text-black'
+                  : 'bg-amber-400 text-black'
+              }`}>
+                {currentScreen?.type === 'podium'
+                  ? '🥇 Medal Ceremony'
+                  : currentScreen?.type === 'live-courts'
+                  ? 'Active Action'
+                  : 'Tournament Stage'}
               </span>
               <span className="text-xs opacity-75 font-semibold">
                 {currentScreen?.subtitle}
@@ -727,6 +842,16 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
               <h3 className="text-2xl font-bold opacity-60">No screens currently selected in rotation.</h3>
               <p className="opacity-40 text-sm mt-2">Click Settings above and select at least one division or Live Courts.</p>
             </div>
+          ) : currentScreen?.type === 'podium' && currentScreen.divisionData?.podium ? (
+            /* ====================================================
+               SCREEN TYPE C: 3D OLYMPIC MEDAL PODIUM
+               ==================================================== */
+            <TvOlympicPodium
+              podium={currentScreen.divisionData.podium}
+              divisionName={currentScreen.title}
+              subtitle={currentScreen.subtitle}
+              themeMode={themeMode}
+            />
           ) : currentScreen?.type === 'live-courts' ? (
             /* ====================================================
                SCREEN TYPE A: LIVE STADIUM COURTS GRID
