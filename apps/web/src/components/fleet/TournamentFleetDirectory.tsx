@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { TournamentEvent, Division } from '../../types/organizer';
+import { TournamentEvent, Division, UserActorProfile } from '../../types/organizer';
 import {
   Trophy,
   Calendar,
@@ -37,6 +37,7 @@ interface TournamentFleetDirectoryProps {
   activeTournamentId?: string | null;
   onSelectTournament: (tournamentId: string) => void;
   onCreateTournament: (newEvent: TournamentEvent) => void;
+  actorProfile?: UserActorProfile;
 }
 
 export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> = ({
@@ -44,7 +45,11 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
   activeTournamentId,
   onSelectTournament,
   onCreateTournament,
+  actorProfile,
 }) => {
+  const canViewFinancials = actorProfile ? actorProfile.permissions.canViewFinancials : true;
+  const canManageFleet = actorProfile ? actorProfile.permissions.canManageFleet : true;
+
   const [statusFilter, setStatusFilter] = useState<'all' | 'Live' | 'Published' | 'Draft' | 'Concluded'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -309,17 +314,19 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
             </button>
           )}
 
-          <button
-            type="button"
-            onClick={() => {
-              setCreateMode('copilot');
-              setShowCreateModal(true);
-            }}
-            className="px-3.5 py-2 bg-[#0A5C43] hover:bg-[#084734] text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center gap-2"
-          >
-            <Plus size={15} />
-            <span>Create New Tournament</span>
-          </button>
+          {canManageFleet && (
+            <button
+              type="button"
+              onClick={() => {
+                setCreateMode('copilot');
+                setShowCreateModal(true);
+              }}
+              className="px-3.5 py-2 bg-[#0A5C43] hover:bg-[#084734] text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center gap-2"
+            >
+              <Plus size={15} />
+              <span>Create New Tournament</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -480,39 +487,64 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
           </div>
         </div>
 
-        {/* Card 3: Revenue Metric */}
-        <div
-          onClick={() => setActiveKpiModal('revenue')}
-          className="bg-white p-4 rounded-xl border border-gray-200 hover:border-[#0A5C43] hover:shadow-md transition cursor-pointer shadow-xs group"
-          title="Click to view financial breakdown & platform fees"
-        >
-          <div className="flex justify-between items-center">
-            <span className="text-[11px] font-semibold text-gray-500 uppercase block">
+        {/* Card 3: Revenue Metric (Founder & Director) OR Operational Readiness (Marshall & Volunteer) */}
+        {canViewFinancials ? (
+          <div
+            onClick={() => setActiveKpiModal('revenue')}
+            className="bg-white p-4 rounded-xl border border-gray-200 hover:border-[#0A5C43] hover:shadow-md transition cursor-pointer shadow-xs group"
+            title="Click to view financial breakdown & platform fees"
+          >
+            <div className="flex justify-between items-center">
+              <span className="text-[11px] font-semibold text-gray-500 uppercase block">
+                {statusFilter === 'all'
+                  ? 'Gross Revenue'
+                  : statusFilter === 'Live'
+                  ? 'Live Event Revenue'
+                  : statusFilter === 'Published'
+                  ? 'Upcoming Collections'
+                  : statusFilter === 'Draft'
+                  ? 'Projected Revenue'
+                  : 'Historical Revenue'}
+              </span>
+              <span className="text-[10px] text-[#0A5C43] font-bold opacity-0 group-hover:opacity-100 transition flex items-center gap-0.5">
+                Breakdown &rarr;
+              </span>
+            </div>
+            <div className="text-xl font-bold text-[#0A5C43] my-1">
+              ${dynamicStats.poolRev.toLocaleString()}
+            </div>
+            <div className="text-xs text-gray-500">
               {statusFilter === 'all'
-                ? 'Gross Revenue'
+                ? 'Across all portfolio events'
                 : statusFilter === 'Live'
-                ? 'Live Event Revenue'
-                : statusFilter === 'Published'
-                ? 'Upcoming Collections'
-                : statusFilter === 'Draft'
-                ? 'Projected Revenue'
-                : 'Historical Revenue'}
-            </span>
-            <span className="text-[10px] text-[#0A5C43] font-bold opacity-0 group-hover:opacity-100 transition flex items-center gap-0.5">
-              Breakdown &rarr;
-            </span>
+                ? '100% collected entry fees'
+                : 'Entry fee gross tracking'}
+            </div>
           </div>
-          <div className="text-xl font-bold text-[#0A5C43] my-1">
-            ${dynamicStats.poolRev.toLocaleString()}
+        ) : (
+          <div
+            onClick={() => setActiveKpiModal('courts')}
+            className="bg-white p-4 rounded-xl border border-gray-200 hover:border-[#0A5C43] hover:shadow-md transition cursor-pointer shadow-xs group"
+            title="Click to view court utilization and match readiness"
+          >
+            <div className="flex justify-between items-center">
+              <span className="text-[11px] font-semibold text-gray-500 uppercase block">
+                Operational Courts
+              </span>
+              <span className="text-[10px] text-[#0A5C43] font-bold opacity-0 group-hover:opacity-100 transition flex items-center gap-0.5">
+                Courts &rarr;
+              </span>
+            </div>
+            <div className="text-xl font-bold text-gray-900 my-1">
+              {dynamicStats.poolCourts} Competition Courts
+            </div>
+            <div className="text-xs text-emerald-700 font-semibold">
+              {dynamicStats.liveCount > 0
+                ? `${dynamicStats.liveCount} Events Live with Active Match Dispatch`
+                : 'Court assignment & referee dispatch ready'}
+            </div>
           </div>
-          <div className="text-xs text-gray-500">
-            {statusFilter === 'all'
-              ? 'Across all portfolio events'
-              : statusFilter === 'Live'
-              ? '100% collected entry fees'
-              : 'Entry fee gross tracking'}
-          </div>
-        </div>
+        )}
 
         {/* Card 4: Competition Courts Metric */}
         <div
@@ -649,13 +681,23 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
                     </div>
                   </div>
 
-                  <div className="text-left lg:text-right">
-                    <span className="text-[10px] uppercase font-semibold text-gray-400 block">Revenue</span>
-                    <span className="text-xs font-bold text-[#0A5C43]">
-                      ${(t.revenue || 0).toLocaleString()}
-                    </span>
-                    <span className="text-[10px] text-gray-400 block">{t.divisionsCount || 3} Divisions</span>
-                  </div>
+                  {canViewFinancials ? (
+                    <div className="text-left lg:text-right">
+                      <span className="text-[10px] uppercase font-semibold text-gray-400 block">Revenue</span>
+                      <span className="text-xs font-bold text-[#0A5C43]">
+                        ${(t.revenue || 0).toLocaleString()}
+                      </span>
+                      <span className="text-[10px] text-gray-400 block">{t.divisionsCount || 3} Divisions</span>
+                    </div>
+                  ) : (
+                    <div className="text-left lg:text-right">
+                      <span className="text-[10px] uppercase font-semibold text-gray-400 block">Competition Setup</span>
+                      <span className="text-xs font-bold text-gray-800">
+                        {t.divisionsCount || 3} Divisions
+                      </span>
+                      <span className="text-[10px] text-emerald-700 font-semibold block">{t.totalCourts || 8} Match Courts</span>
+                    </div>
+                  )}
 
                   {/* Actions Dropdown / Quick Links */}
                   <div className="flex items-center gap-2 shrink-0">
@@ -788,7 +830,7 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
                 </div>
               )}
 
-              {activeKpiModal === 'revenue' && (
+              {activeKpiModal === 'revenue' && canViewFinancials && (
                 <div className="space-y-3">
                   <div className="grid grid-cols-3 gap-2">
                     <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">

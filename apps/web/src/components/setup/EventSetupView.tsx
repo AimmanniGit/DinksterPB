@@ -47,6 +47,8 @@ interface EventSetupViewProps {
   onUpdateSponsor?: (index: number, updated: Sponsor) => void;
   onDeleteSponsor?: (index: number) => void;
   onAssignCourt?: (sponsorIndex: number, courtNumber: number | null) => void;
+  canViewFinancials?: boolean;
+  canEditRules?: boolean;
 }
 
 // Preset options for searchable and creatable comboboxes
@@ -126,6 +128,8 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
   onUpdateSponsor = () => {},
   onDeleteSponsor = () => {},
   onAssignCourt = () => {},
+  canViewFinancials = true,
+  canEditRules = true,
 }) => {
   // Division Add / Edit State
   const [editingDivisionId, setEditingDivisionId] = useState<string | null>(null);
@@ -617,13 +621,22 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
                     </div>
 
                     <div className="flex items-center gap-4 shrink-0 justify-between md:justify-end border-t md:border-t-0 pt-2 md:pt-0">
-                      {/* Entry Fee per person Highlight */}
-                      <div className="text-right">
-                        <span className="text-[10px] uppercase font-semibold text-gray-400 block">Fee / Player</span>
-                        <span className="font-bold text-xl text-[#0A5C43]">
-                          ${d.entryFee}
-                        </span>
-                      </div>
+                      {/* Entry Fee per person Highlight (Redacted for non-financial roles) */}
+                      {canViewFinancials ? (
+                        <div className="text-right">
+                          <span className="text-[10px] uppercase font-semibold text-gray-400 block">Fee / Player</span>
+                          <span className="font-bold text-xl text-[#0A5C43]">
+                            ${d.entryFee}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="text-right">
+                          <span className="text-[10px] uppercase font-semibold text-gray-400 block">Division Status</span>
+                          <span className="font-bold text-xs text-gray-700 bg-gray-100 px-2 py-1 rounded-md">
+                            Active Slot
+                          </span>
+                        </div>
+                      )}
 
                       {/* Division Action Buttons */}
                       <div className="flex items-center gap-1.5">
@@ -671,6 +684,8 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
               onUpdateSponsor={onUpdateSponsor}
               onDeleteSponsor={onDeleteSponsor}
               onAssignCourt={onAssignCourt}
+              canViewFinancials={canViewFinancials}
+              canManageSponsors={canEditRules}
             />
           </div>
         </div>
@@ -743,9 +758,15 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
                           {d.format} &bull; Cap: {d.teamCap} teams
                         </div>
                       </div>
-                      <div className="font-bold text-sm text-[#0A5C43]">
-                        ${d.entryFee} <span className="text-[10px] font-normal text-gray-400">/ player</span>
-                      </div>
+                      {canViewFinancials ? (
+                        <div className="font-bold text-sm text-[#0A5C43]">
+                          ${d.entryFee} <span className="text-[10px] font-normal text-gray-400">/ player</span>
+                        </div>
+                      ) : (
+                        <div className="font-semibold text-xs text-gray-500">
+                          {d.teamCap} teams cap
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

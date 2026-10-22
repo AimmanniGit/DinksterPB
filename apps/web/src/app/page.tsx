@@ -542,16 +542,20 @@ export default function DinksterV2Platform() {
             ) : (
               /* Fleet Level Top Actions */
               <div className="flex items-center gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setShowAgenticCreator(true)}
-                  className="px-4 py-2 bg-[#0A5C43] hover:bg-[#084734] text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-xs"
-                >
-                  <Sparkles size={15} className="text-[#EF9F27]" />
-                  <span>Create with Copilot AI</span>
-                </button>
+                {currentActorProfile.permissions.canManageFleet && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAgenticCreator(true)}
+                    className="px-4 py-2 bg-[#0A5C43] hover:bg-[#084734] text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-xs"
+                  >
+                    <Sparkles size={15} className="text-[#EF9F27]" />
+                    <span>Create with Copilot AI</span>
+                  </button>
+                )}
 
-                <div className="h-4 w-[1px] bg-gray-200 mx-0.5" />
+                {currentActorProfile.permissions.canManageFleet && (
+                  <div className="h-4 w-[1px] bg-gray-200 mx-0.5" />
+                )}
 
                 <ActorRoleSwitcher
                   currentProfile={currentActorProfile}
@@ -697,6 +701,7 @@ export default function DinksterV2Platform() {
               activeTournamentId={selectedTournamentId}
               onSelectTournament={handleSelectTournament}
               onCreateTournament={handleCreateTournament}
+              actorProfile={currentActorProfile}
             />
           </div>
         )}
@@ -917,6 +922,7 @@ export default function DinksterV2Platform() {
                 registrations={registrations}
                 onAutoSeed={handleAutoSeed}
                 onRefund={handleRefund}
+                canViewFinancials={currentActorProfile.permissions.canViewFinancials}
               />
             )}
 
@@ -941,6 +947,8 @@ export default function DinksterV2Platform() {
                   onUpdateSponsor={handleUpdateSponsor}
                   onDeleteSponsor={handleDeleteSponsor}
                   onAssignCourt={handleAssignCourt}
+                  canViewFinancials={currentActorProfile.permissions.canViewFinancials}
+                  canManageSponsors={currentActorProfile.permissions.canManageEventSponsors}
                 />
               </div>
             )}
@@ -951,6 +959,8 @@ export default function DinksterV2Platform() {
                 event={event}
                 divisions={divisions}
                 sponsors={sponsors}
+                canViewFinancials={currentActorProfile.permissions.canViewFinancials}
+                canEditRules={currentActorProfile.permissions.canEditTournamentRules}
                 onUpdateEvent={(updated) => {
                   setEvent(updated);
                   setTournaments((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
