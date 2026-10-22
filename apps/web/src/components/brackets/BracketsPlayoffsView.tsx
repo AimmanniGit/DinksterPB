@@ -12,9 +12,11 @@ import {
   Tv,
   Share2,
   Sparkles,
+  Download,
 } from 'lucide-react';
 import { DivisionBracketData, PoolGroup, PlayoffMatchNode } from '../../types/organizer';
 import { INITIAL_BRACKET_DATA } from '../../constants/initialState';
+import { generateDuprCsv, downloadDuprCsv } from '@/lib/duprExporter';
 
 interface BracketsPlayoffsViewProps {
   onOpenTvMode?: () => void;
@@ -28,6 +30,46 @@ export const BracketsPlayoffsView: React.FC<BracketsPlayoffsViewProps> = ({ onOp
   const currentBracket = bracketData[selectedDivisionId] || bracketData['A'];
   const hasPools = currentBracket.pools && currentBracket.pools.length > 0;
   const hasQuarters = currentBracket.playoffs.quarters && currentBracket.playoffs.quarters.length > 0;
+
+  const handleExportDupr = () => {
+    const records = [
+      {
+        tournamentName: 'Dink Masters Open',
+        matchDate: '2026-11-07',
+        divisionName: currentBracket.divisionName,
+        round: 'Gold Medal Final',
+        team1Player1Name: 'Alex Miller',
+        team1Player1DuprId: 'DUPR-4912',
+        team1Player2Name: 'Sarah Smith',
+        team1Player2DuprId: 'DUPR-8814',
+        team2Player1Name: 'David Chen',
+        team2Player1DuprId: 'DUPR-3190',
+        team2Player2Name: 'Emma Davis',
+        team2Player2DuprId: 'DUPR-7721',
+        set1Score: '11-8',
+        set2Score: '11-9',
+        winningTeam: 1 as const,
+      },
+      {
+        tournamentName: 'Dink Masters Open',
+        matchDate: '2026-11-07',
+        divisionName: currentBracket.divisionName,
+        round: 'Bronze 3rd Place',
+        team1Player1Name: 'Liam Thompson',
+        team1Player1DuprId: 'DUPR-5511',
+        team1Player2Name: 'Chloe Brooks',
+        team1Player2DuprId: 'DUPR-9923',
+        team2Player1Name: 'Mason Wilson',
+        team2Player1DuprId: 'DUPR-2104',
+        team2Player2Name: 'Ava Hayes',
+        team2Player2DuprId: 'DUPR-4419',
+        set1Score: '11-7',
+        winningTeam: 1 as const,
+      },
+    ];
+    const csv = generateDuprCsv(records);
+    downloadDuprCsv(`${currentBracket.divisionName.replace(/\s+/g, '_')}_DUPR_Official.csv`, csv);
+  };
 
   return (
     <div className="space-y-6">
@@ -50,6 +92,14 @@ export const BracketsPlayoffsView: React.FC<BracketsPlayoffsViewProps> = ({ onOp
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3">
+          <button
+            onClick={handleExportDupr}
+            className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5"
+            title="Export official results for DUPR upload"
+          >
+            <Download size={15} />
+            Export to DUPR (CSV)
+          </button>
           {onOpenTvMode && (
             <button
               onClick={onOpenTvMode}
