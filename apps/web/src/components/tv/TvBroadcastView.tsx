@@ -52,6 +52,9 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
   const [spotlightCourtNumber, setSpotlightCourtNumber] = useState<number>(1);
   const [selectedDivisionId, setSelectedDivisionId] = useState<string>('A');
   const [cycleIndex, setCycleIndex] = useState<number>(0); // 0: Jumbotron, 1: Spotlight, 2: Bracket
+  const [secondsRemaining, setSecondsRemaining] = useState<number>(14);
+  const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [zoomLevel, setZoomLevel] = useState<number>(1.0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [currentTime, setCurrentTime] = useState<string>('');
@@ -74,15 +77,70 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-cycle through Jumbotron -> Spotlight -> Bracket Tree Map in cycle mode
+  // Auto-cycle through Jumbotron -> Spotlight -> Bracket Tree Map with elapsed countdown
   useEffect(() => {
-    if (displayMode !== 'cycle') return;
+    if (displayMode !== 'cycle' || isPaused) return;
     const interval = setInterval(() => {
-      setCycleIndex((prev) => (prev + 1) % 3);
-      setSpotlightCourtNumber((prev) => (prev % courts.length) + 1);
-    }, 14000); // 14 seconds per broadcast segment
+      setSecondsRemaining((prev) => {
+        if (prev <= 1) {
+          setCycleIndex((c) => (c + 1) % 3);
+          setSpotlightCourtNumber((c) => (c % courts.length) + 1);
+          return 14;
+        }
+        return prev - 1;
+      });
+    }, 1000);
     return () => clearInterval(interval);
-  }, [displayMode, courts.length]);
+  }, [displayMode, isPaused, courts.length]);
+
+  // Keyboard Shortcuts (F: Fullscreen, Space: Pause/Resume cycle, Arrows: Step views)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === 'f' || e.key === 'F') {
+        handleToggleFullscreen();
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        setIsPaused((p) => !p);
+      } else if (e.key === 'ArrowRight') {
+        if (displayMode === 'spotlight') {
+          setSpotlightCourtNumber((prev) => (prev % courts.length) + 1);
+        } else if (displayMode === 'bracket') {
+          const keys = Object.keys(bracketData);
+          const idx = keys.indexOf(selectedDivisionId);
+          setSelectedDivisionId(keys[(idx + 1) % keys.length]);
+        }
+      } else if (e.key === 'ArrowLeft') {
+        if (displayMode === 'spotlight') {
+          setSpotlightCourtNumber((prev) => (prev - 2 + courts.length) % courts.length + 1);
+        } else if (displayMode === 'bracket') {
+          const keys = Object.keys(bracketData);
+          const idx = keys.indexOf(selectedDivisionId);
+          setSelectedDivisionId(keys[(idx - 1 + keys.length) % keys.length]);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [displayMode, courts.length, selectedDivisionId, bracketData]);
+
+  // Cross-reference live active court by team name
+  const findLiveCourtForTeam = (teamName: string): number | null => {
+    if (!teamName) return null;
+    const cleanTeam = teamName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const members = teamName.toLowerCase().split(/[&/]/).map((m) => m.trim().replace(/[^a-z0-9]/g, ''));
+
+    for (const c of courts) {
+      if (c.status === 'live' && c.matchTitle) {
+        const cleanMatch = c.matchTitle.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (cleanMatch.includes(cleanTeam)) return c.number;
+        if (members.length > 0 && members.every((m) => m.length > 1 && cleanMatch.includes(m))) {
+          return c.number;
+        }
+      }
+    }
+    return null;
+  };
 
   const handleToggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -187,6 +245,44 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
             </button>
           </div>
 
+          {/* Cycle Timer Pill & Pause Indicator */}
+          {displayMode === 'cycle' && (
+            <button
+              onClick={() => setIsPaused((p) => !p)}
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition ${
+                isPaused
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                  : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+              }`}
+              title="Spacebar to Pause / Resume Rotation"
+            >
+              <span className={`w-2 h-2 rounded-full ${isPaused ? 'bg-amber-400' : 'bg-emerald-400 animate-ping'}`} />
+              <span>{isPaused ? 'Paused' : `${secondsRemaining}s`}</span>
+            </button>
+          )}
+
+          {/* In-App Board Zoom Multiplier */}
+          <div className="flex items-center gap-1 bg-slate-800/80 px-2 py-1.5 rounded-xl border border-slate-700/60 text-xs">
+            <span className="text-[10px] uppercase font-bold text-slate-400 mr-0.5">Zoom</span>
+            <button
+              onClick={() => setZoomLevel((z) => Math.max(0.8, Math.round((z - 0.1) * 10) / 10))}
+              className="w-5 h-5 flex items-center justify-center rounded bg-slate-700 hover:bg-slate-600 text-white font-bold"
+              title="Scale TV UI Down"
+            >
+              -
+            </button>
+            <span className="font-mono text-[11px] font-bold text-slate-200 px-1 w-9 text-center">
+              {Math.round(zoomLevel * 100)}%
+            </span>
+            <button
+              onClick={() => setZoomLevel((z) => Math.min(1.4, Math.round((z + 0.1) * 10) / 10))}
+              className="w-5 h-5 flex items-center justify-center rounded bg-slate-700 hover:bg-slate-600 text-white font-bold"
+              title="Scale TV UI Up for Large Screens"
+            >
+              +
+            </button>
+          </div>
+
           {/* Spotlight Court Dropdown */}
           {displayMode === 'spotlight' && (
             <select
@@ -216,6 +312,7 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
           <button
             onClick={handleToggleFullscreen}
             className="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1.5 shadow"
+            title="Press F for Fullscreen"
           >
             {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
             {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen TV'}
@@ -232,8 +329,20 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
         </div>
       </header>
 
+      {/* Elapsed Rotation Progress Bar */}
+      {displayMode === 'cycle' && (
+        <div className="w-full bg-slate-900 h-1 overflow-hidden relative border-b border-slate-800">
+          <div
+            className={`h-full bg-gradient-to-r from-emerald-500 to-amber-400 transition-all duration-1000 ease-linear ${
+              isPaused ? 'opacity-30' : ''
+            }`}
+            style={{ width: `${Math.round(((14 - secondsRemaining) / 14) * 100)}%` }}
+          />
+        </div>
+      )}
+
       {/* Main TV Screen Content */}
-      <main className="flex-1 p-6 overflow-y-auto">
+      <main className="flex-1 p-6 overflow-y-auto" style={{ zoom: zoomLevel }}>
         {activeScreen === 'jumbotron' ? (
           /* ====================================================
              MODE 1: 8-COURT JUMBOTRON GRID (STADIUM VIEW)
@@ -533,46 +642,71 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-800/60 font-medium">
-                                {pool.teams.map((t, idx) => (
-                                  <tr
-                                    key={t.id}
-                                    className={
-                                      t.qualified
-                                        ? 'bg-emerald-950/20 text-white font-bold'
-                                        : 'text-slate-400'
-                                    }
-                                  >
-                                    <td className="py-2.5 px-3 font-mono font-bold text-slate-500">
-                                      {idx + 1}
-                                    </td>
-                                    <td className="py-2.5 px-3">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
-                                          #{t.seed}
-                                        </span>
-                                        <span className="font-bold text-white truncate max-w-[140px]">
-                                          {t.name}
-                                        </span>
-                                      </div>
-                                    </td>
-                                    <td className="py-2.5 px-2 text-center font-mono">
-                                      {t.wins}-{t.losses}
-                                    </td>
-                                    <td className="py-2.5 px-2 text-center font-mono text-emerald-400">
-                                      {t.pointDiff > 0 ? `+${t.pointDiff}` : t.pointDiff}
-                                    </td>
-                                    <td className="py-2.5 px-3 text-right">
-                                      {t.qualified ? (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                                          <CheckCircle2 size={10} className="text-emerald-400" />
-                                          Q{idx + 1} Advancing &rarr;
-                                        </span>
-                                      ) : (
-                                        <span className="text-[10px] text-slate-600">Eliminated</span>
+                                {pool.teams.map((t, idx) => {
+                                  const liveCourtNum = findLiveCourtForTeam(t.name);
+                                  const isLastQualifier = t.qualified && (!pool.teams[idx + 1] || !pool.teams[idx + 1].qualified);
+
+                                  return (
+                                    <React.Fragment key={t.id}>
+                                      <tr
+                                        className={
+                                          t.qualified
+                                            ? 'bg-emerald-950/20 text-white font-bold'
+                                            : 'text-slate-400'
+                                        }
+                                      >
+                                        <td className="py-2.5 px-3 font-mono font-bold text-slate-500">
+                                          {idx + 1}
+                                        </td>
+                                        <td className="py-2.5 px-3">
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
+                                              #{t.seed}
+                                            </span>
+                                            <span className="font-bold text-white truncate max-w-[130px]">
+                                              {t.name}
+                                            </span>
+                                            {liveCourtNum && (
+                                              <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-emerald-500/30 text-emerald-300 border border-emerald-500/50 flex items-center gap-1 shrink-0 animate-pulse">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                                C{liveCourtNum} LIVE
+                                              </span>
+                                            )}
+                                          </div>
+                                        </td>
+                                        <td className="py-2.5 px-2 text-center font-mono">
+                                          {t.wins}-{t.losses}
+                                        </td>
+                                        <td className="py-2.5 px-2 text-center font-mono text-emerald-400">
+                                          {t.pointDiff > 0 ? `+${t.pointDiff}` : t.pointDiff}
+                                        </td>
+                                        <td className="py-2.5 px-3 text-right">
+                                          {t.qualified ? (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                                              <CheckCircle2 size={10} className="text-emerald-400" />
+                                              Q{idx + 1} Advancing &rarr;
+                                            </span>
+                                          ) : (
+                                            <span className="text-[10px] text-slate-600">Eliminated</span>
+                                          )}
+                                        </td>
+                                      </tr>
+                                      {isLastQualifier && (
+                                        <tr key={`${pool.name}-cutline`}>
+                                          <td colSpan={5} className="py-1 px-3 bg-emerald-950/40 border-y border-emerald-500/40 text-[10px] font-black uppercase tracking-wider text-emerald-400">
+                                            <div className="flex items-center justify-between">
+                                              <span className="flex items-center gap-1.5">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                                PLAYOFF ADVANCEMENT CUTLINE
+                                              </span>
+                                              <span className="text-[9px] text-emerald-300 font-bold">TOP 2 ADVANCE TO MEDAL SEMIS</span>
+                                            </div>
+                                          </td>
+                                        </tr>
                                       )}
-                                    </td>
-                                  </tr>
-                                ))}
+                                    </React.Fragment>
+                                  );
+                                })}
                               </tbody>
                             </table>
                           </div>
@@ -725,29 +859,47 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
         )}
       </main>
 
-      {/* Bottom Stadium Announcement & On-Deck Marquee */}
-      <footer className="bg-slate-900 border-t border-slate-800 px-6 py-3 flex items-center justify-between text-xs font-medium">
-        <div className="flex items-center gap-3 overflow-hidden">
-          <span className="px-2.5 py-1 rounded-md bg-amber-500/20 border border-amber-500/40 text-amber-300 font-extrabold uppercase shrink-0">
-            📢 On Deck
+      {/* 3-Tier Stadium Broadcast Band */}
+      <footer className="bg-slate-900 border-t border-slate-800 px-6 py-2.5 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-medium shadow-2xl">
+        {/* Tier 1: Finished Today Podium Showcase */}
+        <div className="flex items-center gap-2 overflow-hidden shrink-0">
+          <span className="px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-extrabold uppercase flex items-center gap-1 shadow-sm">
+            <Trophy size={12} className="text-amber-400" />
+            Podium
           </span>
-          <div className="truncate text-slate-300">
+          <span className="text-slate-300 text-xs truncate max-w-[280px]">
+            <strong>Singles Open:</strong> 🥇 Reyes &bull; 🥈 Chen &bull; 🥉 Patel
+          </span>
+        </div>
+
+        {/* Tier 2: On-Deck Stadium Queue */}
+        <div className="flex items-center gap-2.5 overflow-hidden flex-1 px-4 border-l border-r border-slate-800">
+          <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-extrabold uppercase shrink-0 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            On Deck
+          </span>
+          <div className="truncate text-slate-300 text-xs">
             {scheduledMatches.length > 0 ? (
-              scheduledMatches.slice(0, 4).map((m, i) => (
-                <span key={m.id} className="mr-6">
-                  <strong className="text-white">{m.team1 || 'Team 1'}</strong> vs <strong className="text-white">{m.team2 || 'Team 2'}</strong> ({m.divisionId})
-                  {i < Math.min(scheduledMatches.length - 1, 3) && <span className="text-slate-600 ml-4">&bull;</span>}
+              scheduledMatches.slice(0, 3).map((m, i) => (
+                <span key={m.id} className="mr-4">
+                  <strong className="text-white">{m.team1 || 'Team 1'}</strong> vs <strong className="text-white">{m.team2 || 'Team 2'}</strong>
+                  {i < Math.min(scheduledMatches.length - 1, 2) && <span className="text-slate-600 ml-3">&bull;</span>}
                 </span>
               ))
             ) : (
-              <span>All scheduled pool matches are currently assigned to courts.</span>
+              <span>All scheduled pool matches are assigned to courts.</span>
             )}
           </div>
         </div>
 
-        <div className="flex items-center gap-4 shrink-0 font-mono text-slate-400">
-          <Clock className="w-3.5 h-3.5 text-slate-500" />
-          <span>{currentTime}</span>
+        {/* Tier 3: Active Rallies & Wall Clock */}
+        <div className="flex items-center gap-4 shrink-0 font-mono text-slate-400 text-xs">
+          <span className="text-emerald-400 font-bold">{activeMatchesCount} Courts Live</span>
+          <span className="text-slate-600">&bull;</span>
+          <div className="flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5 text-slate-500" />
+            <span>{currentTime}</span>
+          </div>
         </div>
       </footer>
     </div>
