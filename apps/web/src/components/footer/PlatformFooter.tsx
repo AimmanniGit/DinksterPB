@@ -190,9 +190,20 @@ export const PlatformFooter: React.FC = () => {
           </div>
         </div>
 
-        {/* Bottom Tier: Copyright & Brand */}
-        <div className="border-t border-gray-200 py-4 px-6 text-center text-[11px] text-gray-400">
-          &copy; {new Date().getFullYear()} Dinkster Technologies Inc. All rights reserved. Built for competitive pickleball worldwide.
+        {/* Bottom Tier: Copyright, Production Release Version & Server Info */}
+        <div className="border-t border-gray-200 py-4 px-6">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-gray-400">
+            <div>
+              &copy; {new Date().getFullYear()} Dinkster Technologies Inc. All rights reserved. Built for competitive pickleball worldwide.
+            </div>
+            <div className="flex items-center gap-2.5 text-gray-500 font-mono text-[10px]">
+              <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 font-bold border border-gray-200">
+                v2.4.2 Production
+              </span>
+              <span>&bull;</span>
+              <span>US-Central Cluster</span>
+            </div>
+          </div>
         </div>
       </footer>
 

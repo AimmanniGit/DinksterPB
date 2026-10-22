@@ -461,12 +461,9 @@ export default function DinksterV2Platform() {
           
           {/* Left: Brand + Contextual Breadcrumbs */}
           <div className="flex items-center gap-3 min-w-0">
-            <Link href="/" onClick={() => setSelectedTournamentId(null)} className="flex items-center gap-1.5 shrink-0">
+            <Link href="/" onClick={() => setSelectedTournamentId(null)} className="flex items-center shrink-0">
               <span className="font-extrabold text-xl tracking-tight text-[#0A5C43]">
                 dink<span className="text-[#EF9F27]">ster</span>
-              </span>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-bold border border-gray-200">
-                v2.4
               </span>
             </Link>
 
