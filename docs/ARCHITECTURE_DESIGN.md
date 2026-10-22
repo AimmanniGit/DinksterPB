@@ -198,4 +198,44 @@ flowchart LR
 | `@dinkster/shared` | **Verified (0 errors)** | `npm run build` &rarr; Pure scoring engine, themes, geofence, and checkIn utils. |
 | `@dinkster/database` | **Verified (0 errors)** | `npm run build` &rarr; Prisma 5 schema, 14 tables, `createTenantClient`. |
 | `apps/mobile` | **Verified (0 errors)** | `npm run typecheck` &rarr; 5 tab navigation, Live scoring, Apple Watch simulator, zero-GPS court check-in with 2h expiration. |
-| `apps/web` | **Verified (0 errors)** | `npm run build` &rarr; Next.js 14 production build, Desk Kiosk, Ref Scorecard, Copilot, Signed Webhooks, Tenant API routes. |
+| `apps/web` | **Verified (0 errors)** | `npm run build` &rarr; Next.js 14 production build, Desk Kiosk, Ref Scorecard, Copilot, Signed Webhooks, Tenant API routes, TV Jumbotron, Brackets & Medals. |
+
+---
+
+## 7. Vertical Feature Slice Architecture & Regression Isolation
+
+Every major artifact and capability in Dinkster is engineered as an **isolated vertical feature slice**. Features share the backend database (`@dinkster/database`) and core scoring engine (`@dinkster/shared`), but maintain zero circular UI dependencies:
+
+```mermaid
+flowchart TD
+    subgraph SHARED_FOUNDATION["Shared Foundation Layer"]
+        DB["@dinkster/database<br/>(Prisma Schema & Tenant Client)"]
+        ENGINE["@dinkster/shared<br/>(Scoring Engine & Theme Tokens)"]
+    end
+
+    subgraph WEB_SLICES["Web Vertical Feature Slices (Independent)"]
+        F_TV["📺 /components/tv<br/>(Live Jumbotron & TV Cast)"]
+        F_BRK["🏆 /components/brackets<br/>(Pool Standings & Playoff Trees)"]
+        F_DESK["🏟️ /components/desk<br/>(8-Court Board & Disputes)"]
+        F_REF["📋 /components/referee<br/>(Tablet Referee Scorecard)"]
+        F_COP["🤖 /components/copilot<br/>(Wing 4 Copilot & Audit Log)"]
+        F_ORG["💰 /components/organizer<br/>(Registrations & Sponsors)"]
+    end
+
+    subgraph MOBILE_SLICES["Mobile Vertical Feature Slices (Independent)"]
+        M_DISC["🔥 /screens/Discover<br/>(Tinder Swipe Deck)"]
+        M_PLAY["🎾 /screens/Play<br/>(Live Scoring & Dink Battle)"]
+        M_CRTS["📍 /screens/Courts<br/>(2h Zero-GPS Check-In)"]
+        M_CREW["💬 /screens/Crew<br/>(Match Chat & Proposals)"]
+        M_PROF["👤 /screens/Profile<br/>(DUPR Stats & Watch Sim)"]
+    end
+
+    DB --> WEB_SLICES
+    ENGINE --> WEB_SLICES
+    ENGINE --> MOBILE_SLICES
+```
+
+### Key Engineering Rules:
+1. **Isolated Blast Radius:** Modifying TV Casting or Bracket Progression cannot break registrations or court desks. Any regression is strictly contained within that feature slice.
+2. **Independent Shippiability:** Slices can be enabled, disabled, mocked, or shipped as independent feature flags or micro-frontends without rewriting core code.
+3. **Single Contract with DB:** All writes pass through the verified multi-tenant Prisma client (`createTenantClient`) ensuring global data safety across all slices.
