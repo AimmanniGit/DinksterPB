@@ -95,10 +95,14 @@ export interface Division {
   entryFee: number;
   teamCap: number;
   isPilot?: boolean;
+  ageBracket?: string;
+  scoringFormat?: string;
 }
 
 export interface TournamentEvent {
   name: string;
+  slug?: string;
+  joinCode?: string;
   dates: string;
   venue: string;
   status: 'Draft' | 'Published' | 'Live';
@@ -106,6 +110,12 @@ export interface TournamentEvent {
   seedByDupr: boolean;
   totalCourts: number;
   courtSurface?: string;
+  ballType?: string;
+  tournamentFormat?: string;
+  registrationDeadline?: string;
+  rulesNotes?: string;
+  contactEmail?: string;
+  sanctioningBody?: string;
 }
 
 export interface Registration {

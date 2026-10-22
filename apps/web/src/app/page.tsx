@@ -672,9 +672,22 @@ export default function DinksterWebPlatform() {
               setDivisions([...divisions, div]);
               showToast(`Division "${div.name}" added.`);
             }}
+            onUpdateDivision={(id, updated) => {
+              setDivisions((prev) => prev.map((d) => (d.id === id ? updated : d)));
+              showToast(`Division "${updated.name}" updated.`);
+            }}
+            onDeleteDivision={(id) => {
+              setDivisions((prev) => prev.filter((d) => d.id !== id));
+              showToast('Division removed.');
+            }}
             onPublish={() => {
-              setEvent({ ...event, status: 'Published' });
-              showToast('Tournament published and visible on Dinkster mobile.');
+              setEvent((prev) => ({
+                ...prev,
+                status: 'Published',
+                slug: prev.slug || prev.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+                joinCode: prev.joinCode || 'D-8421',
+              }));
+              showToast('Tournament published to independent web portal & Dinkster app!');
             }}
           />
         )}
