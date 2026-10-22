@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { TournamentEvent, Division, UserActorProfile } from '../../types/organizer';
+import { TournamentEvent, Division, UserActorProfile, Sponsor } from '../../types/organizer';
 import {
   Trophy,
   Calendar,
@@ -30,27 +30,62 @@ import {
   ShieldCheck,
   Building2,
   ChevronRight,
+  Crown,
+  Briefcase,
+  Globe,
+  Smartphone,
+  Award,
+  Tag,
+  CheckCircle2,
 } from 'lucide-react';
+import { SponsorsManagementHub } from '../sponsors/SponsorsManagementHub';
 
 interface TournamentFleetDirectoryProps {
   tournaments: TournamentEvent[];
+  sponsors?: Sponsor[];
   activeTournamentId?: string | null;
   onSelectTournament: (tournamentId: string) => void;
   onCreateTournament: (newEvent: TournamentEvent) => void;
+  onAddSponsor?: (newSponsor: Sponsor) => void;
+  onUpdateSponsor?: (index: number, updated: Sponsor) => void;
+  onDeleteSponsor?: (index: number) => void;
+  onAssignCourt?: (sponsorIndex: number, courtNumber: number | null) => void;
   actorProfile?: UserActorProfile;
   onOpenAnalytics?: () => void;
 }
 
 export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> = ({
   tournaments,
+  sponsors = [],
   activeTournamentId,
   onSelectTournament,
   onCreateTournament,
+  onAddSponsor,
+  onUpdateSponsor,
+  onDeleteSponsor,
+  onAssignCourt,
   actorProfile,
   onOpenAnalytics,
 }) => {
   const canViewFinancials = actorProfile ? actorProfile.permissions.canViewFinancials : true;
   const canManageFleet = actorProfile ? actorProfile.permissions.canManageFleet : true;
+  const canManageGlobalSponsors = actorProfile ? actorProfile.permissions.canManageGlobalSponsors : true;
+
+  const sponsorsList = sponsors || [];
+  const [showSponsorsManager, setShowSponsorsManager] = useState(false);
+  const [sponsorTabFilter, setSponsorTabFilter] = useState<'all' | 'global' | 'event'>('all');
+
+  const totalSponsorRev = useMemo(() => {
+    return sponsorsList.reduce((acc, s) => acc + (s.amountPaid || 0), 0);
+  }, [sponsorsList]);
+
+  const globalSponsors = useMemo(() => {
+    return sponsorsList.filter((s) => s.scope === 'global');
+  }, [sponsorsList]);
+
+  const eventSponsors = useMemo(() => {
+    return sponsorsList.filter((s) => s.scope !== 'global');
+  }, [sponsorsList]);
 
   const [statusFilter, setStatusFilter] = useState<'all' | 'Live' | 'Published' | 'Draft' | 'Concluded'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -114,9 +149,13 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
     const draftsCount = tournaments.filter((t) => t.status === 'Draft').length;
     const concludedCount = tournaments.filter((t) => t.status === 'Concluded').length;
 
+    // Combined Gross Revenue (Tournaments Revenue + Sponsorships if viewing all/portfolio)
+    const combinedGrossRev = statusFilter === 'all' ? totalRev + totalSponsorRev : totalRev;
+
     return {
       poolCount: count,
       poolRev: totalRev,
+      combinedGrossRev,
       poolPlayers: totalPlayers,
       poolCourts: totalCourtsCount,
       liveCount,
@@ -126,7 +165,7 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
       totalCount: tournaments.length,
       targetPool,
     };
-  }, [tournaments, statusFilter]);
+  }, [tournaments, statusFilter, totalSponsorRev]);
 
   // Copilot Interactive Prompt Generator
   const handleCopilotSend = (customPrompt?: string) => {
@@ -283,6 +322,103 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
 
   return (
     <div className="space-y-5">
+      {/* 0. FOUNDER & OWNER EXECUTIVE IDENTITY & PORTFOLIO BANNER */}
+      {actorProfile?.role === 'founder' && (
+        <div className="bg-gradient-to-br from-slate-950 via-[#0a2016] to-[#0A5C43] text-white p-5 rounded-2xl border border-amber-400/30 shadow-md relative overflow-hidden">
+          {/* Subtle decorative glow */}
+          <div className="absolute -right-16 -top-16 w-56 h-56 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -left-16 -bottom-16 w-56 h-56 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+            {/* Left: Founder Profile & Identity */}
+            <div className="space-y-2 max-w-xl">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <div className="w-10 h-10 rounded-xl bg-amber-500 text-slate-950 font-black flex items-center justify-center text-sm shadow-sm ring-2 ring-amber-400/50">
+                  {actorProfile.avatarInitials || 'AJ'}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-base font-bold text-white tracking-tight flex items-center gap-1.5">
+                      <span>{actorProfile.name}</span>
+                      <Crown size={15} className="text-amber-400" />
+                    </h2>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                      Head / Founder (Unrestricted)
+                    </span>
+                  </div>
+                  <p className="text-xs text-emerald-200/80 font-mono">
+                    {actorProfile.email} &bull; Dinkster Platform Owner & Operator
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-300 leading-relaxed">
+                Welcome to your Founder Operations Hub. You have unrestricted oversight across all <strong>{tournaments.length} Texas tournaments</strong>, active facility contracts, and the <strong>${totalSponsorRev.toLocaleString()} corporate sponsorship book</strong>.
+              </p>
+
+              {/* Founder Privileges & Scope Badges */}
+              <div className="flex items-center gap-2 flex-wrap text-[11px] pt-1">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/10 text-emerald-300 border border-white/10 font-medium">
+                  <ShieldCheck size={12} className="text-emerald-400" />
+                  <span>Unrestricted Fleet Control</span>
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/10 text-amber-300 border border-white/10 font-medium">
+                  <Building2 size={12} className="text-amber-400" />
+                  <span>Texas Footprint: Austin, Dallas, Houston, San Antonio</span>
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/10 text-blue-300 border border-white/10 font-medium">
+                  <Globe size={12} className="text-blue-400" />
+                  <span>Global Title Partner: JOOLA ($15,000/yr)</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Right: Founder Portfolio Snapshot & Action Center */}
+            <div className="flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end gap-3 shrink-0">
+              <div className="grid grid-cols-2 gap-2 w-full sm:w-auto">
+                <div className="bg-white/10 backdrop-blur-xs px-3.5 py-2 rounded-xl border border-white/10 text-left">
+                  <span className="text-[10px] uppercase font-bold text-amber-300 block">Total Portfolio Gross</span>
+                  <span className="text-base font-extrabold text-white font-mono">
+                    ${(dynamicStats.poolRev + totalSponsorRev).toLocaleString()}
+                  </span>
+                  <span className="text-[10px] text-emerald-300 block">Entry Fees + Sponsors</span>
+                </div>
+
+                <div className="bg-white/10 backdrop-blur-xs px-3.5 py-2 rounded-xl border border-white/10 text-left">
+                  <span className="text-[10px] uppercase font-bold text-emerald-300 block">Commercial Sponsors</span>
+                  <span className="text-base font-extrabold text-white font-mono">
+                    ${totalSponsorRev.toLocaleString()}
+                  </span>
+                  <span className="text-[10px] text-gray-300 block">{sponsorsList.length} Active Partners</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setShowSponsorsManager(true)}
+                  className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs"
+                >
+                  <Briefcase size={13} />
+                  <span>Manage Fleet Sponsors</span>
+                </button>
+
+                {onOpenAnalytics && (
+                  <button
+                    type="button"
+                    onClick={onOpenAnalytics}
+                    className="px-3.5 py-1.5 bg-white/15 hover:bg-white/25 text-white font-semibold rounded-xl text-xs transition flex items-center gap-1.5 border border-white/20"
+                  >
+                    <BarChart3 size={13} className="text-blue-300" />
+                    <span>Portfolio Analytics</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 1. TOP HEADER CARD */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">
         <div>
@@ -511,7 +647,7 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
             <div className="flex justify-between items-center">
               <span className="text-[11px] font-semibold text-gray-500 uppercase block">
                 {statusFilter === 'all'
-                  ? 'Gross Revenue'
+                  ? 'Total Portfolio Gross'
                   : statusFilter === 'Live'
                   ? 'Live Event Revenue'
                   : statusFilter === 'Published'
@@ -521,15 +657,15 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
                   : 'Historical Revenue'}
               </span>
               <span className="text-[10px] text-[#0A5C43] font-bold opacity-0 group-hover:opacity-100 transition flex items-center gap-0.5">
-                Breakdown &rarr;
+                Ledger &rarr;
               </span>
             </div>
             <div className="text-xl font-bold text-[#0A5C43] my-1">
-              ${dynamicStats.poolRev.toLocaleString()}
+              ${(statusFilter === 'all' ? dynamicStats.combinedGrossRev : dynamicStats.poolRev).toLocaleString()}
             </div>
             <div className="text-xs text-gray-500">
               {statusFilter === 'all'
-                ? 'Across all portfolio events'
+                ? `$${dynamicStats.poolRev.toLocaleString()} Entries • $${totalSponsorRev.toLocaleString()} Sponsors`
                 : statusFilter === 'Live'
                 ? '100% collected entry fees'
                 : 'Entry fee gross tracking'}
@@ -756,7 +892,178 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
         )}
       </div>
 
-      {/* 5. INTERACTIVE KPI BREAKDOWN MODAL */}
+      {/* 5. CORPORATE & FLEET BRAND PARTNERSHIPS SHOWCASE */}
+      <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b pb-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                Commercial Partnerships Hub
+              </span>
+              <span className="text-[11px] text-gray-500 font-medium">
+                Fleet-Wide & Event Level
+              </span>
+            </div>
+            <h2 className="text-lg font-bold text-gray-900 tracking-tight flex items-center gap-2">
+              <span>Corporate Sponsors & Brand Partners</span>
+              <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full font-semibold">
+                {sponsorsList.length} Active Partners
+              </span>
+            </h2>
+            <p className="text-xs text-gray-600 mt-0.5">
+              Multi-tournament global title presenting partners, court naming rights, and event sponsors active across Dinkster.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => setSponsorTabFilter('all')}
+                className={`px-3 py-1 rounded-lg transition ${
+                  sponsorTabFilter === 'all'
+                    ? 'bg-white text-gray-900 font-bold shadow-xs'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                All ({sponsorsList.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setSponsorTabFilter('global')}
+                className={`px-3 py-1 rounded-lg transition ${
+                  sponsorTabFilter === 'global'
+                    ? 'bg-white text-amber-900 font-bold shadow-xs'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Global Fleet ({globalSponsors.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setSponsorTabFilter('event')}
+                className={`px-3 py-1 rounded-lg transition ${
+                  sponsorTabFilter === 'event'
+                    ? 'bg-white text-emerald-900 font-bold shadow-xs'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Event Specific ({eventSponsors.length})
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowSponsorsManager(true)}
+              className="px-3.5 py-1.5 bg-[#0A5C43] hover:bg-[#084734] text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center gap-1.5"
+            >
+              <Briefcase size={14} />
+              <span>Manage Partnerships</span>
+            </button>
+          </div>
+        </div>
+
+        {/* FEATURED: GLOBAL TITLE PRESENTING PARTNER (JOOLA) */}
+        {globalSponsors.length > 0 && (sponsorTabFilter === 'all' || sponsorTabFilter === 'global') && (
+          <div className="p-4 rounded-xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-300 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1.5 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-500 text-slate-950 tracking-wider">
+                  ★ Global Title Presenting Partner
+                </span>
+                <span className="text-xs font-semibold text-amber-900">
+                  Multi-Tournament Annual Agreement
+                </span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <h3 className="text-base font-extrabold text-gray-950">
+                  {globalSponsors[0].name}
+                </h3>
+                {canViewFinancials && (
+                  <span className="text-xs font-mono font-bold text-[#0A5C43]">
+                    ${(globalSponsors[0].amountPaid || 15000).toLocaleString()} / Year
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-gray-700">
+                {globalSponsors[0].assetDescription || 'Headline logo across all Dinkster tournament portals, jumbo TV broadcasts, and official balls.'}
+              </p>
+              <div className="flex items-center gap-2 text-[11px] text-gray-600 flex-wrap pt-1">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-medium">
+                  <Tv size={12} /> Jumbo TV Broadcast
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-medium">
+                  <Globe size={12} /> Player Portal Banner
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-medium">
+                  <Layers size={12} /> Baseline Court Banners
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-medium">
+                  <Smartphone size={12} /> Mobile App Shoutout
+                </span>
+              </div>
+            </div>
+
+            <div className="shrink-0 flex items-center gap-2">
+              {globalSponsors[0].websiteUrl && (
+                <a
+                  href={globalSponsors[0].websiteUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-1.5 rounded-lg border border-amber-400 bg-white hover:bg-amber-50 text-amber-950 text-xs font-semibold transition flex items-center gap-1"
+                >
+                  <span>Visit Partner</span>
+                  <ExternalLink size={12} />
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* SPONSORS GRID */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {(sponsorTabFilter === 'global' ? globalSponsors : sponsorTabFilter === 'event' ? eventSponsors : sponsorsList).map((s, idx) => {
+            if (sponsorTabFilter === 'all' && s.scope === 'global') return null; // already featured on top
+            return (
+              <div
+                key={s.id || idx}
+                className="p-3.5 bg-gray-50/80 hover:bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition shadow-2xs space-y-2 group"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-block ${
+                      s.scope === 'global' ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-800'
+                    }`}>
+                      {s.tier}
+                    </span>
+                    <h4 className="font-bold text-gray-900 text-xs mt-1 group-hover:text-[#0A5C43] transition">
+                      {s.name}
+                    </h4>
+                  </div>
+                  {canViewFinancials && (
+                    <span className="font-mono text-xs font-extrabold text-[#0A5C43]">
+                      ${(s.amountPaid || 0).toLocaleString()}
+                    </span>
+                  )}
+                </div>
+
+                <p className="text-[11px] text-gray-500 line-clamp-2">
+                  {s.assetDescription || s.categoryLabel || 'Official Tournament Commercial Partner'}
+                </p>
+
+                <div className="flex items-center justify-between pt-2 border-t border-gray-200/60 text-[10px] text-gray-400">
+                  <span>{s.categoryLabel || (s.scope === 'global' ? 'Fleet Partner' : 'Event Partner')}</span>
+                  {s.courtAssigned && (
+                    <span className="font-bold text-emerald-700">Court {s.courtAssigned} Naming</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 6. INTERACTIVE KPI BREAKDOWN MODAL */}
       {activeKpiModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-gray-200 space-y-4 max-h-[85vh] flex flex-col">
@@ -845,33 +1152,76 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
               )}
 
               {activeKpiModal === 'revenue' && canViewFinancials && (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-3 gap-2">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
-                      <span className="text-[10px] uppercase font-bold text-emerald-800 block">Gross Invoiced</span>
-                      <strong className="text-base text-emerald-950">${dynamicStats.poolRev.toLocaleString()}</strong>
+                      <span className="text-[10px] uppercase font-bold text-emerald-800 block">Total Portfolio Gross</span>
+                      <strong className="text-base text-emerald-950 font-mono">${dynamicStats.combinedGrossRev.toLocaleString()}</strong>
+                    </div>
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl">
+                      <span className="text-[10px] uppercase font-bold text-gray-500 block">Player Registrations</span>
+                      <strong className="text-base text-gray-900 font-mono">${dynamicStats.poolRev.toLocaleString()}</strong>
+                    </div>
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                      <span className="text-[10px] uppercase font-bold text-amber-800 block">Corporate Sponsors</span>
+                      <strong className="text-base text-amber-900 font-mono">${totalSponsorRev.toLocaleString()}</strong>
                     </div>
                     <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl">
                       <span className="text-[10px] uppercase font-bold text-gray-500 block">10% Platform Cut</span>
-                      <strong className="text-base text-gray-900">${Math.round(dynamicStats.poolRev * 0.1).toLocaleString()}</strong>
-                    </div>
-                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl">
-                      <span className="text-[10px] uppercase font-bold text-gray-500 block">Director Net</span>
-                      <strong className="text-base text-gray-900">${Math.round(dynamicStats.poolRev * 0.9).toLocaleString()}</strong>
+                      <strong className="text-base text-gray-900 font-mono">${Math.round(dynamicStats.combinedGrossRev * 0.1).toLocaleString()}</strong>
                     </div>
                   </div>
-                  {dynamicStats.targetPool.map((t) => (
-                    <div key={t.id} className="p-3 bg-white rounded-xl border border-gray-200 flex justify-between items-center">
-                      <div>
-                        <div className="font-bold text-gray-900">{t.name}</div>
-                        <div className="text-gray-500 text-[11px]">{t.status} &bull; {t.registeredCount || 0} Paid Registrations</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-bold text-[#0A5C43] text-sm">${(t.revenue || 0).toLocaleString()}</div>
-                        <div className="text-[10px] text-gray-400">Stripe Connect: Settled</div>
-                      </div>
+
+                  {/* Corporate & Fleet Sponsors Invoices */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center text-xs font-bold text-gray-800">
+                      <span>Corporate Sponsorship Contracts ({sponsorsList.length} Partners)</span>
+                      <span className="text-[#0A5C43] font-mono">${totalSponsorRev.toLocaleString()}</span>
                     </div>
-                  ))}
+                    <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                      {sponsorsList.map((s) => (
+                        <div key={s.id || s.name} className="p-2.5 bg-amber-50/40 rounded-xl border border-amber-200/60 flex justify-between items-center text-xs">
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              s.scope === 'global' ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-gray-100 text-gray-700'
+                            }`}>
+                              {s.scope === 'global' ? 'Global Fleet' : 'Event Partner'}
+                            </span>
+                            <div>
+                              <span className="font-bold text-gray-900">{s.name}</span>
+                              <span className="text-gray-500 text-[11px] block">{s.categoryLabel || s.tier}</span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-bold text-[#0A5C43] font-mono">${(s.amountPaid || 0).toLocaleString()}</span>
+                            <span className="text-[10px] text-gray-400 block">{s.scope === 'global' ? 'Annual Contract' : 'Single Event'}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Tournament Entry Fee Invoices */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center text-xs font-bold text-gray-800">
+                      <span>Tournament Entry Fee Gross ({dynamicStats.targetPool.length} Events)</span>
+                      <span className="text-[#0A5C43] font-mono">${dynamicStats.poolRev.toLocaleString()}</span>
+                    </div>
+                    <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                      {dynamicStats.targetPool.map((t) => (
+                        <div key={t.id} className="p-2.5 bg-white rounded-xl border border-gray-200 flex justify-between items-center text-xs">
+                          <div>
+                            <div className="font-bold text-gray-900">{t.name}</div>
+                            <div className="text-gray-500 text-[11px]">{t.status} &bull; {t.registeredCount || 0} Paid Registrations</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-bold text-[#0A5C43] font-mono">${(t.revenue || 0).toLocaleString()}</div>
+                            <div className="text-[10px] text-gray-400">Stripe Connect: Settled</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -1163,6 +1513,53 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 7. CORPORATE & FLEET SPONSORS MANAGEMENT MODAL */}
+      {showSponsorsManager && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-5xl w-full p-6 shadow-2xl border border-gray-200 space-y-4 max-h-[90vh] flex flex-col">
+            <div className="flex justify-between items-center border-b pb-3 shrink-0">
+              <div>
+                <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                  <span>Corporate & Fleet Partnerships Manager</span>
+                  <span className="text-[10px] bg-amber-100 text-amber-900 font-semibold px-2 py-0.5 rounded-full">
+                    Executive Suite
+                  </span>
+                </h3>
+                <p className="text-xs text-gray-500">
+                  Manage multi-tournament title partners, court baseline agreements, and division sponsors across your fleet.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSponsorsManager(false)}
+                className="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold flex items-center justify-center"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              <SponsorsManagementHub
+                sponsors={sponsorsList}
+                totalCourts={dynamicStats.poolCourts || 8}
+                onAddSponsor={(newSponsor) => {
+                  if (onAddSponsor) onAddSponsor(newSponsor);
+                }}
+                onUpdateSponsor={(index, updated) => {
+                  if (onUpdateSponsor) onUpdateSponsor(index, updated);
+                }}
+                onDeleteSponsor={(index) => {
+                  if (onDeleteSponsor) onDeleteSponsor(index);
+                }}
+                onAssignCourt={onAssignCourt}
+                canViewFinancials={canViewFinancials}
+                canManageSponsors={canManageGlobalSponsors}
+              />
+            </div>
           </div>
         </div>
       )}

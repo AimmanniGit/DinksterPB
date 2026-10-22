@@ -741,9 +741,14 @@ export default function DinksterV2Platform() {
             ) : (
               <TournamentFleetDirectory
                 tournaments={tournaments}
+                sponsors={sponsors}
                 activeTournamentId={selectedTournamentId}
                 onSelectTournament={handleSelectTournament}
                 onCreateTournament={handleCreateTournament}
+                onAddSponsor={handleAddSponsor}
+                onUpdateSponsor={handleUpdateSponsor}
+                onDeleteSponsor={handleDeleteSponsor}
+                onAssignCourt={handleAssignCourt}
                 actorProfile={currentActorProfile}
                 onOpenAnalytics={() => setIsFleetAnalyticsOpen(true)}
               />
