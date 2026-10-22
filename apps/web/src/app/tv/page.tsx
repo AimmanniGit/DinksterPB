@@ -15,7 +15,15 @@ import { CourtDeskState, TournamentMatch, Sponsor } from '../../types/organizer'
 
 function TvPageContent() {
   const searchParams = useSearchParams();
-  const requestedMode = searchParams.get('mode') as 'jumbotron' | 'spotlight' | 'bracket' | 'cycle' | null;
+  const requestedMode = (searchParams.get('mode') || searchParams.get('stage') || searchParams.get('view')) as
+    | 'jumbotron'
+    | 'spotlight'
+    | 'bracket'
+    | 'cycle'
+    | 'podium'
+    | 'courts'
+    | 'pools'
+    | null;
 
   const [courts] = useState<CourtDeskState[]>(generateCourts(INITIAL_EVENT.totalCourts || 8, INITIAL_COURTS));
   const [matches] = useState<TournamentMatch[]>(generateInitialMatches());

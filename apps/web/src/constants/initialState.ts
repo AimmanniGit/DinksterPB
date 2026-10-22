@@ -42,12 +42,12 @@ export const INITIAL_DIVISIONS: Division[] = [
   },
   {
     id: 'C',
-    name: 'Singles Open',
-    format: 'Singles',
-    minDupr: 0,
+    name: "Men's Pro Open Doubles",
+    format: 'Doubles',
+    minDupr: 4.5,
     maxDupr: 5.5,
-    entryFee: 45,
-    teamCap: 24,
+    entryFee: 75,
+    teamCap: 16,
   },
 ];
 

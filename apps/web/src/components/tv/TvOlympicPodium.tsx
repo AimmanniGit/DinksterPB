@@ -87,7 +87,7 @@ export const TvOlympicPodium: React.FC<TvOlympicPodiumProps> = ({
   const { gold, silver, bronze } = podium;
 
   return (
-    <div className="relative w-full h-[620px] max-h-[78vh] flex flex-col justify-end items-center overflow-hidden pb-4 select-none">
+    <div className="relative w-full min-h-[520px] h-full flex flex-col justify-end items-center overflow-hidden pb-4 select-none">
       {/* Confetti celebration canvas */}
       <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-10 w-full h-full" />
 

@@ -38,7 +38,7 @@ interface TvBroadcastViewProps {
   sponsors?: Sponsor[];
   onExitTvMode?: () => void;
   bracketData?: Record<string, DivisionBracketData>;
-  initialMode?: 'jumbotron' | 'spotlight' | 'bracket' | 'cycle';
+  initialMode?: 'jumbotron' | 'spotlight' | 'bracket' | 'cycle' | 'podium' | 'courts' | 'pools' | string;
 }
 
 export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
@@ -49,6 +49,7 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
   sponsors = [],
   onExitTvMode,
   bracketData = INITIAL_BRACKET_DATA,
+  initialMode,
 }) => {
   // Available screen items in rotation
   const divisionList = useMemo(() => Object.values(bracketData), [bracketData]);
@@ -56,6 +57,14 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
 
   // Operator Settings State (Persisted in LocalStorage)
   const [selectedDivisionIds, setSelectedDivisionIds] = useState<string[]>(allDivisionIds);
+
+  // Synchronize selectedDivisionIds whenever division list updates
+  useEffect(() => {
+    setSelectedDivisionIds((prev) => {
+      const missing = allDivisionIds.filter((id) => !prev.includes(id));
+      return missing.length > 0 ? [...prev, ...missing] : prev;
+    });
+  }, [allDivisionIds]);
   const [includeLiveCourts, setIncludeLiveCourts] = useState<boolean>(true);
   const [rotate, setRotate] = useState<boolean>(true);
   const [dwellSecs, setDwellSecs] = useState<number>(15);
@@ -154,6 +163,37 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
   const safePageIndex = screens.length > 0 ? (((pageIndex % screens.length) + screens.length) % screens.length) : 0;
   const currentScreen = screens[safePageIndex] || null;
   const nextScreen = screens.length > 1 ? screens[(safePageIndex + 1) % screens.length] : null;
+
+  // Support initialMode (e.g., ?mode=podium, ?stage=podium) to immediately land on the requested stage
+  useEffect(() => {
+    if (!initialMode || screens.length === 0) return;
+    const mode = initialMode.toLowerCase();
+    if (mode === 'podium' || mode === 'champions') {
+      const idx = screens.findIndex((s) => s.type === 'podium');
+      if (idx >= 0) {
+        setPageIndex(idx);
+        setSecondsRemaining(dwellSecs);
+      }
+    } else if (mode === 'bracket' || mode === 'playoffs') {
+      const idx = screens.findIndex((s) => s.stageType === 'playoffs');
+      if (idx >= 0) {
+        setPageIndex(idx);
+        setSecondsRemaining(dwellSecs);
+      }
+    } else if (mode === 'pools' || mode === 'roundrobin') {
+      const idx = screens.findIndex((s) => s.stageType === 'pools');
+      if (idx >= 0) {
+        setPageIndex(idx);
+        setSecondsRemaining(dwellSecs);
+      }
+    } else if (mode === 'courts' || mode === 'jumbotron') {
+      const idx = screens.findIndex((s) => s.type === 'live-courts');
+      if (idx >= 0) {
+        setPageIndex(idx);
+        setSecondsRemaining(dwellSecs);
+      }
+    }
+  }, [initialMode, screens, dwellSecs]);
 
   // Single long-lived timer for automatic division rotation
   useEffect(() => {
@@ -654,6 +694,115 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
               </div>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* ========================================================
+          STAGE SWITCHER BAR (EVENT DIRECTOR & VENUE TEST BAR)
+          ======================================================== */}
+      <div className="bg-slate-950/95 border-b border-slate-800 px-4 py-2 flex flex-wrap items-center justify-between text-xs shrink-0 z-40 select-none backdrop-blur">
+        <div className="flex items-center gap-2 flex-wrap">
+          <strong className="text-white text-[11px] uppercase tracking-wider mr-1">
+            Stage Switcher:
+          </strong>
+          <button
+            type="button"
+            onClick={() => setRotate((r) => !r)}
+            className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+              rotate
+                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                : 'bg-red-500/20 text-red-300 border border-red-500/40'
+            }`}
+            title="Press Space to Pause or Resume rotation"
+          >
+            <RotateCw size={12} className={rotate ? 'animate-spin-slow' : ''} />
+            <span>{rotate ? 'Auto-Cycling' : 'Paused (Space)'}</span>
+          </button>
+
+          {screens.some((s) => s.type === 'podium') && (
+            <button
+              type="button"
+              onClick={() => {
+                const idx = screens.findIndex((s) => s.type === 'podium');
+                if (idx >= 0) {
+                  setPageIndex(idx);
+                  setSecondsRemaining(dwellSecs);
+                }
+              }}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                currentScreen?.type === 'podium'
+                  ? 'bg-amber-400 text-black shadow-[0_0_15px_rgba(251,191,36,0.6)] font-black'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+              }`}
+            >
+              <span>🥇 Jump to Podium / Finals</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => {
+              const idx = screens.findIndex((s) => s.stageType === 'playoffs');
+              if (idx >= 0) {
+                setPageIndex(idx);
+                setSecondsRemaining(dwellSecs);
+              }
+            }}
+            className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+              currentScreen?.stageType === 'playoffs'
+                ? 'bg-blue-400 text-black shadow-[0_0_15px_rgba(96,165,250,0.6)] font-black'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+            }`}
+          >
+            <span>🏆 Jump to Playoff Bracket</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              const idx = screens.findIndex((s) => s.stageType === 'pools');
+              if (idx >= 0) {
+                setPageIndex(idx);
+                setSecondsRemaining(dwellSecs);
+              }
+            }}
+            className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+              currentScreen?.stageType === 'pools'
+                ? 'bg-emerald-400 text-black shadow-[0_0_15px_rgba(52,211,153,0.6)] font-black'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+            }`}
+          >
+            <span>📊 Jump to Active Pools</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              const idx = screens.findIndex((s) => s.type === 'live-courts');
+              if (idx >= 0) {
+                setPageIndex(idx);
+                setSecondsRemaining(dwellSecs);
+              }
+            }}
+            className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+              currentScreen?.type === 'live-courts'
+                ? 'bg-purple-400 text-black shadow-[0_0_15px_rgba(192,132,252,0.6)] font-black'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+            }`}
+          >
+            <span>🏟️ Jump to Courts Live</span>
+          </button>
+        </div>
+
+        {/* Hotkey Guide */}
+        <div className="hidden lg:flex items-center gap-2 text-[11px] font-mono text-slate-400">
+          <span>Press <kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 text-[10px]">SPACE</kbd> to Pause</span>
+          <span>&bull;</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 text-[10px]">&larr;</kbd> <kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 text-[10px]">&rarr;</kbd> Skip</span>
+          <span>&bull;</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 text-[10px]">C</kbd> Settings</span>
+          <span>&bull;</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 text-[10px]">F</kbd> Fullscreen</span>
         </div>
       </div>
 
