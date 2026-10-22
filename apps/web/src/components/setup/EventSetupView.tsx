@@ -256,40 +256,40 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
               Status: {event.status}
             </span>
           </div>
-          <h1 className="font-display font-black text-3xl md:text-4xl text-gray-900 tracking-tight">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
             Tournament Event Setup
           </h1>
-          <p className="text-sm text-gray-600 mt-1 max-w-2xl">
+          <p className="text-xs md:text-sm text-gray-600 mt-1 max-w-2xl leading-relaxed">
             Configure all tournament options with searchable custom inputs. Creating this event generates an independent public web portal for player registrations as well as syncs to the Dinkster mobile app.
           </p>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0 flex-wrap">
+        <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
           <Link
             href={`/t/${eventSlug}`}
             target="_blank"
-            className="px-4 py-2.5 rounded-xl text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-800 transition flex items-center gap-2 border border-gray-200"
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-800 transition flex items-center gap-1.5 border border-gray-200"
           >
-            <Globe size={15} className="text-[#0A5C43]" />
+            <Globe size={14} className="text-[#0A5C43]" />
             <span>Preview Web Portal</span>
-            <ExternalLink size={13} className="text-gray-400" />
+            <ExternalLink size={12} className="text-gray-400" />
           </Link>
 
           <Link
             href="/tv"
             target="_blank"
-            className="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white transition flex items-center gap-2 shadow-sm"
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white transition flex items-center gap-1.5 shadow-xs"
           >
-            <Tv size={15} className="text-amber-400" />
+            <Tv size={14} className="text-amber-400" />
             <span>TV Jumbotron</span>
           </Link>
 
           <button
             type="button"
             onClick={handleCreateAndPublish}
-            className="px-5 py-2.5 bg-[#0A5C43] hover:bg-[#084734] text-white rounded-xl font-black text-sm shadow-md transition flex items-center gap-2"
+            className="px-4 py-2 bg-[#0A5C43] hover:bg-[#084734] text-white rounded-xl font-semibold text-xs shadow-xs transition flex items-center gap-1.5"
           >
-            <Sparkles size={16} className="text-yellow-300" />
+            <Sparkles size={15} className="text-yellow-300" />
             <span>{event.status === 'Draft' ? 'Create & Publish Portals' : 'Update & Re-Publish'}</span>
           </button>
         </div>
@@ -302,9 +302,9 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
             ======================================================== */}
         <div className="lg:col-span-7 space-y-6">
           {/* Card 1: Core Tournament Identity */}
-          <div className="bg-white p-6 rounded-2xl border border-black/10 shadow-sm space-y-4">
-            <h2 className="font-display font-black text-xl text-gray-900 flex items-center gap-2 border-b pb-3">
-              <Trophy size={20} className="text-[#0A5C43]" />
+          <div className="bg-white p-5 md:p-6 rounded-2xl border border-black/10 shadow-sm space-y-4">
+            <h2 className="font-bold text-lg text-gray-900 flex items-center gap-2 border-b pb-3">
+              <Trophy size={18} className="text-[#0A5C43]" />
               <span>1. Tournament Identity & Schedule</span>
             </h2>
 
@@ -367,9 +367,9 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
           </div>
 
           {/* Card 2: Venue, Court Surface & Equipment (Searchable & Creatable Dropdowns) */}
-          <div className="bg-white p-6 rounded-2xl border border-black/10 shadow-sm space-y-4">
-            <h2 className="font-display font-black text-xl text-gray-900 flex items-center gap-2 border-b pb-3">
-              <MapPin size={20} className="text-[#0A5C43]" />
+          <div className="bg-white p-5 md:p-6 rounded-2xl border border-black/10 shadow-sm space-y-4">
+            <h2 className="font-bold text-lg text-gray-900 flex items-center gap-2 border-b pb-3">
+              <MapPin size={18} className="text-[#0A5C43]" />
               <span>2. Venue, Court Surface & Equipment (Customizable)</span>
             </h2>
 
@@ -430,13 +430,13 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
           </div>
 
           {/* Card 3: Competition Courts Engine */}
-          <div className="bg-white p-6 rounded-2xl border border-black/10 shadow-sm space-y-4">
+          <div className="bg-white p-5 md:p-6 rounded-2xl border border-black/10 shadow-sm space-y-4">
             <div className="flex justify-between items-center border-b pb-3">
-              <h2 className="font-display font-black text-xl text-gray-900 flex items-center gap-2">
-                <Layers size={20} className="text-[#0A5C43]" />
+              <h2 className="font-bold text-lg text-gray-900 flex items-center gap-2">
+                <Layers size={18} className="text-[#0A5C43]" />
                 <span>3. Active Competition Courts</span>
               </h2>
-              <span className="text-xs font-black px-3 py-1 rounded-full bg-emerald-100 text-[#0A5C43]">
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-[#0A5C43]">
                 {event.totalCourts || 8} Active Courts
               </span>
             </div>
@@ -448,7 +448,7 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
             <div className="p-4 bg-[#FAF8F3] border border-black/10 rounded-xl space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-black uppercase text-gray-700 block">Total Courts</span>
+                  <span className="text-xs font-semibold uppercase text-gray-700 block">Total Courts</span>
                   <span className="text-[11px] text-gray-500">Stepper or manual number input (1 to 32)</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -468,7 +468,7 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
                       const val = parseInt(e.target.value, 10);
                       if (!isNaN(val)) onUpdateEvent({ ...event, totalCourts: Math.max(1, Math.min(32, val)) });
                     }}
-                    className="w-16 text-center font-display font-black text-xl bg-white border border-black/15 rounded-lg py-1 text-[#0A5C43]"
+                    className="w-14 text-center font-bold text-lg bg-white border border-black/15 rounded-lg py-1 text-[#0A5C43]"
                   />
                   <button
                     type="button"
@@ -482,13 +482,13 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
 
               {/* Court Quick Presets */}
               <div className="flex items-center gap-2 pt-2 border-t border-black/5">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Presets:</span>
+                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Presets:</span>
                 {[4, 6, 8, 12, 16, 24].map((count) => (
                   <button
                     key={count}
                     type="button"
                     onClick={() => onUpdateEvent({ ...event, totalCourts: count })}
-                    className={`px-2.5 py-1 text-xs font-bold rounded-lg border transition ${
+                    className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition ${
                       (event.totalCourts || 8) === count
                         ? 'bg-[#0A5C43] text-white border-[#0A5C43]'
                         : 'bg-white text-gray-700 border-black/10 hover:bg-gray-50'
@@ -504,9 +504,9 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
                 {Array.from({ length: event.totalCourts || 8 }, (_, i) => i + 1).map((cNum) => (
                   <span
                     key={cNum}
-                    className={`text-[11px] font-bold px-2.5 py-0.5 rounded-md ${
+                    className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-md ${
                       cNum === 1
-                        ? 'bg-amber-100 text-amber-900 border border-amber-300 font-extrabold shadow-xs'
+                        ? 'bg-amber-100 text-amber-900 border border-amber-300 font-bold shadow-xs'
                         : 'bg-gray-100 text-gray-700 border border-gray-200'
                     }`}
                   >
@@ -518,7 +518,7 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
 
             {/* Checkbox Toggles */}
             <div className="flex flex-wrap items-center gap-6 pt-2 border-t">
-              <label className="flex items-center gap-2 cursor-pointer text-sm font-bold text-gray-700">
+              <label className="flex items-center gap-2 cursor-pointer text-xs md:text-sm font-semibold text-gray-700">
                 <input
                   type="checkbox"
                   checked={event.requireWaiver}
@@ -528,7 +528,7 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
                 Require Digital Liability Waiver
               </label>
 
-              <label className="flex items-center gap-2 cursor-pointer text-sm font-bold text-gray-700">
+              <label className="flex items-center gap-2 cursor-pointer text-xs md:text-sm font-semibold text-gray-700">
                 <input
                   type="checkbox"
                   checked={event.seedByDupr}
@@ -541,11 +541,11 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
           </div>
 
           {/* Card 4: Divisions Configuration (Fully Customizable, No Rigid Defaults) */}
-          <div className="bg-white p-6 rounded-2xl border border-black/10 shadow-sm space-y-4">
+          <div className="bg-white p-5 md:p-6 rounded-2xl border border-black/10 shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3">
               <div>
-                <h2 className="font-display font-black text-xl text-gray-900 flex items-center gap-2">
-                  <Users size={20} className="text-[#0A5C43]" />
+                <h2 className="font-bold text-lg text-gray-900 flex items-center gap-2">
+                  <Users size={18} className="text-[#0A5C43]" />
                   <span>4. Tournament Divisions & Pricing</span>
                 </h2>
                 <p className="text-xs text-gray-500">
@@ -556,9 +556,9 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
               <button
                 type="button"
                 onClick={handleOpenAddDivision}
-                className="px-4 py-2 bg-[#0A5C43] hover:bg-[#084734] text-white rounded-xl text-xs font-black shadow-sm transition flex items-center gap-1.5 self-start sm:self-auto"
+                className="px-3.5 py-1.5 bg-[#0A5C43] hover:bg-[#084734] text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center gap-1.5 self-start sm:self-auto"
               >
-                <Plus size={15} />
+                <Plus size={14} />
                 <span>Add Division</span>
               </button>
             </div>
@@ -566,11 +566,11 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
             {/* Divisions List */}
             {divisions.length === 0 ? (
               <div className="py-10 text-center border-2 border-dashed border-gray-200 rounded-2xl">
-                <p className="text-gray-500 text-sm font-semibold">No divisions added yet.</p>
+                <p className="text-gray-500 text-xs font-medium">No divisions added yet.</p>
                 <button
                   type="button"
                   onClick={handleOpenAddDivision}
-                  className="mt-3 px-4 py-1.5 bg-[#0A5C43] text-white text-xs font-bold rounded-lg"
+                  className="mt-3 px-3.5 py-1.5 bg-[#0A5C43] text-white text-xs font-semibold rounded-lg"
                 >
                   Create Your First Division
                 </button>
@@ -584,18 +584,18 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-display font-black text-lg text-gray-900">{d.name}</span>
+                        <span className="font-bold text-base text-gray-900">{d.name}</span>
                         {d.isPilot && (
-                          <span className="text-[10px] font-black uppercase px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full border border-amber-300">
+                          <span className="text-[10px] font-semibold uppercase px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full border border-amber-300">
                             Pilot Dink Battle
                           </span>
                         )}
                       </div>
-                      <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-gray-600">
+                      <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-gray-600">
                         <span className="px-2 py-0.5 rounded bg-white border border-gray-200 text-gray-700">
                           {d.format}
                         </span>
-                        <span className="px-2 py-0.5 rounded bg-white border border-gray-200 text-emerald-800 font-bold">
+                        <span className="px-2 py-0.5 rounded bg-white border border-gray-200 text-emerald-800 font-semibold">
                           DUPR: {d.minDupr && d.maxDupr ? `${d.minDupr} - ${d.maxDupr}` : 'Open'}
                         </span>
                         <span className="px-2 py-0.5 rounded bg-white border border-gray-200 text-gray-700">
@@ -608,10 +608,10 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
                     </div>
 
                     <div className="flex items-center gap-4 shrink-0 justify-between md:justify-end border-t md:border-t-0 pt-2 md:pt-0">
-                      {/* Entry Fee Highlight */}
+                      {/* Entry Fee per person Highlight */}
                       <div className="text-right">
-                        <span className="text-[10px] uppercase font-bold text-gray-400 block">Entry Fee</span>
-                        <span className="font-display font-black text-2xl text-[#0A5C43]">
+                        <span className="text-[10px] uppercase font-semibold text-gray-400 block">Fee / Player</span>
+                        <span className="font-bold text-xl text-[#0A5C43]">
                           ${d.entryFee}
                         </span>
                       </div>
@@ -624,7 +624,7 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
                           className="p-2 rounded-lg bg-white hover:bg-gray-100 border border-gray-200 text-gray-700 hover:text-black transition shadow-xs"
                           title="Edit Division"
                         >
-                          <Edit2 size={14} />
+                          <Edit2 size={13} />
                         </button>
                         <button
                           type="button"
@@ -632,7 +632,7 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
                           className="p-2 rounded-lg bg-white hover:bg-gray-100 border border-gray-200 text-gray-700 hover:text-black transition shadow-xs"
                           title="Duplicate Division"
                         >
-                          <Copy size={14} />
+                          <Copy size={13} />
                         </button>
                         {onDeleteDivision && (
                           <button
@@ -641,7 +641,7 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
                             className="p-2 rounded-lg bg-white hover:bg-red-50 border border-gray-200 text-gray-500 hover:text-red-600 transition shadow-xs"
                             title="Delete Division"
                           >
-                            <Trash2 size={14} />
+                            <Trash2 size={13} />
                           </button>
                         )}
                       </div>
@@ -679,50 +679,50 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
             </div>
 
             {/* Public Page Hero Card */}
-            <div className="bg-gradient-to-br from-[#0A5C43] to-[#0E3D2F] text-white p-6">
+            <div className="bg-gradient-to-br from-[#0A5C43] to-[#0E3D2F] text-white p-5">
               <div className="flex items-center gap-2 mb-2">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#EF9F27] text-black">
+                <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#EF9F27] text-black">
                   Public Tournament
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-emerald-200">
+                <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-white/20 text-emerald-200">
                   Join Code: {eventJoinCode}
                 </span>
               </div>
-              <h3 className="font-display font-black text-2xl text-white tracking-tight">{event.name}</h3>
+              <h3 className="text-xl font-bold text-white tracking-tight">{event.name}</h3>
               <p className="text-xs opacity-90 mt-1">{event.dates}</p>
               <p className="text-xs opacity-75">{event.venue}</p>
 
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] font-extrabold">
-                <span className="px-2 py-1 bg-white/20 rounded-md backdrop-blur">
-                  🏟️ {event.totalCourts || 8} Competition Courts
+              <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[10px] font-semibold">
+                <span className="px-2 py-0.5 bg-white/20 rounded backdrop-blur">
+                  🏟️ {event.totalCourts || 8} Courts
                 </span>
-                <span className="px-2 py-1 bg-white/10 rounded-md">
+                <span className="px-2 py-0.5 bg-white/10 rounded">
                   {event.courtSurface || 'Outdoor Hardcourt'}
                 </span>
-                <span className="px-2 py-1 bg-white/10 rounded-md">
+                <span className="px-2 py-0.5 bg-white/10 rounded">
                   {event.ballType || 'Franklin X-40'}
                 </span>
               </div>
             </div>
 
             {/* Live Divisions Showcase */}
-            <div className="p-5 flex flex-col gap-4 flex-1">
+            <div className="p-4 flex flex-col gap-3 flex-1">
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-display font-black text-base text-gray-900">Available Divisions</h4>
-                  <span className="text-[11px] font-bold text-gray-500">{divisions.length} Divisions</span>
+                  <h4 className="font-bold text-sm text-gray-900">Available Divisions</h4>
+                  <span className="text-[11px] text-gray-500">{divisions.length} Divisions</span>
                 </div>
                 <div className="divide-y border-y border-gray-200">
                   {divisions.map((d) => (
-                    <div key={d.id} className="py-2.5 flex justify-between items-center text-xs">
+                    <div key={d.id} className="py-2 flex justify-between items-center text-xs">
                       <div>
-                        <div className="font-bold text-gray-900">{d.name}</div>
+                        <div className="font-semibold text-gray-900">{d.name}</div>
                         <div className="text-[11px] text-gray-500">
                           {d.format} &bull; Cap: {d.teamCap} teams
                         </div>
                       </div>
-                      <div className="font-display font-black text-base text-[#0A5C43]">
-                        ${d.entryFee}
+                      <div className="font-bold text-sm text-[#0A5C43]">
+                        ${d.entryFee} <span className="text-[10px] font-normal text-gray-400">/ player</span>
                       </div>
                     </div>
                   ))}
@@ -730,8 +730,8 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
               </div>
 
               {event.requireWaiver && (
-                <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl text-xs text-[#0A5C43] font-semibold flex items-center gap-2">
-                  <ShieldCheck size={16} className="text-[#0A5C43] shrink-0" />
+                <div className="bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl text-xs text-[#0A5C43] font-medium flex items-center gap-2">
+                  <ShieldCheck size={15} className="text-[#0A5C43] shrink-0" />
                   <span>Digital liability waiver required upon player entry.</span>
                 </div>
               )}
@@ -740,9 +740,9 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
               <Link
                 href={`/t/${eventSlug}`}
                 target="_blank"
-                className="w-full py-3 bg-[#EF9F27] hover:bg-[#d98c1c] text-black font-black text-center text-sm rounded-xl shadow-sm transition block"
+                className="w-full py-2.5 bg-[#EF9F27] hover:bg-[#d98c1c] text-black font-semibold text-center text-xs rounded-xl shadow-xs transition block"
               >
-                Register Team Online Now
+                Register Player Online Now
               </Link>
 
               {/* Dual Landing Explanation */}
@@ -865,8 +865,8 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
               {/* Dollar Amount & Team Cap */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-bold text-gray-600 uppercase block mb-1">
-                    Entry Fee ($ USD)
+                  <label className="text-xs font-semibold text-gray-700 block mb-1">
+                    Entry Fee ($ per player / person)
                   </label>
                   <div className="flex items-center bg-[#FAF8F3] border border-black/15 rounded-xl px-3 py-2">
                     <DollarSign size={16} className="text-gray-400 shrink-0" />
@@ -875,7 +875,7 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
                       min={0}
                       value={divFee}
                       onChange={(e) => setDivFee(parseInt(e.target.value, 10) || 0)}
-                      className="w-full bg-transparent font-display font-black text-lg text-[#0A5C43] focus:outline-none ml-1"
+                      className="w-full bg-transparent font-bold text-base text-[#0A5C43] focus:outline-none ml-1"
                     />
                   </div>
                 </div>
