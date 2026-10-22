@@ -85,6 +85,7 @@ export const TvOlympicPodium: React.FC<TvOlympicPodiumProps> = ({
   }, []);
 
   const { gold, silver, bronze } = podium;
+  const isLight = themeMode === 'light';
 
   return (
     <div className="relative w-full min-h-[520px] h-full flex flex-col justify-end items-center overflow-hidden pb-4 select-none">
@@ -99,20 +100,42 @@ export const TvOlympicPodium: React.FC<TvOlympicPodiumProps> = ({
         <div className="flex flex-col items-center justify-end h-full">
           {/* Athlete Platform Floating Above Pedestal */}
           <div className="flex flex-col items-center text-center mb-4 w-full animate-fade-in">
-            <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs md:text-sm font-black tracking-wider uppercase bg-gradient-to-r from-slate-300/30 via-slate-200/20 to-slate-400/30 border-2 border-slate-200 text-slate-100 shadow-[0_0_20px_rgba(203,213,225,0.35)] backdrop-blur mb-2.5">
-              <Medal size={16} className="text-slate-200" />
+            <div
+              className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs md:text-sm font-black tracking-wider uppercase border-2 shadow-sm mb-2.5 ${
+                isLight
+                  ? 'bg-slate-200 border-slate-400 text-slate-800'
+                  : 'bg-gradient-to-r from-slate-300/30 via-slate-200/20 to-slate-400/30 border-slate-200 text-slate-100 shadow-[0_0_20px_rgba(203,213,225,0.35)] backdrop-blur'
+              }`}
+            >
+              <Medal size={16} className={isLight ? 'text-slate-700' : 'text-slate-200'} />
               <span>Silver Medalist</span>
             </div>
-            <h3 className="font-display font-black text-xl md:text-3xl text-white tracking-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] line-clamp-2">
+            <h3
+              className={`font-display font-black text-xl md:text-3xl tracking-tight line-clamp-2 ${
+                isLight
+                  ? 'text-slate-900 drop-shadow-none font-black'
+                  : 'text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]'
+              }`}
+            >
               {silver.team}
             </h3>
-            <div className="text-[11px] md:text-xs font-semibold text-slate-300 flex items-center gap-2 mt-1">
+            <div
+              className={`text-[11px] md:text-xs font-semibold flex items-center gap-2 mt-1 ${
+                isLight ? 'text-slate-600' : 'text-slate-300'
+              }`}
+            >
               <span>{silver.seed || '#2 Seed'}</span>
               <span>&bull;</span>
               <span className="truncate max-w-[180px]">{silver.club || 'Finalist'}</span>
             </div>
             {silver.score && (
-              <div className="mt-2 text-[10px] md:text-xs font-mono font-bold px-2.5 py-1 rounded bg-black/50 border border-slate-600/60 text-slate-200 shadow-sm">
+              <div
+                className={`mt-2 text-[10px] md:text-xs font-mono font-bold px-2.5 py-1 rounded shadow-sm ${
+                  isLight
+                    ? 'bg-white border border-slate-300 text-slate-800'
+                    : 'bg-black/50 border border-slate-600/60 text-slate-200'
+                }`}
+              >
                 {silver.score}
               </div>
             )}
@@ -156,21 +179,43 @@ export const TvOlympicPodium: React.FC<TvOlympicPodiumProps> = ({
         <div className="flex flex-col items-center justify-end h-full">
           {/* Athlete Platform Floating Above Pedestal */}
           <div className="flex flex-col items-center text-center mb-4 w-full animate-fade-in scale-105">
-            <div className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-xs md:text-base font-black tracking-wider uppercase bg-gradient-to-r from-amber-400/35 via-yellow-300/30 to-amber-500/35 border-2 border-yellow-300 text-yellow-200 shadow-[0_0_30px_rgba(251,191,36,0.5)] backdrop-blur mb-2.5">
-              <Trophy size={18} className="text-yellow-300 animate-pulse" />
+            <div
+              className={`inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-xs md:text-base font-black tracking-wider uppercase border-2 shadow-sm mb-2.5 ${
+                isLight
+                  ? 'bg-amber-100 border-amber-400 text-amber-950 shadow-md'
+                  : 'bg-gradient-to-r from-amber-400/35 via-yellow-300/30 to-amber-500/35 border-yellow-300 text-yellow-200 shadow-[0_0_30px_rgba(251,191,36,0.5)] backdrop-blur'
+              }`}
+            >
+              <Trophy size={18} className={isLight ? 'text-amber-600 animate-pulse' : 'text-yellow-300 animate-pulse'} />
               <span>Tournament Champions</span>
-              <Sparkles size={16} className="text-yellow-300" />
+              <Sparkles size={16} className={isLight ? 'text-amber-600' : 'text-yellow-300'} />
             </div>
-            <h2 className="font-display font-black text-2xl md:text-4xl text-white tracking-tight drop-shadow-[0_4px_16px_rgba(0,0,0,0.9)] line-clamp-2">
+            <h2
+              className={`font-display font-black text-2xl md:text-4xl tracking-tight line-clamp-2 ${
+                isLight
+                  ? 'text-slate-950 drop-shadow-none font-black'
+                  : 'text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.9)]'
+              }`}
+            >
               {gold.team}
             </h2>
-            <div className="text-xs md:text-sm font-semibold text-amber-200 flex items-center gap-2 mt-1">
+            <div
+              className={`text-xs md:text-sm font-semibold flex items-center gap-2 mt-1 ${
+                isLight ? 'text-amber-900 font-bold' : 'text-amber-200'
+              }`}
+            >
               <span>{gold.seed || '#1 Seed'}</span>
               <span>&bull;</span>
               <span className="truncate max-w-[220px]">{gold.club || 'Tournament Champion'}</span>
             </div>
             {gold.score && (
-              <div className="mt-2 text-xs md:text-sm font-mono font-black px-3.5 py-1 rounded bg-black/60 border-2 border-amber-400/80 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.3)]">
+              <div
+                className={`mt-2 text-xs md:text-sm font-mono font-black px-3.5 py-1 rounded shadow-sm ${
+                  isLight
+                    ? 'bg-amber-100 border-2 border-amber-400 text-amber-950'
+                    : 'bg-black/60 border-2 border-amber-400/80 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.3)]'
+                }`}
+              >
                 {gold.score}
               </div>
             )}
@@ -214,20 +259,42 @@ export const TvOlympicPodium: React.FC<TvOlympicPodiumProps> = ({
         <div className="flex flex-col items-center justify-end h-full">
           {/* Athlete Platform Floating Above Pedestal */}
           <div className="flex flex-col items-center text-center mb-4 w-full animate-fade-in">
-            <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs md:text-sm font-black tracking-wider uppercase bg-gradient-to-r from-amber-600/30 via-orange-500/20 to-amber-700/30 border-2 border-orange-300 text-orange-200 shadow-[0_0_20px_rgba(217,119,6,0.35)] backdrop-blur mb-2.5">
-              <Award size={16} className="text-orange-300" />
+            <div
+              className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs md:text-sm font-black tracking-wider uppercase border-2 shadow-sm mb-2.5 ${
+                isLight
+                  ? 'bg-orange-100 border-orange-400 text-orange-950 shadow-md'
+                  : 'bg-gradient-to-r from-amber-600/30 via-orange-500/20 to-amber-700/30 border-orange-300 text-orange-200 shadow-[0_0_20px_rgba(217,119,6,0.35)] backdrop-blur'
+              }`}
+            >
+              <Award size={16} className={isLight ? 'text-orange-600' : 'text-orange-300'} />
               <span>Bronze Medalist</span>
             </div>
-            <h3 className="font-display font-black text-xl md:text-3xl text-white tracking-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] line-clamp-2">
+            <h3
+              className={`font-display font-black text-xl md:text-3xl tracking-tight line-clamp-2 ${
+                isLight
+                  ? 'text-slate-900 drop-shadow-none font-black'
+                  : 'text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]'
+              }`}
+            >
               {bronze.team}
             </h3>
-            <div className="text-[11px] md:text-xs font-semibold text-orange-200/80 flex items-center gap-2 mt-1">
+            <div
+              className={`text-[11px] md:text-xs font-semibold flex items-center gap-2 mt-1 ${
+                isLight ? 'text-orange-900 font-bold' : 'text-orange-200/80'
+              }`}
+            >
               <span>{bronze.seed || '#3 Seed'}</span>
               <span>&bull;</span>
               <span className="truncate max-w-[180px]">{bronze.club || '3rd Place'}</span>
             </div>
             {bronze.score && (
-              <div className="mt-2 text-[10px] md:text-xs font-mono font-bold px-2.5 py-1 rounded bg-black/50 border border-orange-700/60 text-orange-200 shadow-sm">
+              <div
+                className={`mt-2 text-[10px] md:text-xs font-mono font-bold px-2.5 py-1 rounded shadow-sm ${
+                  isLight
+                    ? 'bg-white border border-orange-300 text-slate-800'
+                    : 'bg-black/50 border border-orange-700/60 text-orange-200'
+                }`}
+              >
                 {bronze.score}
               </div>
             )}

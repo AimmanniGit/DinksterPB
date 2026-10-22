@@ -143,18 +143,52 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
       .forEach((d) => {
         const isConcluded = d.stage === 'concluded' || !!d.podium;
         const hasBracket = d.playoffs.semis.length > 0 || d.playoffs.quarters.length > 0;
-        list.push({
-          id: d.divisionId,
-          type: isConcluded ? 'podium' : 'division',
-          title: d.divisionName,
-          subtitle: isConcluded
-            ? 'Official Podium · Medal Ceremony Completed'
-            : hasBracket
-            ? 'Playoff Progression & Medal Matches'
-            : 'Round-Robin Pool Play Standings',
-          divisionData: d,
-          stageType: isConcluded ? 'concluded' : hasBracket ? 'playoffs' : 'pools',
-        });
+        const hasPools = d.pools && d.pools.length > 0;
+
+        if (isConcluded) {
+          list.push({
+            id: `${d.divisionId}-podium`,
+            type: 'podium',
+            title: d.divisionName,
+            subtitle: 'Official Podium · Medal Ceremony Completed',
+            divisionData: d,
+            stageType: 'concluded',
+          });
+        } else {
+          // If division has round-robin pools, add dedicated Pools screen
+          if (hasPools) {
+            list.push({
+              id: `${d.divisionId}-pools`,
+              type: 'division',
+              title: `${d.divisionName}`,
+              subtitle: 'Round-Robin Pool Play Standings · Top 2 Advance to Semis',
+              divisionData: d,
+              stageType: 'pools',
+            });
+          }
+          // If division has playoff matches, add dedicated Playoffs screen
+          if (hasBracket) {
+            list.push({
+              id: `${d.divisionId}-playoffs`,
+              type: 'division',
+              title: `${d.divisionName}`,
+              subtitle: 'Playoff Progression & Medal Matches',
+              divisionData: d,
+              stageType: 'playoffs',
+            });
+          }
+          // Fallback if neither pools nor playoffs are populated yet
+          if (!hasPools && !hasBracket) {
+            list.push({
+              id: d.divisionId,
+              type: 'division',
+              title: d.divisionName,
+              subtitle: 'Division Schedule & Match Desk',
+              divisionData: d,
+              stageType: 'pools',
+            });
+          }
+        }
       });
 
     return list;
@@ -237,7 +271,14 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
 
   // Reset timers on manual step or jump
   const jumpToScreen = (targetId: string) => {
-    const idx = screens.findIndex((s) => s.id === targetId);
+    const idx = screens.findIndex(
+      (s) =>
+        s.id === targetId ||
+        s.id === `${targetId}-pools` ||
+        s.id === `${targetId}-playoffs` ||
+        s.id === `${targetId}-podium` ||
+        s.divisionData?.divisionId === targetId
+    );
     if (idx >= 0) {
       setPageIndex(idx);
       setSecondsRemaining(dwellSecs);
@@ -465,12 +506,16 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      const div = divisionList.find((d) => d.stage === 'concluded' || d.podium);
-                      if (div) {
-                        if (!selectedDivisionIds.includes(div.divisionId)) {
-                          setSelectedDivisionIds((prev) => [...prev, div.divisionId]);
+                      const idx = screens.findIndex((s) => s.type === 'podium');
+                      if (idx >= 0) {
+                        setPageIndex(idx);
+                        setSecondsRemaining(dwellSecs);
+                      } else {
+                        const div = divisionList.find((d) => d.stage === 'concluded' || d.podium);
+                        if (div) {
+                          setSelectedDivisionIds((prev) => (prev.includes(div.divisionId) ? prev : [...prev, div.divisionId]));
+                          jumpToScreen(`${div.divisionId}-podium`);
                         }
-                        jumpToScreen(div.divisionId);
                       }
                     }}
                     className={`px-2.5 py-1 text-[11px] font-extrabold rounded-lg flex items-center gap-1 transition ${
@@ -486,16 +531,20 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    const div = divisionList.find((d) => (d.playoffs.semis.length > 0 || d.playoffs.quarters.length > 0) && d.stage !== 'concluded' && !d.podium);
-                    if (div) {
-                      if (!selectedDivisionIds.includes(div.divisionId)) {
-                        setSelectedDivisionIds((prev) => [...prev, div.divisionId]);
+                    const idx = screens.findIndex((s) => s.stageType === 'playoffs');
+                    if (idx >= 0) {
+                      setPageIndex(idx);
+                      setSecondsRemaining(dwellSecs);
+                    } else {
+                      const div = divisionList.find((d) => (d.playoffs.semis.length > 0 || d.playoffs.quarters.length > 0) && d.stage !== 'concluded' && !d.podium);
+                      if (div) {
+                        setSelectedDivisionIds((prev) => (prev.includes(div.divisionId) ? prev : [...prev, div.divisionId]));
+                        jumpToScreen(`${div.divisionId}-playoffs`);
                       }
-                      jumpToScreen(div.divisionId);
                     }
                   }}
                   className={`px-2.5 py-1 text-[11px] font-extrabold rounded-lg flex items-center gap-1 transition ${
-                    currentScreen?.type === 'division' && (currentScreen?.divisionData?.playoffs?.semis?.length || 0) > 0
+                    currentScreen?.stageType === 'playoffs'
                       ? 'bg-blue-400 text-black shadow-sm font-black'
                       : 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40'
                   }`}
@@ -506,16 +555,21 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    const div = divisionList.find((d) => d.pools.length > 0 && d.stage !== 'concluded' && !d.podium);
-                    if (div) {
-                      if (!selectedDivisionIds.includes(div.divisionId)) {
-                        setSelectedDivisionIds((prev) => [...prev, div.divisionId]);
+                    const idx = screens.findIndex((s) => s.stageType === 'pools');
+                    if (idx >= 0) {
+                      setPageIndex(idx);
+                      setSecondsRemaining(dwellSecs);
+                      setPoolHalfIndex(0);
+                    } else {
+                      const div = divisionList.find((d) => d.pools.length > 0 && d.stage !== 'concluded' && !d.podium);
+                      if (div) {
+                        setSelectedDivisionIds((prev) => (prev.includes(div.divisionId) ? prev : [...prev, div.divisionId]));
+                        jumpToScreen(`${div.divisionId}-pools`);
                       }
-                      jumpToScreen(div.divisionId);
                     }
                   }}
                   className={`px-2.5 py-1 text-[11px] font-extrabold rounded-lg flex items-center gap-1 transition ${
-                    currentScreen?.type === 'division' && (currentScreen?.divisionData?.pools?.length || 0) > 0
+                    currentScreen?.stageType === 'pools'
                       ? 'bg-emerald-400 text-black shadow-sm font-black'
                       : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40'
                   }`}
@@ -527,7 +581,13 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
                   type="button"
                   onClick={() => {
                     setIncludeLiveCourts(true);
-                    jumpToScreen('screen-live-courts');
+                    const idx = screens.findIndex((s) => s.type === 'live-courts');
+                    if (idx >= 0) {
+                      setPageIndex(idx);
+                      setSecondsRemaining(dwellSecs);
+                    } else {
+                      jumpToScreen('screen-live-courts');
+                    }
                   }}
                   className={`px-2.5 py-1 text-[11px] font-extrabold rounded-lg flex items-center gap-1 transition ${
                     currentScreen?.type === 'live-courts'
@@ -700,9 +760,19 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
       {/* ========================================================
           STAGE SWITCHER BAR (EVENT DIRECTOR & VENUE TEST BAR)
           ======================================================== */}
-      <div className="bg-slate-950/95 border-b border-slate-800 px-4 py-2 flex flex-wrap items-center justify-between text-xs shrink-0 z-40 select-none backdrop-blur">
+      <div
+        className={`px-4 py-2 flex flex-wrap items-center justify-between text-xs shrink-0 z-40 select-none backdrop-blur border-b transition-colors ${
+          themeMode === 'light'
+            ? 'bg-slate-100/95 border-slate-300 text-slate-800'
+            : 'bg-slate-950/95 border-slate-800 text-white'
+        }`}
+      >
         <div className="flex items-center gap-2 flex-wrap">
-          <strong className="text-white text-[11px] uppercase tracking-wider mr-1">
+          <strong
+            className={`text-[11px] uppercase tracking-wider mr-1 ${
+              themeMode === 'light' ? 'text-slate-900 font-black' : 'text-white'
+            }`}
+          >
             Stage Switcher:
           </strong>
           <button
@@ -710,7 +780,11 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
             onClick={() => setRotate((r) => !r)}
             className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
               rotate
-                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                ? themeMode === 'light'
+                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-sm'
+                  : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                : themeMode === 'light'
+                ? 'bg-red-100 text-red-800 border border-red-300'
                 : 'bg-red-500/20 text-red-300 border border-red-500/40'
             }`}
             title="Press Space to Pause or Resume rotation"
@@ -727,11 +801,19 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
                 if (idx >= 0) {
                   setPageIndex(idx);
                   setSecondsRemaining(dwellSecs);
+                } else {
+                  const div = divisionList.find((d) => d.stage === 'concluded' || d.podium);
+                  if (div) {
+                    setSelectedDivisionIds((prev) => (prev.includes(div.divisionId) ? prev : [...prev, div.divisionId]));
+                    jumpToScreen(`${div.divisionId}-podium`);
+                  }
                 }
               }}
               className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
                 currentScreen?.type === 'podium'
-                  ? 'bg-amber-400 text-black shadow-[0_0_15px_rgba(251,191,36,0.6)] font-black'
+                  ? 'bg-amber-400 text-black shadow-md font-black'
+                  : themeMode === 'light'
+                  ? 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-sm'
                   : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
               }`}
             >
@@ -746,11 +828,21 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
               if (idx >= 0) {
                 setPageIndex(idx);
                 setSecondsRemaining(dwellSecs);
+              } else {
+                const div = divisionList.find((d) => (d.playoffs.semis.length > 0 || d.playoffs.quarters.length > 0) && d.stage !== 'concluded' && !d.podium);
+                if (div) {
+                  setSelectedDivisionIds((prev) => (prev.includes(div.divisionId) ? prev : [...prev, div.divisionId]));
+                  jumpToScreen(`${div.divisionId}-playoffs`);
+                }
               }
             }}
             className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
               currentScreen?.stageType === 'playoffs'
-                ? 'bg-blue-400 text-black shadow-[0_0_15px_rgba(96,165,250,0.6)] font-black'
+                ? themeMode === 'light'
+                  ? 'bg-blue-600 text-white shadow-md font-black'
+                  : 'bg-blue-400 text-black shadow-[0_0_15px_rgba(96,165,250,0.6)] font-black'
+                : themeMode === 'light'
+                ? 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-sm'
                 : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
             }`}
           >
@@ -764,11 +856,22 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
               if (idx >= 0) {
                 setPageIndex(idx);
                 setSecondsRemaining(dwellSecs);
+                setPoolHalfIndex(0);
+              } else {
+                const div = divisionList.find((d) => d.pools && d.pools.length > 0);
+                if (div) {
+                  setSelectedDivisionIds((prev) => (prev.includes(div.divisionId) ? prev : [...prev, div.divisionId]));
+                  jumpToScreen(`${div.divisionId}-pools`);
+                }
               }
             }}
             className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
               currentScreen?.stageType === 'pools'
-                ? 'bg-emerald-400 text-black shadow-[0_0_15px_rgba(52,211,153,0.6)] font-black'
+                ? themeMode === 'light'
+                  ? 'bg-emerald-600 text-white shadow-md font-black'
+                  : 'bg-emerald-400 text-black shadow-[0_0_15px_rgba(52,211,153,0.6)] font-black'
+                : themeMode === 'light'
+                ? 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-sm'
                 : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
             }`}
           >
@@ -778,15 +881,22 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
           <button
             type="button"
             onClick={() => {
+              setIncludeLiveCourts(true);
               const idx = screens.findIndex((s) => s.type === 'live-courts');
               if (idx >= 0) {
                 setPageIndex(idx);
                 setSecondsRemaining(dwellSecs);
+              } else {
+                jumpToScreen('screen-live-courts');
               }
             }}
             className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
               currentScreen?.type === 'live-courts'
-                ? 'bg-purple-400 text-black shadow-[0_0_15px_rgba(192,132,252,0.6)] font-black'
+                ? themeMode === 'light'
+                  ? 'bg-purple-600 text-white shadow-md font-black'
+                  : 'bg-purple-400 text-black shadow-[0_0_15px_rgba(192,132,252,0.6)] font-black'
+                : themeMode === 'light'
+                ? 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-sm'
                 : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
             }`}
           >
@@ -795,14 +905,72 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
         </div>
 
         {/* Hotkey Guide */}
-        <div className="hidden lg:flex items-center gap-2 text-[11px] font-mono text-slate-400">
-          <span>Press <kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 text-[10px]">SPACE</kbd> to Pause</span>
+        <div
+          className={`hidden lg:flex items-center gap-2 text-[11px] font-mono ${
+            themeMode === 'light' ? 'text-slate-600' : 'text-slate-400'
+          }`}
+        >
+          <span>
+            Press{' '}
+            <kbd
+              className={`px-1.5 py-0.5 rounded text-[10px] ${
+                themeMode === 'light'
+                  ? 'bg-white border border-slate-300 text-slate-700 shadow-sm'
+                  : 'bg-slate-800 border border-slate-700 text-slate-200'
+              }`}
+            >
+              SPACE
+            </kbd>{' '}
+            to Pause
+          </span>
           <span>&bull;</span>
-          <span><kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 text-[10px]">&larr;</kbd> <kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 text-[10px]">&rarr;</kbd> Skip</span>
+          <span>
+            <kbd
+              className={`px-1.5 py-0.5 rounded text-[10px] ${
+                themeMode === 'light'
+                  ? 'bg-white border border-slate-300 text-slate-700 shadow-sm'
+                  : 'bg-slate-800 border border-slate-700 text-slate-200'
+              }`}
+            >
+              &larr;
+            </kbd>{' '}
+            <kbd
+              className={`px-1.5 py-0.5 rounded text-[10px] ${
+                themeMode === 'light'
+                  ? 'bg-white border border-slate-300 text-slate-700 shadow-sm'
+                  : 'bg-slate-800 border border-slate-700 text-slate-200'
+              }`}
+            >
+              &rarr;
+            </kbd>{' '}
+            Skip
+          </span>
           <span>&bull;</span>
-          <span><kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 text-[10px]">C</kbd> Settings</span>
+          <span>
+            <kbd
+              className={`px-1.5 py-0.5 rounded text-[10px] ${
+                themeMode === 'light'
+                  ? 'bg-white border border-slate-300 text-slate-700 shadow-sm'
+                  : 'bg-slate-800 border border-slate-700 text-slate-200'
+              }`}
+            >
+              C
+            </kbd>{' '}
+            Settings
+          </span>
           <span>&bull;</span>
-          <span><kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 text-[10px]">F</kbd> Fullscreen</span>
+          <span>
+            <kbd
+              className={`px-1.5 py-0.5 rounded text-[10px] ${
+                themeMode === 'light'
+                  ? 'bg-white border border-slate-300 text-slate-700 shadow-sm'
+                  : 'bg-slate-800 border border-slate-700 text-slate-200'
+              }`}
+            >
+              F
+            </kbd>{' '}
+            Fullscreen
+          </span>
         </div>
       </div>
 
@@ -812,18 +980,44 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
       <header className={`${themeHeaderClass} px-6 py-3 flex items-center justify-between backdrop-blur sticky top-0 z-40 border-b transition-colors`}>
         {/* Left: Tournament Branding */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+          <div
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+              themeMode === 'light'
+                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-sm'
+                : 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400'
+            }`}
+          >
             <Tv className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-lg font-black tracking-tight uppercase">{tournamentName}</span>
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span
+                className={`text-lg font-black tracking-tight uppercase ${
+                  themeMode === 'light' ? 'text-slate-950' : 'text-white'
+                }`}
+              >
+                {tournamentName}
+              </span>
+              <span
+                className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold ${
+                  themeMode === 'light'
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                }`}
+              >
+                <span
+                  className={`w-2 h-2 rounded-full animate-pulse ${
+                    themeMode === 'light' ? 'bg-emerald-600' : 'bg-emerald-400'
+                  }`}
+                />
                 LIVE BROADCAST
               </span>
             </div>
-            <p className="text-xs opacity-70 font-medium">
+            <p
+              className={`text-xs font-medium ${
+                themeMode === 'light' ? 'text-slate-600' : 'opacity-70 text-slate-300'
+              }`}
+            >
               {venueName} &bull; {activeMatchesCount} Courts Active
             </p>
           </div>
@@ -832,26 +1026,32 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
         {/* Right: Permanent Action Controls (Rock Solid) */}
         <div className="flex items-center gap-3">
           {/* Status Indicator Pill */}
-          <span className="px-3 py-1.5 rounded-xl bg-white/10 text-xs font-extrabold flex items-center gap-1.5 border border-white/10">
+          <span
+            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 border transition-colors ${
+              themeMode === 'light'
+                ? 'bg-slate-100 text-slate-800 border-slate-300 shadow-sm'
+                : 'bg-white/10 text-white border-white/10'
+            }`}
+          >
             {currentScreen?.type === 'podium' ? (
-              <span className="flex items-center gap-1.5 text-amber-300">
-                <Trophy size={14} className="text-amber-400" />
+              <span className={`flex items-center gap-1.5 ${themeMode === 'light' ? 'text-amber-800 font-black' : 'text-amber-300'}`}>
+                <Trophy size={14} className={themeMode === 'light' ? 'text-amber-600' : 'text-amber-400'} />
                 Medal Ceremony
               </span>
             ) : currentScreen?.type === 'live-courts' ? (
-              <span className="flex items-center gap-1.5 text-emerald-400">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className={`flex items-center gap-1.5 ${themeMode === 'light' ? 'text-emerald-800 font-black' : 'text-emerald-400'}`}>
+                <span className={`w-2 h-2 rounded-full animate-pulse ${themeMode === 'light' ? 'bg-emerald-600' : 'bg-emerald-400'}`} />
                 Court Scoreboard
               </span>
-            ) : currentScreen?.divisionData?.playoffs?.semis?.length ? (
-              <span className="flex items-center gap-1.5 text-blue-400">
-                <span className="w-2 h-2 rounded-full bg-blue-400" />
+            ) : currentScreen?.stageType === 'playoffs' ? (
+              <span className={`flex items-center gap-1.5 ${themeMode === 'light' ? 'text-blue-800 font-black' : 'text-blue-400'}`}>
+                <span className={`w-2 h-2 rounded-full ${themeMode === 'light' ? 'bg-blue-600' : 'bg-blue-400'}`} />
                 Playoffs & Medals
               </span>
             ) : (
-              <span className="flex items-center gap-1.5 text-emerald-400">
-                <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                Pool Play
+              <span className={`flex items-center gap-1.5 ${themeMode === 'light' ? 'text-emerald-800 font-black' : 'text-emerald-400'}`}>
+                <span className={`w-2 h-2 rounded-full ${themeMode === 'light' ? 'bg-emerald-600' : 'bg-emerald-400'}`} />
+                Pool Play Standings
               </span>
             )}
           </span>
@@ -859,7 +1059,11 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
           {/* Fullscreen Button */}
           <button
             onClick={handleToggleFullscreen}
-            className="p-2.5 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 transition flex items-center justify-center shadow-sm"
+            className={`p-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center shadow-sm ${
+              themeMode === 'light'
+                ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300'
+                : 'bg-white/10 hover:bg-white/20 text-white'
+            }`}
             title="Toggle Fullscreen (F)"
           >
             {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
@@ -872,7 +1076,11 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
               if (!panelOpen) scheduleAutoClose();
             }}
             className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow ${
-              panelOpen ? 'bg-amber-500 text-black font-extrabold' : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+              panelOpen
+                ? 'bg-amber-500 text-black font-extrabold'
+                : themeMode === 'light'
+                ? 'bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold'
+                : 'bg-emerald-600 hover:bg-emerald-500 text-white'
             }`}
             title="Open Admin Controls (Hotkey: C)"
           >
@@ -883,22 +1091,36 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
           {/* Share Link */}
           <button
             onClick={handleCopyShareLink}
-            className="p-2.5 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 transition flex items-center justify-center"
+            className={`p-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center ${
+              themeMode === 'light'
+                ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300'
+                : 'bg-white/10 hover:bg-white/20 text-white'
+            }`}
             title="Copy Public TV URL"
           >
             <Share2 size={16} />
           </button>
 
           {/* Stadium Wall Clock */}
-          <div className="flex items-center gap-2 pl-2 border-l border-white/15 font-mono text-sm font-bold opacity-90">
-            <Clock size={16} className="text-slate-400" />
+          <div
+            className={`flex items-center gap-2 pl-2 font-mono text-sm font-bold border-l ${
+              themeMode === 'light'
+                ? 'border-slate-300 text-slate-800'
+                : 'border-white/15 text-white opacity-90'
+            }`}
+          >
+            <Clock size={16} className={themeMode === 'light' ? 'text-slate-500' : 'text-slate-400'} />
             <span>{currentTime}</span>
           </div>
 
           {onExitTvMode && (
             <button
               onClick={onExitTvMode}
-              className="px-3 py-1.5 rounded-xl text-xs font-semibold opacity-70 hover:opacity-100 hover:bg-white/10 transition"
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                themeMode === 'light'
+                  ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                  : 'opacity-70 hover:opacity-100 hover:bg-white/10'
+              }`}
             >
               Exit
             </button>
@@ -910,7 +1132,11 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
           ELAPSED COUNTDOWN GLIDE BAR (0% -> 100%)
           ======================================================== */}
       {rotate && screens.length > 1 && (
-        <div className="w-full bg-slate-900 h-1 overflow-hidden relative border-b border-slate-800">
+        <div
+          className={`w-full h-1 overflow-hidden relative border-b ${
+            themeMode === 'light' ? 'bg-slate-200 border-slate-300' : 'bg-slate-900 border-slate-800'
+          }`}
+        >
           <div
             className="h-full bg-gradient-to-r from-emerald-500 via-amber-400 to-amber-500 transition-all duration-1000 ease-linear"
             style={{ width: `${barProgressPercent}%` }}
@@ -945,28 +1171,52 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
         )}
 
         {/* Current Screen Header Title Strip */}
-        <div className="max-w-[1500px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 mb-6 border-b border-white/10">
+        <div
+          className={`max-w-[1500px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 mb-6 border-b transition-colors ${
+            themeMode === 'light' ? 'border-slate-300' : 'border-white/10'
+          }`}
+        >
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className={`px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider ${
-                currentScreen?.type === 'podium'
-                  ? 'bg-amber-400 text-black shadow-[0_0_12px_rgba(251,191,36,0.5)]'
-                  : currentScreen?.type === 'live-courts'
-                  ? 'bg-emerald-400 text-black'
-                  : 'bg-amber-400 text-black'
-              }`}>
+              <span
+                className={`px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider ${
+                  currentScreen?.type === 'podium'
+                    ? 'bg-amber-400 text-black shadow-sm'
+                    : currentScreen?.type === 'live-courts'
+                    ? themeMode === 'light'
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-emerald-400 text-black'
+                    : currentScreen?.stageType === 'playoffs'
+                    ? themeMode === 'light'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-blue-400 text-black'
+                    : themeMode === 'light'
+                    ? 'bg-emerald-700 text-white'
+                    : 'bg-amber-400 text-black'
+                }`}
+              >
                 {currentScreen?.type === 'podium'
                   ? '🥇 Medal Ceremony'
                   : currentScreen?.type === 'live-courts'
                   ? 'Active Action'
-                  : 'Tournament Stage'}
+                  : currentScreen?.stageType === 'playoffs'
+                  ? 'Playoff Bracket'
+                  : 'Pool Standings'}
               </span>
-              <span className="text-xs opacity-75 font-semibold">
+              <span
+                className={`text-xs font-semibold ${
+                  themeMode === 'light' ? 'text-slate-600 font-bold' : 'opacity-75 text-slate-300'
+                }`}
+              >
                 {currentScreen?.subtitle}
                 {isPoolSplit ? ` · Pools Part ${poolHalfIndex + 1}/2` : ''}
               </span>
             </div>
-            <h1 className="font-display font-black text-3xl md:text-4xl tracking-tight">
+            <h1
+              className={`font-display font-black text-3xl md:text-4xl tracking-tight ${
+                themeMode === 'light' ? 'text-slate-950' : 'text-white'
+              }`}
+            >
               {currentScreen?.title}
             </h1>
           </div>
@@ -974,11 +1224,27 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
           {/* Rotation Position & Next Indicator */}
           <div className="flex items-center gap-3">
             {rotate && nextScreen && (
-              <span className="px-3.5 py-1.5 rounded-xl bg-white/10 text-xs font-bold border border-white/10">
-                Next: <strong className="text-amber-400">{nextScreen.title}</strong> in {isPoolSplit ? poolHalfRemaining : secondsRemaining}s
+              <span
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-colors ${
+                  themeMode === 'light'
+                    ? 'bg-white text-slate-800 border-slate-300 shadow-sm'
+                    : 'bg-white/10 text-white border-white/10'
+                }`}
+              >
+                Next:{' '}
+                <strong className={themeMode === 'light' ? 'text-amber-800 font-black' : 'text-amber-400'}>
+                  {nextScreen.title}
+                </strong>{' '}
+                in {isPoolSplit ? poolHalfRemaining : secondsRemaining}s
               </span>
             )}
-            <span className="font-mono text-xs font-black px-3 py-1.5 rounded-xl bg-white/10 border border-white/10">
+            <span
+              className={`font-mono text-xs font-black px-3 py-1.5 rounded-xl border transition-colors ${
+                themeMode === 'light'
+                  ? 'bg-white text-slate-800 border-slate-300 shadow-sm'
+                  : 'bg-white/10 text-white border-white/10'
+              }`}
+            >
               {safePageIndex + 1} / {screens.length}
             </span>
           </div>
@@ -988,8 +1254,12 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
         <div className="max-w-[1500px] mx-auto">
           {screens.length === 0 ? (
             <div className="py-24 text-center">
-              <h3 className="text-2xl font-bold opacity-60">No screens currently selected in rotation.</h3>
-              <p className="opacity-40 text-sm mt-2">Click Settings above and select at least one division or Live Courts.</p>
+              <h3 className={`text-2xl font-bold ${themeMode === 'light' ? 'text-slate-700' : 'opacity-60 text-white'}`}>
+                No screens currently selected in rotation.
+              </h3>
+              <p className={`text-sm mt-2 ${themeMode === 'light' ? 'text-slate-500' : 'opacity-40 text-slate-400'}`}>
+                Click Settings above and select at least one division or Live Courts.
+              </p>
             </div>
           ) : currentScreen?.type === 'podium' && currentScreen.divisionData?.podium ? (
             /* ====================================================
@@ -1026,29 +1296,49 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
                     key={court.number}
                     className={`rounded-3xl border-2 flex flex-col justify-between overflow-hidden transition-all shadow-xl ${themeCardBg} ${
                       isLive
-                        ? 'border-emerald-500 shadow-emerald-950/40 ring-1 ring-emerald-500/30'
+                        ? themeMode === 'light'
+                          ? 'border-emerald-500 shadow-emerald-900/10 ring-1 ring-emerald-500/30'
+                          : 'border-emerald-500 shadow-emerald-950/40 ring-1 ring-emerald-500/30'
                         : isCalled
-                        ? 'border-amber-500 shadow-amber-950/30'
+                        ? themeMode === 'light'
+                          ? 'border-amber-500 shadow-amber-900/10'
+                          : 'border-amber-500 shadow-amber-950/30'
                         : isBlocked
                         ? 'border-red-500/80'
+                        : themeMode === 'light'
+                        ? 'border-slate-300'
                         : 'border-slate-800'
                     }`}
                   >
                     <div
                       className={`px-4 py-2.5 flex items-center justify-between border-b ${
                         isLive
-                          ? 'bg-emerald-950/60 border-emerald-800/40 text-emerald-300'
+                          ? themeMode === 'light'
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-900 font-black'
+                            : 'bg-emerald-950/60 border-emerald-800/40 text-emerald-300'
                           : isCalled
-                          ? 'bg-amber-950/60 border-amber-800/40 text-amber-300'
+                          ? themeMode === 'light'
+                            ? 'bg-amber-50 border-amber-200 text-amber-900 font-black'
+                            : 'bg-amber-950/60 border-amber-800/40 text-amber-300'
                           : isBlocked
-                          ? 'bg-red-950/60 border-red-800/40 text-red-300'
+                          ? themeMode === 'light'
+                            ? 'bg-red-50 border-red-200 text-red-900 font-black'
+                            : 'bg-red-950/60 border-red-800/40 text-red-300'
+                          : themeMode === 'light'
+                          ? 'bg-slate-100 border-slate-200 text-slate-700 font-bold'
                           : 'bg-slate-800/60 border-slate-700/60 text-slate-400'
                       }`}
                     >
                       <div className="flex items-center gap-2">
                         <span className="font-black text-sm tracking-wide uppercase">Court {court.number}</span>
                         {sponsor && (
-                          <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-white/10 text-white/90">
+                          <span
+                            className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${
+                              themeMode === 'light'
+                                ? 'bg-slate-200 text-slate-800 border border-slate-300'
+                                : 'bg-white/10 text-white/90'
+                            }`}
+                          >
                             {sponsor.name}
                           </span>
                         )}
@@ -1056,15 +1346,29 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
                       <span
                         className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full flex items-center gap-1 ${
                           isLive
-                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            ? themeMode === 'light'
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 font-black'
+                              : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                             : isCalled
-                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                            ? themeMode === 'light'
+                              ? 'bg-amber-100 text-amber-900 border border-amber-300 font-black'
+                              : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
                             : isBlocked
-                            ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                            ? themeMode === 'light'
+                              ? 'bg-red-100 text-red-900 border border-red-300 font-black'
+                              : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                            : themeMode === 'light'
+                            ? 'bg-slate-200 text-slate-700'
                             : 'bg-slate-700/40 text-slate-400'
                         }`}
                       >
-                        {isLive && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
+                        {isLive && (
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                              themeMode === 'light' ? 'bg-emerald-600' : 'bg-emerald-400'
+                            }`}
+                          />
+                        )}
                         {court.status.toUpperCase()}
                       </span>
                     </div>
@@ -1072,18 +1376,43 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
                     <div className="p-4 flex-1 flex flex-col justify-between">
                       {court.matchTitle ? (
                         <div>
-                          <div className="text-[11px] font-bold opacity-60 uppercase tracking-wider mb-3">
+                          <div
+                            className={`text-[11px] font-bold uppercase tracking-wider mb-3 ${
+                              themeMode === 'light' ? 'text-slate-500 font-extrabold' : 'opacity-60'
+                            }`}
+                          >
                             Match {court.matchId || 'Live'} &bull; Active Rally
                           </div>
 
-                          <div className="flex items-center justify-between py-2 border-b border-white/10">
+                          <div
+                            className={`flex items-center justify-between py-2 border-b ${
+                              themeMode === 'light' ? 'border-slate-200' : 'border-white/10'
+                            }`}
+                          >
                             <div className="flex items-center gap-2 flex-1 pr-2">
                               {isLive && score[0] >= score[1] && (
-                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" title="Serving" />
+                                <span
+                                  className={`w-2.5 h-2.5 rounded-full ${
+                                    themeMode === 'light'
+                                      ? 'bg-emerald-600 shadow-[0_0_8px_#059669]'
+                                      : 'bg-emerald-400 shadow-[0_0_8px_#34d399]'
+                                  }`}
+                                  title="Serving"
+                                />
                               )}
-                              <span className="font-extrabold text-base tracking-tight truncate">{teamA}</span>
+                              <span
+                                className={`font-extrabold text-base tracking-tight truncate ${
+                                  themeMode === 'light' ? 'text-slate-950 font-black' : 'text-white'
+                                }`}
+                              >
+                                {teamA}
+                              </span>
                             </div>
-                            <span className="text-3xl font-black text-emerald-400 font-mono tracking-tighter">
+                            <span
+                              className={`text-3xl font-black font-mono tracking-tighter ${
+                                themeMode === 'light' ? 'text-emerald-700' : 'text-emerald-400'
+                              }`}
+                            >
                               {score[0]}
                             </span>
                           </div>
@@ -1091,24 +1420,59 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
                           <div className="flex items-center justify-between py-2">
                             <div className="flex items-center gap-2 flex-1 pr-2">
                               {isLive && score[1] > score[0] && (
-                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" title="Serving" />
+                                <span
+                                  className={`w-2.5 h-2.5 rounded-full ${
+                                    themeMode === 'light'
+                                      ? 'bg-emerald-600 shadow-[0_0_8px_#059669]'
+                                      : 'bg-emerald-400 shadow-[0_0_8px_#34d399]'
+                                  }`}
+                                  title="Serving"
+                                />
                               )}
-                              <span className="font-extrabold text-base tracking-tight truncate">{teamB}</span>
+                              <span
+                                className={`font-extrabold text-base tracking-tight truncate ${
+                                  themeMode === 'light' ? 'text-slate-950 font-black' : 'text-white'
+                                }`}
+                              >
+                                {teamB}
+                              </span>
                             </div>
-                            <span className="text-3xl font-black text-emerald-400 font-mono tracking-tighter">
+                            <span
+                              className={`text-3xl font-black font-mono tracking-tighter ${
+                                themeMode === 'light' ? 'text-emerald-700' : 'text-emerald-400'
+                              }`}
+                            >
                               {score[1]}
                             </span>
                           </div>
                         </div>
                       ) : (
                         <div className="py-8 text-center flex flex-col items-center justify-center">
-                          <span className="text-sm font-semibold opacity-60">Court Open</span>
-                          <span className="text-xs opacity-40 mt-1">Ready for next assignment</span>
+                          <span
+                            className={`text-sm font-semibold ${
+                              themeMode === 'light' ? 'text-slate-600 font-bold' : 'opacity-60'
+                            }`}
+                          >
+                            Court Open
+                          </span>
+                          <span
+                            className={`text-xs mt-1 ${
+                              themeMode === 'light' ? 'text-slate-400 font-medium' : 'opacity-40'
+                            }`}
+                          >
+                            Ready for next assignment
+                          </span>
                         </div>
                       )}
 
-                      <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between text-[11px] opacity-70">
-                        <span>Ref: <strong>{court.referee || 'Desk Call'}</strong></span>
+                      <div
+                        className={`mt-3 pt-2.5 border-t flex items-center justify-between text-[11px] ${
+                          themeMode === 'light' ? 'border-slate-200 text-slate-600 font-medium' : 'border-white/10 opacity-70'
+                        }`}
+                      >
+                        <span>
+                          Ref: <strong className={themeMode === 'light' ? 'text-slate-800' : 'text-white'}>{court.referee || 'Desk Call'}</strong>
+                        </span>
                         {court.sinceTime && <span className="font-mono">Since {court.sinceTime}</span>}
                       </div>
                     </div>
@@ -1116,225 +1480,525 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
                 );
               })}
             </div>
+          ) : currentScreen?.stageType === 'pools' && currentScreen.divisionData?.pools ? (
+            /* ====================================================
+               SCREEN TYPE B1: DEDICATED ROUND-ROBIN POOL PLAY STANDINGS
+               ==================================================== */
+            <div className="space-y-6">
+              <div
+                className={`flex items-center justify-between pb-3 border-b ${
+                  themeMode === 'light' ? 'border-slate-300' : 'border-white/10'
+                }`}
+              >
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span
+                    className={`w-3 h-3 rounded-full animate-pulse ${
+                      themeMode === 'light' ? 'bg-emerald-600' : 'bg-emerald-400'
+                    }`}
+                  />
+                  <h2
+                    className={`text-base md:text-lg font-black uppercase tracking-wider ${
+                      themeMode === 'light' ? 'text-slate-900' : 'text-emerald-400'
+                    }`}
+                  >
+                    Stage 1: Round-Robin Pool Play Standings
+                  </h2>
+                  <span
+                    className={`text-xs font-black px-3 py-1 rounded-full ${
+                      themeMode === 'light'
+                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                        : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    }`}
+                  >
+                    Top 2 Advance to Medal Semis
+                  </span>
+                </div>
+                <div
+                  className={`text-xs font-semibold ${
+                    themeMode === 'light' ? 'text-slate-600' : 'opacity-70 text-slate-400'
+                  }`}
+                >
+                  {currentScreen.divisionData.pools.length} Pools &bull; Live Progression
+                </div>
+              </div>
+
+              {/* Multi-Pool Responsive Grid */}
+              <div
+                className={`grid grid-cols-1 ${
+                  displayedPools.length > 1 ? 'lg:grid-cols-2' : 'max-w-4xl mx-auto'
+                } gap-6 items-start`}
+              >
+                {displayedPools.map((pool) => (
+                  <div
+                    key={pool.name}
+                    className={`rounded-3xl border overflow-hidden shadow-xl transition-all ${themeCardBg} ${
+                      themeMode === 'light' ? 'border-slate-300' : 'border-slate-800'
+                    }`}
+                  >
+                    <div
+                      className={`px-5 py-3.5 flex items-center justify-between border-b ${
+                        themeMode === 'light'
+                          ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
+                          : 'bg-emerald-950/40 border-white/10 text-emerald-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="font-black text-sm uppercase tracking-wider">{pool.name} Standings</span>
+                      </div>
+                      <span
+                        className={`text-xs font-bold ${
+                          themeMode === 'light' ? 'text-slate-600' : 'opacity-70 text-slate-300'
+                        }`}
+                      >
+                        {pool.teams.length} Teams &bull; Advance Top 2
+                      </span>
+                    </div>
+
+                    <table className="w-full text-xs text-left">
+                      <thead
+                        className={`font-black border-b ${
+                          themeMode === 'light'
+                            ? 'bg-slate-100 text-slate-700 border-slate-200 uppercase tracking-wider text-[11px]'
+                            : 'bg-black/20 text-slate-200 opacity-80 border-white/10'
+                        }`}
+                      >
+                        <tr>
+                          <th className="py-2.5 px-4">#</th>
+                          <th className="py-2.5 px-4">Team</th>
+                          <th className="py-2.5 px-3 text-center">W-L</th>
+                          <th className="py-2.5 px-3 text-center">+/-</th>
+                          <th className="py-2.5 px-4 text-right">Advancement</th>
+                        </tr>
+                      </thead>
+                      <tbody
+                        className={`divide-y font-medium ${
+                          themeMode === 'light' ? 'divide-slate-200 text-slate-900' : 'divide-white/5'
+                        }`}
+                      >
+                        {pool.teams.map((t, idx) => {
+                          const liveCourtNum = findLiveCourtForTeam(t.name);
+                          const isLastQualifier = t.qualified && (!pool.teams[idx + 1] || !pool.teams[idx + 1].qualified);
+
+                          return (
+                            <React.Fragment key={t.id}>
+                              <tr
+                                className={`transition-colors ${
+                                  t.qualified
+                                    ? themeMode === 'light'
+                                      ? 'bg-emerald-50/70 font-bold text-slate-950'
+                                      : 'bg-emerald-950/20 font-bold text-white'
+                                    : themeMode === 'light'
+                                    ? 'text-slate-700 hover:bg-slate-50'
+                                    : 'opacity-60 text-slate-300'
+                                }`}
+                              >
+                                <td className="py-3 px-4 font-mono font-black opacity-80">{idx + 1}</td>
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center gap-2">
+                                    <span
+                                      className={`text-[10px] font-black px-2 py-0.5 rounded ${
+                                        themeMode === 'light'
+                                          ? 'bg-slate-100 text-slate-800 border border-slate-300'
+                                          : 'bg-white/10 text-white opacity-80'
+                                      }`}
+                                    >
+                                      #{t.seed}
+                                    </span>
+                                    <span
+                                      className={`text-sm truncate max-w-[200px] ${
+                                        themeMode === 'light' ? 'text-slate-950 font-black' : 'font-bold'
+                                      }`}
+                                    >
+                                      {t.name}
+                                    </span>
+                                    {liveCourtNum && (
+                                      <span
+                                        className={`px-2 py-0.5 rounded-full text-[9px] font-black flex items-center gap-1 shrink-0 animate-pulse ${
+                                          themeMode === 'light'
+                                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-400'
+                                            : 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/50'
+                                        }`}
+                                      >
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                        C{liveCourtNum} LIVE
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td
+                                  className={`py-3 px-3 text-center font-mono font-bold ${
+                                    themeMode === 'light' ? 'text-slate-900' : 'text-white'
+                                  }`}
+                                >
+                                  {t.wins}-{t.losses}
+                                </td>
+                                <td
+                                  className={`py-3 px-3 text-center font-mono font-black ${
+                                    themeMode === 'light' ? 'text-emerald-700' : 'text-emerald-400'
+                                  }`}
+                                >
+                                  {t.pointDiff > 0 ? `+${t.pointDiff}` : t.pointDiff}
+                                </td>
+                                <td className="py-3 px-4 text-right">
+                                  {t.qualified ? (
+                                    <span
+                                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black ${
+                                        themeMode === 'light'
+                                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                          : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                      }`}
+                                    >
+                                      <CheckCircle2 size={12} className={themeMode === 'light' ? 'text-emerald-700' : 'text-emerald-400'} />
+                                      Q{idx + 1} Advancing &rarr;
+                                    </span>
+                                  ) : (
+                                    <span
+                                      className={`text-[11px] font-semibold ${
+                                        themeMode === 'light' ? 'text-slate-400' : 'opacity-40 text-slate-400'
+                                      }`}
+                                    >
+                                      Eliminated
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                              {/* Visual Playoff Advancement Cutline */}
+                              {isLastQualifier && (
+                                <tr key={`${pool.name}-cutline`}>
+                                  <td
+                                    colSpan={5}
+                                    className={`py-1.5 px-4 text-[10px] font-black uppercase tracking-wider ${
+                                      themeMode === 'light'
+                                        ? 'bg-emerald-100/90 border-y-2 border-emerald-500 text-emerald-950'
+                                        : 'bg-emerald-950/60 border-y border-emerald-500/40 text-emerald-400'
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <span className="flex items-center gap-1.5">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                        PLAYOFF ADVANCEMENT CUTLINE
+                                      </span>
+                                      <span
+                                        className={`font-black ${
+                                          themeMode === 'light' ? 'text-emerald-900' : 'text-emerald-300'
+                                        }`}
+                                      >
+                                        TOP 2 ADVANCE TO MEDAL SEMIS
+                                      </span>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+
+                    {/* Mini Match Scores Ticker for this pool */}
+                    {pool.matches && pool.matches.length > 0 && (
+                      <div
+                        className={`p-3 border-t flex items-center gap-2 overflow-x-auto text-[11px] ${
+                          themeMode === 'light' ? 'bg-slate-50 border-slate-200' : 'bg-black/20 border-white/5'
+                        }`}
+                      >
+                        <span
+                          className={`font-black uppercase text-[10px] shrink-0 ${
+                            themeMode === 'light' ? 'text-slate-600' : 'opacity-70 text-slate-400'
+                          }`}
+                        >
+                          Results:
+                        </span>
+                        {pool.matches.slice(0, 4).map((m) => (
+                          <span
+                            key={m.id}
+                            className={`px-2 py-1 rounded-lg border shrink-0 font-medium ${
+                              themeMode === 'light'
+                                ? 'bg-white border-slate-300 text-slate-800'
+                                : 'bg-white/10 border-white/10 text-slate-200'
+                            }`}
+                          >
+                            <strong>{m.team1.split(' ')[0]}</strong> {m.score?.[0]}-{m.score?.[1]} <strong>{m.team2.split(' ')[0]}</strong>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           ) : (
             /* ====================================================
-               SCREEN TYPE B: DIVISION BRACKET & POOLS TREE MAP
+               SCREEN TYPE B2: PLAYOFF PROGRESSION & CHAMPIONSHIP MEDAL MATCHES
                ==================================================== */
             (() => {
               const d = currentScreen?.divisionData!;
-              const hasBracket = d.playoffs.semis.length > 0 || d.playoffs.quarters.length > 0;
-              const hasPools = displayedPools.length > 0;
 
               return (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                  {/* Left Column: Stage 1 Pools or Quarterfinals */}
+                  {/* Left Column: Stage 2 Semifinals (or Quarters) */}
                   <div className="lg:col-span-5 space-y-5">
-                    {hasPools ? (
-                      <>
-                        <div className="flex items-center justify-between pb-2 border-b border-white/10">
-                          <h3 className="text-sm font-black uppercase text-emerald-400 tracking-wider flex items-center gap-2">
-                            <span>Stage 1: Round Robin Pools</span>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300">
-                              Top 2 Advance to Semis
-                            </span>
-                          </h3>
-                        </div>
-
-                        {displayedPools.map((pool) => (
-                          <div key={pool.name} className={`rounded-2xl border overflow-hidden shadow-lg ${themeCardBg}`}>
-                            <div className="bg-emerald-950/40 border-b border-white/10 px-4 py-2.5 flex items-center justify-between">
-                              <span className="font-black text-xs text-emerald-300 uppercase tracking-wider">
-                                {pool.name} Standings
-                              </span>
-                              <span className="text-[11px] opacity-70 font-semibold">
-                                {pool.teams.length} Teams &bull; Advance Top 2
-                              </span>
-                            </div>
-
-                            <table className="w-full text-xs text-left">
-                              <thead className="bg-black/20 opacity-70 font-bold border-b border-white/10">
-                                <tr>
-                                  <th className="py-2 px-3">#</th>
-                                  <th className="py-2 px-3">Team</th>
-                                  <th className="py-2 px-2 text-center">W-L</th>
-                                  <th className="py-2 px-2 text-center">+/-</th>
-                                  <th className="py-2 px-3 text-right">Advancement</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-white/5 font-medium">
-                                {pool.teams.map((t, idx) => {
-                                  const liveCourtNum = findLiveCourtForTeam(t.name);
-                                  const isLastQualifier = t.qualified && (!pool.teams[idx + 1] || !pool.teams[idx + 1].qualified);
-
-                                  return (
-                                    <React.Fragment key={t.id}>
-                                      <tr className={t.qualified ? 'bg-emerald-950/20 font-bold' : 'opacity-60'}>
-                                        <td className="py-2.5 px-3 font-mono font-bold opacity-75">{idx + 1}</td>
-                                        <td className="py-2.5 px-3">
-                                          <div className="flex items-center gap-2">
-                                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/10 opacity-75">
-                                              #{t.seed}
-                                            </span>
-                                            <span className="font-bold truncate max-w-[130px]">{t.name}</span>
-                                            {liveCourtNum && (
-                                              <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-emerald-500/30 text-emerald-300 border border-emerald-500/50 flex items-center gap-1 shrink-0 animate-pulse">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                                                C{liveCourtNum} LIVE
-                                              </span>
-                                            )}
-                                          </div>
-                                        </td>
-                                        <td className="py-2.5 px-2 text-center font-mono">
-                                          {t.wins}-{t.losses}
-                                        </td>
-                                        <td className="py-2.5 px-2 text-center font-mono text-emerald-400">
-                                          {t.pointDiff > 0 ? `+${t.pointDiff}` : t.pointDiff}
-                                        </td>
-                                        <td className="py-2.5 px-3 text-right">
-                                          {t.qualified ? (
-                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                                              <CheckCircle2 size={10} className="text-emerald-400" />
-                                              Q{idx + 1} Advancing &rarr;
-                                            </span>
-                                          ) : (
-                                            <span className="text-[10px] opacity-40">Eliminated</span>
-                                          )}
-                                        </td>
-                                      </tr>
-                                      {/* Visual Playoff Advancement Cutline */}
-                                      {isLastQualifier && (
-                                        <tr key={`${pool.name}-cutline`}>
-                                          <td colSpan={5} className="py-1 px-3 bg-emerald-950/60 border-y border-emerald-500/40 text-[10px] font-black uppercase tracking-wider text-emerald-400">
-                                            <div className="flex items-center justify-between">
-                                              <span className="flex items-center gap-1.5">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                                                PLAYOFF ADVANCEMENT CUTLINE
-                                              </span>
-                                              <span className="text-[9px] text-emerald-300 font-bold">TOP 2 ADVANCE TO MEDAL SEMIS</span>
-                                            </div>
-                                          </td>
-                                        </tr>
-                                      )}
-                                    </React.Fragment>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                          </div>
-                        ))}
-                      </>
-                    ) : (
-                      <>
-                        <div className="flex items-center justify-between pb-2 border-b border-white/10">
-                          <h3 className="text-sm font-black uppercase opacity-75 tracking-wider">Quarterfinals (Round of 8)</h3>
-                        </div>
-                        <div className="space-y-4">
-                          {d.playoffs.quarters.map((q) => (
-                            <TvMatchNodeCard key={q.id} node={q} cardBg={themeCardBg} />
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Middle Column: Stage 2 Semifinals */}
-                  <div className="lg:col-span-3 space-y-5">
-                    <div className="flex items-center justify-between pb-2 border-b border-white/10">
-                      <h3 className="text-sm font-black uppercase text-blue-400 tracking-wider flex items-center gap-2">
-                        <span>Stage 2: Semifinals</span>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300">
-                          Win to Gold
+                    <div
+                      className={`flex items-center justify-between pb-2 border-b ${
+                        themeMode === 'light' ? 'border-slate-300' : 'border-white/10'
+                      }`}
+                    >
+                      <h3
+                        className={`text-sm font-black uppercase tracking-wider flex items-center gap-2 ${
+                          themeMode === 'light' ? 'text-blue-700 font-black' : 'text-blue-400'
+                        }`}
+                      >
+                        <span>Stage 2: Playoff Semifinals</span>
+                        <span
+                          className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                            themeMode === 'light'
+                              ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                              : 'bg-blue-500/20 border border-blue-500/30 text-blue-300'
+                          }`}
+                        >
+                          Winners to Gold &bull; Losers to Bronze
                         </span>
                       </h3>
                     </div>
 
-                    <div className="space-y-6 pt-2">
+                    <div className="space-y-4 pt-1">
                       {d.playoffs.semis.map((semi) => (
-                        <TvMatchNodeCard key={semi.id} node={semi} isSemi cardBg={themeCardBg} />
+                        <TvMatchNodeCard
+                          key={semi.id}
+                          node={semi}
+                          isSemi
+                          cardBg={themeCardBg}
+                          themeMode={themeMode}
+                        />
                       ))}
                     </div>
                   </div>
 
                   {/* Right Column: Stage 3 Gold & Bronze Medal Matches */}
-                  <div className="lg:col-span-4 space-y-6">
-                    <div className="flex items-center justify-between pb-2 border-b border-white/10">
-                      <h3 className="text-sm font-black uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
-                        <Trophy className="w-4 h-4 text-amber-400" />
-                        <span>Stage 3: Medal Matches</span>
+                  <div className="lg:col-span-7 space-y-6">
+                    <div
+                      className={`flex items-center justify-between pb-2 border-b ${
+                        themeMode === 'light' ? 'border-slate-300' : 'border-white/10'
+                      }`}
+                    >
+                      <h3
+                        className={`text-sm font-black uppercase tracking-wider flex items-center gap-1.5 ${
+                          themeMode === 'light' ? 'text-amber-800 font-black' : 'text-amber-400'
+                        }`}
+                      >
+                        <Trophy className={`w-4 h-4 ${themeMode === 'light' ? 'text-amber-600' : 'text-amber-400'}`} />
+                        <span>Stage 3: Championship Medal Matches</span>
                       </h3>
                     </div>
 
-                    {/* 🥇 Gold & Silver Championship Match */}
-                    <div className="bg-gradient-to-b from-amber-950/40 via-slate-900 to-slate-950 border-2 border-amber-400 rounded-3xl p-5 shadow-2xl shadow-amber-950/40 ring-1 ring-amber-400/40">
-                      <div className="flex items-center justify-between pb-3 mb-3 border-b border-amber-400/30">
-                        <span className="text-xs font-black uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
-                          <Trophy className="w-4 h-4 text-amber-400" />
-                          🥇 Gold & 🥈 Silver Final
-                        </span>
-                        <span className="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg bg-amber-400 text-black shadow-sm">
-                          Stadium Court 1
-                        </span>
-                      </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      {/* 🥇 Gold & Silver Championship Match */}
+                      <div
+                        className={`rounded-3xl p-5 transition-all shadow-xl ${
+                          themeMode === 'light'
+                            ? 'bg-gradient-to-b from-amber-50/90 via-white to-white border-2 border-amber-400 text-slate-900 shadow-amber-900/10 ring-1 ring-amber-300'
+                            : 'bg-gradient-to-b from-amber-950/40 via-slate-900 to-slate-950 border-2 border-amber-400 text-white shadow-2xl shadow-amber-950/40 ring-1 ring-amber-400/40'
+                        }`}
+                      >
+                        <div
+                          className={`flex items-center justify-between pb-3 mb-3 border-b ${
+                            themeMode === 'light' ? 'border-amber-300' : 'border-amber-400/30'
+                          }`}
+                        >
+                          <span
+                            className={`text-xs font-black uppercase tracking-wider flex items-center gap-1.5 ${
+                              themeMode === 'light' ? 'text-amber-950' : 'text-amber-300'
+                            }`}
+                          >
+                            <Trophy className={`w-4 h-4 ${themeMode === 'light' ? 'text-amber-600' : 'text-amber-400'}`} />
+                            🥇 Gold & 🥈 Silver Final
+                          </span>
+                          <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-lg bg-amber-400 text-black shadow-sm">
+                            Stadium Court 1
+                          </span>
+                        </div>
 
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between py-2 border-b border-white/10">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                              #1
+                        <div className="space-y-3">
+                          <div
+                            className={`flex items-center justify-between py-2 border-b ${
+                              themeMode === 'light' ? 'border-slate-200' : 'border-white/10'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`text-xs font-black px-1.5 py-0.5 rounded ${
+                                  themeMode === 'light'
+                                    ? 'bg-amber-100 text-amber-950 border border-amber-300'
+                                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                }`}
+                              >
+                                #1
+                              </span>
+                              <span
+                                className={`font-black text-base ${
+                                  themeMode === 'light' ? 'text-slate-950' : 'text-white'
+                                }`}
+                              >
+                                {d.playoffs.final.team1.name}
+                              </span>
+                            </div>
+                            <span
+                              className={`text-xs font-extrabold px-2 py-0.5 rounded ${
+                                themeMode === 'light'
+                                  ? 'bg-amber-100 text-amber-900 border border-amber-200'
+                                  : 'bg-white/10 text-white'
+                              }`}
+                            >
+                              Pool A #1
                             </span>
-                            <span className="font-black text-base">{d.playoffs.final.team1.name}</span>
                           </div>
-                          <span className="text-xs font-extrabold px-2 py-0.5 rounded bg-white/10">Pool A #1</span>
+
+                          <div className="flex items-center justify-between py-2">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`text-xs font-black px-1.5 py-0.5 rounded ${
+                                  themeMode === 'light'
+                                    ? 'bg-slate-200 text-slate-700 border border-slate-300'
+                                    : 'bg-white/10 opacity-75'
+                                }`}
+                              >
+                                TBD
+                              </span>
+                              <span
+                                className={`font-black text-base ${
+                                  themeMode === 'light' ? 'text-slate-700' : 'opacity-75'
+                                }`}
+                              >
+                                {d.playoffs.final.team2.name}
+                              </span>
+                            </div>
+                            <span
+                              className={`text-xs font-bold ${
+                                themeMode === 'light' ? 'text-amber-800' : 'text-amber-400/80'
+                              }`}
+                            >
+                              Winner Semi 2
+                            </span>
+                          </div>
                         </div>
 
-                        <div className="flex items-center justify-between py-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-extrabold px-1.5 py-0.5 rounded bg-white/10 opacity-75">TBD</span>
-                            <span className="font-black text-base opacity-75">{d.playoffs.final.team2.name}</span>
-                          </div>
-                          <span className="text-xs font-bold text-amber-400/80">Winner Semi 2</span>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 pt-3 border-t border-amber-400/20 flex items-center justify-between text-[11px] text-amber-200/90 font-semibold">
-                        <span>🥇 Gold: Trophy + $1,200</span>
-                        <span>🥈 Silver: Medal + $600</span>
-                      </div>
-                    </div>
-
-                    {/* 🥉 Bronze 3rd Place Match */}
-                    <div className="bg-gradient-to-b from-orange-950/30 via-slate-900 to-slate-950 border border-orange-500/60 rounded-3xl p-5 shadow-xl shadow-orange-950/20">
-                      <div className="flex items-center justify-between pb-3 mb-3 border-b border-orange-500/30">
-                        <span className="text-xs font-black uppercase tracking-wider text-orange-300 flex items-center gap-1.5">
-                          <Medal className="w-4 h-4 text-orange-400" />
-                          🥉 Bronze 3rd Place Match
-                        </span>
-                        <span className="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg bg-orange-500/20 text-orange-300 border border-orange-500/40">
-                          Court 3
-                        </span>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between py-1.5 border-b border-white/10">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-extrabold px-1.5 py-0.5 rounded bg-white/10 opacity-75">#3</span>
-                            <span className="font-bold text-sm">{d.playoffs.bronze.team1.name}</span>
-                          </div>
-                          <span className="text-xs opacity-60">Loser Semi 1</span>
-                        </div>
-
-                        <div className="flex items-center justify-between py-1.5">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-extrabold px-1.5 py-0.5 rounded bg-white/10 opacity-75">TBD</span>
-                            <span className="font-bold text-sm opacity-60">{d.playoffs.bronze.team2.name}</span>
-                          </div>
-                          <span className="text-xs opacity-60">Loser Semi 2</span>
+                        <div
+                          className={`mt-4 pt-3 border-t flex items-center justify-between text-[11px] font-bold ${
+                            themeMode === 'light'
+                              ? 'border-amber-200 text-amber-950'
+                              : 'border-amber-400/20 text-amber-200/90'
+                          }`}
+                        >
+                          <span>🥇 Gold: Trophy + $1,200</span>
+                          <span>🥈 Silver: Medal + $600</span>
                         </div>
                       </div>
 
-                      <div className="mt-3 pt-2.5 border-t border-orange-500/20 flex items-center justify-between text-[11px] text-orange-200/80 font-semibold">
-                        <span>🥉 Bronze: Medal + DUPR 4.0+</span>
-                        <span className="opacity-60">Scheduled 3:45 PM</span>
+                      {/* 🥉 Bronze 3rd Place Match */}
+                      <div
+                        className={`rounded-3xl p-5 transition-all shadow-md ${
+                          themeMode === 'light'
+                            ? 'bg-gradient-to-b from-orange-50/90 via-white to-white border border-orange-300 text-slate-900 shadow-orange-900/10'
+                            : 'bg-gradient-to-b from-orange-950/30 via-slate-900 to-slate-950 border border-orange-500/60 text-white shadow-xl shadow-orange-950/20'
+                        }`}
+                      >
+                        <div
+                          className={`flex items-center justify-between pb-3 mb-3 border-b ${
+                            themeMode === 'light' ? 'border-orange-200' : 'border-orange-500/30'
+                          }`}
+                        >
+                          <span
+                            className={`text-xs font-black uppercase tracking-wider flex items-center gap-1.5 ${
+                              themeMode === 'light' ? 'text-orange-950' : 'text-orange-300'
+                            }`}
+                          >
+                            <Medal className={`w-4 h-4 ${themeMode === 'light' ? 'text-orange-600' : 'text-orange-400'}`} />
+                            🥉 Bronze 3rd Place Match
+                          </span>
+                          <span
+                            className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg ${
+                              themeMode === 'light'
+                                ? 'bg-orange-100 text-orange-900 border border-orange-300'
+                                : 'bg-orange-500/20 text-orange-300 border border-orange-500/40'
+                            }`}
+                          >
+                            Court 3
+                          </span>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div
+                            className={`flex items-center justify-between py-1.5 border-b ${
+                              themeMode === 'light' ? 'border-slate-200' : 'border-white/10'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`text-xs font-black px-1.5 py-0.5 rounded ${
+                                  themeMode === 'light'
+                                    ? 'bg-orange-100 text-orange-900 border border-orange-200'
+                                    : 'bg-white/10 opacity-75'
+                                }`}
+                              >
+                                #3
+                              </span>
+                              <span
+                                className={`font-bold text-sm ${
+                                  themeMode === 'light' ? 'text-slate-950' : 'text-white'
+                                }`}
+                              >
+                                {d.playoffs.bronze.team1.name}
+                              </span>
+                            </div>
+                            <span
+                              className={`text-xs ${
+                                themeMode === 'light' ? 'text-slate-600' : 'opacity-60'
+                              }`}
+                            >
+                              Loser Semi 1
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between py-1.5">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`text-xs font-black px-1.5 py-0.5 rounded ${
+                                  themeMode === 'light'
+                                    ? 'bg-slate-200 text-slate-700 border border-slate-300'
+                                    : 'bg-white/10 opacity-75'
+                                }`}
+                              >
+                                TBD
+                              </span>
+                              <span
+                                className={`font-bold text-sm ${
+                                  themeMode === 'light' ? 'text-slate-700' : 'opacity-60'
+                                }`}
+                              >
+                                {d.playoffs.bronze.team2.name}
+                              </span>
+                            </div>
+                            <span
+                              className={`text-xs ${
+                                themeMode === 'light' ? 'text-slate-600' : 'opacity-60'
+                              }`}
+                            >
+                              Loser Semi 2
+                            </span>
+                          </div>
+                        </div>
+
+                        <div
+                          className={`mt-3 pt-2.5 border-t flex items-center justify-between text-[11px] font-bold ${
+                            themeMode === 'light'
+                              ? 'border-orange-200 text-orange-950'
+                              : 'border-orange-500/20 text-orange-200/80'
+                          }`}
+                        >
+                          <span>🥉 Bronze: Medal + DUPR 4.0+</span>
+                          <span className={themeMode === 'light' ? 'text-slate-500' : 'opacity-60'}>Scheduled 3:45 PM</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1351,27 +2015,57 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
       <footer className={`${themeHeaderClass} px-6 py-2.5 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-medium border-t transition-colors shadow-2xl`}>
         {/* Tier 1: Finished Today Podium Showcase */}
         <div className="flex items-center gap-2 overflow-hidden shrink-0">
-          <span className="px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-extrabold uppercase flex items-center gap-1 shadow-sm">
-            <Trophy size={12} className="text-amber-400" />
+          <span
+            className={`px-2 py-0.5 rounded-md text-[11px] font-extrabold uppercase flex items-center gap-1 shadow-sm ${
+              themeMode === 'light'
+                ? 'bg-amber-100 border border-amber-300 text-amber-900'
+                : 'bg-amber-500/20 border border-amber-500/40 text-amber-300'
+            }`}
+          >
+            <Trophy size={12} className={themeMode === 'light' ? 'text-amber-600' : 'text-amber-400'} />
             Podium
           </span>
-          <span className="opacity-80 text-xs truncate max-w-[280px]">
+          <span
+            className={`text-xs truncate max-w-[280px] ${
+              themeMode === 'light' ? 'text-slate-800' : 'opacity-80 text-white'
+            }`}
+          >
             <strong>Singles Open:</strong> 🥇 Reyes &bull; 🥈 Chen &bull; 🥉 Patel
           </span>
         </div>
 
         {/* Tier 2: On-Deck Stadium Queue */}
-        <div className="flex items-center gap-2.5 overflow-hidden flex-1 px-4 border-l border-r border-white/10">
-          <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-extrabold uppercase shrink-0 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+        <div
+          className={`flex items-center gap-2.5 overflow-hidden flex-1 px-4 border-l border-r ${
+            themeMode === 'light' ? 'border-slate-300' : 'border-white/10'
+          }`}
+        >
+          <span
+            className={`px-2 py-0.5 rounded-md text-[11px] font-extrabold uppercase shrink-0 flex items-center gap-1 ${
+              themeMode === 'light'
+                ? 'bg-emerald-100 border border-emerald-300 text-emerald-800'
+                : 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
+            }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                themeMode === 'light' ? 'bg-emerald-600' : 'bg-emerald-400'
+              }`}
+            />
             On Deck
           </span>
-          <div className="truncate opacity-80 text-xs">
+          <div
+            className={`truncate text-xs ${
+              themeMode === 'light' ? 'text-slate-800' : 'opacity-80 text-white'
+            }`}
+          >
             {scheduledMatches.length > 0 ? (
               scheduledMatches.slice(0, 3).map((m, i) => (
                 <span key={m.id} className="mr-4">
                   <strong>{m.team1 || 'Team 1'}</strong> vs <strong>{m.team2 || 'Team 2'}</strong>
-                  {i < Math.min(scheduledMatches.length - 1, 2) && <span className="opacity-40 ml-3">&bull;</span>}
+                  {i < Math.min(scheduledMatches.length - 1, 2) && (
+                    <span className={`ml-3 ${themeMode === 'light' ? 'text-slate-400' : 'opacity-40'}`}>&bull;</span>
+                  )}
                 </span>
               ))
             ) : (
@@ -1381,11 +2075,17 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
         </div>
 
         {/* Tier 3: Active Rallies & Wall Clock */}
-        <div className="flex items-center gap-4 shrink-0 font-mono opacity-80 text-xs">
-          <span className="text-emerald-400 font-bold">{activeMatchesCount} Courts Live</span>
-          <span className="opacity-40">&bull;</span>
+        <div
+          className={`flex items-center gap-4 shrink-0 font-mono text-xs ${
+            themeMode === 'light' ? 'text-slate-700 font-bold' : 'opacity-80 text-white'
+          }`}
+        >
+          <span className={`font-black ${themeMode === 'light' ? 'text-emerald-700' : 'text-emerald-400'}`}>
+            {activeMatchesCount} Courts Live
+          </span>
+          <span className={themeMode === 'light' ? 'text-slate-400' : 'opacity-40'}>&bull;</span>
           <div className="flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 opacity-60" />
+            <Clock className={`w-3.5 h-3.5 ${themeMode === 'light' ? 'text-slate-500' : 'opacity-60'}`} />
             <span>{currentTime}</span>
           </div>
         </div>
@@ -1399,39 +2099,64 @@ interface TvMatchNodeCardProps {
   node: PlayoffMatchNode;
   isSemi?: boolean;
   cardBg?: string;
+  themeMode?: 'dark' | 'green' | 'light';
 }
 
-const TvMatchNodeCard: React.FC<TvMatchNodeCardProps> = ({ node, isSemi = false, cardBg = 'bg-slate-900/90 border-slate-800' }) => {
+const TvMatchNodeCard: React.FC<TvMatchNodeCardProps> = ({
+  node,
+  isSemi = false,
+  cardBg = 'bg-slate-900/90 border-slate-800',
+  themeMode = 'dark',
+}) => {
   const isLive = node.status === 'LIVE';
   const isCompleted = node.status === 'COMPLETED';
+  const isLight = themeMode === 'light';
 
   return (
     <div
       className={`rounded-2xl border transition-all overflow-hidden shadow-lg ${cardBg} ${
         isLive
-          ? 'border-emerald-500 ring-2 ring-emerald-500/30'
+          ? isLight
+            ? 'border-emerald-600 ring-2 ring-emerald-500/30'
+            : 'border-emerald-500 ring-2 ring-emerald-500/30'
           : isCompleted
-          ? 'border-white/10'
+          ? isLight
+            ? 'border-slate-300'
+            : 'border-white/10'
+          : isLight
+          ? 'border-slate-200'
           : 'border-white/5 opacity-80'
       }`}
     >
       <div
         className={`px-3.5 py-1.5 flex items-center justify-between text-[11px] font-bold border-b ${
           isLive
-            ? 'bg-emerald-950/40 border-emerald-800/40 text-emerald-300'
+            ? isLight
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-900 font-black'
+              : 'bg-emerald-950/40 border-emerald-800/40 text-emerald-300'
+            : isLight
+            ? 'bg-slate-100 border-slate-200 text-slate-800 font-extrabold'
             : 'bg-black/20 border-white/10 opacity-70'
         }`}
       >
         <span className="truncate pr-2 font-black uppercase tracking-wider">{node.title}</span>
         <div className="flex items-center gap-1.5 shrink-0">
           {node.court && (
-            <span className="px-2 py-0.5 rounded bg-white/10 opacity-80 text-[10px] font-bold">
+            <span
+              className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                isLight ? 'bg-slate-200 text-slate-800 border border-slate-300' : 'bg-white/10 opacity-80'
+              }`}
+            >
               Court {node.court}
             </span>
           )}
           {isLive && (
-            <span className="flex items-center gap-1 text-[10px] text-emerald-400 uppercase font-black">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+            <span
+              className={`flex items-center gap-1 text-[10px] uppercase font-black ${
+                isLight ? 'text-emerald-700' : 'text-emerald-400'
+              }`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${isLight ? 'bg-emerald-600' : 'bg-emerald-400'} animate-ping`} />
               Live
             </span>
           )}
@@ -1442,16 +2167,40 @@ const TvMatchNodeCard: React.FC<TvMatchNodeCardProps> = ({ node, isSemi = false,
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 truncate pr-2">
             {node.team1.seed && (
-              <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-white/10 opacity-75">
+              <span
+                className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded ${
+                  isLight ? 'bg-slate-100 text-slate-800 border border-slate-300' : 'bg-white/10 opacity-75'
+                }`}
+              >
                 #{node.team1.seed}
               </span>
             )}
-            <span className={`text-sm truncate ${node.team1.winner ? 'font-black text-emerald-400' : 'font-bold'}`}>
+            <span
+              className={`text-sm truncate ${
+                node.team1.winner
+                  ? isLight
+                    ? 'font-black text-emerald-700'
+                    : 'font-black text-emerald-400'
+                  : isLight
+                  ? 'font-bold text-slate-900'
+                  : 'font-bold'
+              }`}
+            >
               {node.team1.name}
             </span>
           </div>
           {node.team1.score !== undefined && (
-            <span className={`text-lg font-mono font-black ${node.team1.winner ? 'text-emerald-400' : 'opacity-60'}`}>
+            <span
+              className={`text-lg font-mono font-black ${
+                node.team1.winner
+                  ? isLight
+                    ? 'text-emerald-700'
+                    : 'text-emerald-400'
+                  : isLight
+                  ? 'text-slate-500 font-bold'
+                  : 'opacity-60'
+              }`}
+            >
               {node.team1.score}
             </span>
           )}
@@ -1460,16 +2209,40 @@ const TvMatchNodeCard: React.FC<TvMatchNodeCardProps> = ({ node, isSemi = false,
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 truncate pr-2">
             {node.team2.seed && (
-              <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-white/10 opacity-75">
+              <span
+                className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded ${
+                  isLight ? 'bg-slate-100 text-slate-800 border border-slate-300' : 'bg-white/10 opacity-75'
+                }`}
+              >
                 #{node.team2.seed}
               </span>
             )}
-            <span className={`text-sm truncate ${node.team2.winner ? 'font-black text-emerald-400' : 'font-bold'}`}>
+            <span
+              className={`text-sm truncate ${
+                node.team2.winner
+                  ? isLight
+                    ? 'font-black text-emerald-700'
+                    : 'font-black text-emerald-400'
+                  : isLight
+                  ? 'font-bold text-slate-900'
+                  : 'font-bold'
+              }`}
+            >
               {node.team2.name}
             </span>
           </div>
           {node.team2.score !== undefined && (
-            <span className={`text-lg font-mono font-black ${node.team2.winner ? 'text-emerald-400' : 'opacity-60'}`}>
+            <span
+              className={`text-lg font-mono font-black ${
+                node.team2.winner
+                  ? isLight
+                    ? 'text-emerald-700'
+                    : 'text-emerald-400'
+                  : isLight
+                  ? 'text-slate-500 font-bold'
+                  : 'opacity-60'
+              }`}
+            >
               {node.team2.score}
             </span>
           )}
