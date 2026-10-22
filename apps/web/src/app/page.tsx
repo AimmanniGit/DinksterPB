@@ -57,6 +57,7 @@ export default function DinksterWebPlatform() {
   const [activeTab, setActiveTab] = useState<TabKey>('dash');
   const [theme, setTheme] = useState('default');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [tvInitialMode, setTvInitialMode] = useState<'jumbotron' | 'spotlight' | 'bracket' | 'cycle'>('jumbotron');
 
   // Tournament Data State
   const [event, setEvent] = useState<TournamentEvent>(INITIAL_EVENT);
@@ -346,6 +347,7 @@ export default function DinksterWebPlatform() {
         courts={courts}
         matches={matches}
         sponsors={sponsors}
+        initialMode={tvInitialMode}
         onExitTvMode={() => setRole('org')}
       />
     );
@@ -679,7 +681,12 @@ export default function DinksterWebPlatform() {
 
         {/* VIEW: BRACKETS & PLAYOFFS */}
         {activeTab === 'brackets' && (
-          <BracketsPlayoffsView onOpenTvMode={() => setRole('tv')} />
+          <BracketsPlayoffsView
+            onOpenTvMode={() => {
+              setTvInitialMode('bracket');
+              setRole('tv');
+            }}
+          />
         )}
 
         {/* VIEW: REGISTRATIONS */}

@@ -10,8 +10,22 @@ import {
   Flame,
   Radio,
   Clock,
+  Trophy,
+  Medal,
+  Award,
+  ChevronRight,
+  CheckCircle2,
+  Sparkles,
 } from 'lucide-react';
-import { CourtDeskState, TournamentMatch, Sponsor } from '../../types/organizer';
+import {
+  CourtDeskState,
+  TournamentMatch,
+  Sponsor,
+  DivisionBracketData,
+  PoolGroup,
+  PlayoffMatchNode,
+} from '../../types/organizer';
+import { INITIAL_BRACKET_DATA } from '../../constants/initialState';
 
 interface TvBroadcastViewProps {
   tournamentName?: string;
@@ -20,6 +34,8 @@ interface TvBroadcastViewProps {
   matches: TournamentMatch[];
   sponsors?: Sponsor[];
   onExitTvMode?: () => void;
+  bracketData?: Record<string, DivisionBracketData>;
+  initialMode?: 'jumbotron' | 'spotlight' | 'bracket' | 'cycle';
 }
 
 export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
@@ -29,9 +45,13 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
   matches,
   sponsors = [],
   onExitTvMode,
+  bracketData = INITIAL_BRACKET_DATA,
+  initialMode = 'jumbotron',
 }) => {
-  const [displayMode, setDisplayMode] = useState<'jumbotron' | 'spotlight' | 'cycle'>('jumbotron');
+  const [displayMode, setDisplayMode] = useState<'jumbotron' | 'spotlight' | 'bracket' | 'cycle'>(initialMode);
   const [spotlightCourtNumber, setSpotlightCourtNumber] = useState<number>(1);
+  const [selectedDivisionId, setSelectedDivisionId] = useState<string>('A');
+  const [cycleIndex, setCycleIndex] = useState<number>(0); // 0: Jumbotron, 1: Spotlight, 2: Bracket
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [currentTime, setCurrentTime] = useState<string>('');
@@ -54,12 +74,13 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-cycle courts if in cycle mode
+  // Auto-cycle through Jumbotron -> Spotlight -> Bracket Tree Map in cycle mode
   useEffect(() => {
     if (displayMode !== 'cycle') return;
     const interval = setInterval(() => {
+      setCycleIndex((prev) => (prev + 1) % 3);
       setSpotlightCourtNumber((prev) => (prev % courts.length) + 1);
-    }, 12000); // 12 seconds per court
+    }, 14000); // 14 seconds per broadcast segment
     return () => clearInterval(interval);
   }, [displayMode, courts.length]);
 
@@ -87,6 +108,13 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
   const scheduledMatches = matches.filter((m) => m.status === 'SCHEDULED' || m.status === 'PENDING');
   const activeMatchesCount = courts.filter((c) => c.status === 'live').length;
   const spotlightCourt = courts.find((c) => c.number === spotlightCourtNumber) || courts[0];
+  const activeScreen = displayMode === 'cycle'
+    ? cycleIndex === 0
+      ? 'jumbotron'
+      : cycleIndex === 1
+      ? 'spotlight'
+      : 'bracket'
+    : displayMode;
 
   return (
     <div className="min-h-screen bg-slate-950 text-white font-sans flex flex-col select-none">
@@ -136,6 +164,17 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
               Center Court
             </button>
             <button
+              onClick={() => setDisplayMode('bracket')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                displayMode === 'bracket'
+                  ? 'bg-amber-500 text-black shadow font-extrabold'
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              <Trophy className="w-3.5 h-3.5" />
+              Brackets & Medals
+            </button>
+            <button
               onClick={() => setDisplayMode('cycle')}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
                 displayMode === 'cycle'
@@ -149,7 +188,7 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
           </div>
 
           {/* Spotlight Court Dropdown */}
-          {(displayMode === 'spotlight' || displayMode === 'cycle') && (
+          {displayMode === 'spotlight' && (
             <select
               value={spotlightCourtNumber}
               onChange={(e) => setSpotlightCourtNumber(Number(e.target.value))}
@@ -195,7 +234,7 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
 
       {/* Main TV Screen Content */}
       <main className="flex-1 p-6 overflow-y-auto">
-        {displayMode === 'jumbotron' ? (
+        {activeScreen === 'jumbotron' ? (
           /* ====================================================
              MODE 1: 8-COURT JUMBOTRON GRID (STADIUM VIEW)
              ==================================================== */
@@ -325,7 +364,7 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
               );
             })}
           </div>
-        ) : (
+        ) : activeScreen === 'spotlight' ? (
           /* ====================================================
              MODE 2: CENTER COURT SPOTLIGHT (GIANT SCOREBOARD)
              ==================================================== */
@@ -401,6 +440,288 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
               </div>
             )}
           </div>
+        ) : (
+          /* ====================================================
+             MODE 3: TOURNAMENT BRACKET & MEDAL PROGRESSION TREE
+             Round Robin Pools -> Playoff Tree -> Medal Matches
+             ==================================================== */
+          <div className="max-w-[1500px] mx-auto space-y-6 py-2">
+            {/* Division & Progression Header Bar */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/90 border border-slate-800 p-4 rounded-3xl shadow-xl">
+              <div className="flex items-center gap-2 overflow-x-auto">
+                <span className="text-xs font-black uppercase text-amber-400 tracking-wider mr-2 flex items-center gap-1.5 shrink-0">
+                  <Trophy className="w-4 h-4 text-amber-400" />
+                  Division:
+                </span>
+                {Object.values(bracketData).map((b) => (
+                  <button
+                    key={b.divisionId}
+                    onClick={() => setSelectedDivisionId(b.divisionId)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+                      selectedDivisionId === b.divisionId
+                        ? 'bg-amber-500 text-black shadow font-extrabold'
+                        : 'bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700'
+                    }`}
+                  >
+                    {b.divisionName}
+                  </button>
+                ))}
+              </div>
+
+              {/* Broadcast Stage Flow Badges */}
+              <div className="flex items-center gap-2 text-xs font-bold">
+                <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  Stage 1: Round Robin Pools
+                </span>
+                <ChevronRight className="w-4 h-4 text-slate-600" />
+                <span className="px-3 py-1.5 rounded-xl bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                  Stage 2: Playoff Semifinals
+                </span>
+                <ChevronRight className="w-4 h-4 text-slate-600" />
+                <span className="px-3.5 py-1.5 rounded-xl bg-amber-500/25 text-amber-300 border border-amber-500/40 font-black flex items-center gap-1.5 shadow-sm">
+                  <Medal className="w-4 h-4 text-amber-400" />
+                  🥇 Gold & 🥉 Bronze Medal Matches
+                </span>
+              </div>
+            </div>
+
+            {/* Stadium Tree Map Grid */}
+            {(() => {
+              const currentBracket = bracketData[selectedDivisionId] || bracketData['A'];
+              const hasPools = currentBracket.pools && currentBracket.pools.length > 0;
+
+              return (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                  {/* ====================================================
+                      COLUMN 1: STAGE 1 (POOLS OR QUARTERFINALS)
+                      ==================================================== */}
+                  <div className="lg:col-span-5 space-y-5">
+                    {hasPools ? (
+                      <>
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                          <h3 className="text-sm font-black uppercase text-emerald-400 tracking-wider flex items-center gap-2">
+                            <span>Stage 1: Round Robin Pools</span>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300">
+                              Top 2 Advance to Semis
+                            </span>
+                          </h3>
+                        </div>
+
+                        {currentBracket.pools.map((pool) => (
+                          <div
+                            key={pool.name}
+                            className="bg-slate-900/90 rounded-2xl border border-slate-800 overflow-hidden shadow-lg"
+                          >
+                            <div className="bg-emerald-950/40 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between">
+                              <span className="font-black text-xs text-emerald-300 uppercase tracking-wider">
+                                {pool.name} Standings
+                              </span>
+                              <span className="text-[11px] text-slate-400 font-semibold">
+                                4 Teams &bull; 6 Matches Total
+                              </span>
+                            </div>
+
+                            <table className="w-full text-xs text-left">
+                              <thead className="bg-slate-950/60 text-slate-400 font-bold border-b border-slate-800">
+                                <tr>
+                                  <th className="py-2 px-3">#</th>
+                                  <th className="py-2 px-3">Team</th>
+                                  <th className="py-2 px-2 text-center">W-L</th>
+                                  <th className="py-2 px-2 text-center">+/-</th>
+                                  <th className="py-2 px-3 text-right">Advancement</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-800/60 font-medium">
+                                {pool.teams.map((t, idx) => (
+                                  <tr
+                                    key={t.id}
+                                    className={
+                                      t.qualified
+                                        ? 'bg-emerald-950/20 text-white font-bold'
+                                        : 'text-slate-400'
+                                    }
+                                  >
+                                    <td className="py-2.5 px-3 font-mono font-bold text-slate-500">
+                                      {idx + 1}
+                                    </td>
+                                    <td className="py-2.5 px-3">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
+                                          #{t.seed}
+                                        </span>
+                                        <span className="font-bold text-white truncate max-w-[140px]">
+                                          {t.name}
+                                        </span>
+                                      </div>
+                                    </td>
+                                    <td className="py-2.5 px-2 text-center font-mono">
+                                      {t.wins}-{t.losses}
+                                    </td>
+                                    <td className="py-2.5 px-2 text-center font-mono text-emerald-400">
+                                      {t.pointDiff > 0 ? `+${t.pointDiff}` : t.pointDiff}
+                                    </td>
+                                    <td className="py-2.5 px-3 text-right">
+                                      {t.qualified ? (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                                          <CheckCircle2 size={10} className="text-emerald-400" />
+                                          Q{idx + 1} Advancing &rarr;
+                                        </span>
+                                      ) : (
+                                        <span className="text-[10px] text-slate-600">Eliminated</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ))}
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                          <h3 className="text-sm font-black uppercase text-slate-300 tracking-wider">
+                            Quarterfinals (Round of 8)
+                          </h3>
+                        </div>
+                        <div className="space-y-4">
+                          {currentBracket.playoffs.quarters.map((q) => (
+                            <TvMatchNodeCard key={q.id} node={q} />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* ====================================================
+                      COLUMN 2: STAGE 2 (SEMIFINALS BRACKET NODES)
+                      ==================================================== */}
+                  <div className="lg:col-span-3 space-y-5">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                      <h3 className="text-sm font-black uppercase text-blue-400 tracking-wider flex items-center gap-2">
+                        <span>Stage 2: Semifinals</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300">
+                          Win to Gold
+                        </span>
+                      </h3>
+                    </div>
+
+                    <div className="space-y-6 pt-2">
+                      {currentBracket.playoffs.semis.map((semi) => (
+                        <TvMatchNodeCard key={semi.id} node={semi} isSemi />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ====================================================
+                      COLUMN 3: STAGE 3 (GOLD & BRONZE MEDAL FINALS)
+                      ==================================================== */}
+                  <div className="lg:col-span-4 space-y-6">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                      <h3 className="text-sm font-black uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
+                        <Trophy className="w-4 h-4 text-amber-400" />
+                        <span>Stage 3: Medal Matches</span>
+                      </h3>
+                    </div>
+
+                    {/* 🥇 Gold & Silver Championship Match */}
+                    <div className="bg-gradient-to-b from-amber-950/40 via-slate-900 to-slate-950 border-2 border-amber-400 rounded-3xl p-5 shadow-2xl shadow-amber-950/40 ring-1 ring-amber-400/40">
+                      <div className="flex items-center justify-between pb-3 mb-3 border-b border-amber-400/30">
+                        <span className="text-xs font-black uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                          <Trophy className="w-4 h-4 text-amber-400" />
+                          🥇 Gold & 🥈 Silver Final
+                        </span>
+                        <span className="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg bg-amber-400 text-black shadow-sm">
+                          Stadium Court 1
+                        </span>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between py-2 border-b border-slate-800">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                              #1
+                            </span>
+                            <span className="font-black text-base text-white">
+                              {currentBracket.playoffs.final.team1.name}
+                            </span>
+                          </div>
+                          <span className="text-xs font-extrabold px-2 py-0.5 rounded bg-white/10 text-white">
+                            Pool A #1
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between py-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-extrabold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
+                              TBD
+                            </span>
+                            <span className="font-black text-base text-slate-300">
+                              {currentBracket.playoffs.final.team2.name}
+                            </span>
+                          </div>
+                          <span className="text-xs font-bold text-amber-400/80">
+                            Winner Semi 2
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Golden Award Footer */}
+                      <div className="mt-4 pt-3 border-t border-amber-400/20 flex items-center justify-between text-[11px] text-amber-200/90 font-semibold">
+                        <span>🥇 Gold: Trophy + $1,200</span>
+                        <span>🥈 Silver: Medal + $600</span>
+                      </div>
+                    </div>
+
+                    {/* 🥉 Bronze 3rd Place Match */}
+                    <div className="bg-gradient-to-b from-orange-950/30 via-slate-900 to-slate-950 border border-orange-500/60 rounded-3xl p-5 shadow-xl shadow-orange-950/20">
+                      <div className="flex items-center justify-between pb-3 mb-3 border-b border-orange-500/30">
+                        <span className="text-xs font-black uppercase tracking-wider text-orange-300 flex items-center gap-1.5">
+                          <Medal className="w-4 h-4 text-orange-400" />
+                          🥉 Bronze 3rd Place Match
+                        </span>
+                        <span className="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg bg-orange-500/20 text-orange-300 border border-orange-500/40">
+                          Court 3
+                        </span>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between py-1.5 border-b border-slate-800">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-extrabold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
+                              #3
+                            </span>
+                            <span className="font-bold text-sm text-white">
+                              {currentBracket.playoffs.bronze.team1.name}
+                            </span>
+                          </div>
+                          <span className="text-xs text-slate-400">Loser Semi 1</span>
+                        </div>
+
+                        <div className="flex items-center justify-between py-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-extrabold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
+                              TBD
+                            </span>
+                            <span className="font-bold text-sm text-slate-400">
+                              {currentBracket.playoffs.bronze.team2.name}
+                            </span>
+                          </div>
+                          <span className="text-xs text-slate-400">Loser Semi 2</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 pt-2.5 border-t border-orange-500/20 flex items-center justify-between text-[11px] text-orange-200/80 font-semibold">
+                        <span>🥉 Bronze: Medal + DUPR 4.0+</span>
+                        <span className="text-slate-400">Scheduled 3:45 PM</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
         )}
       </main>
 
@@ -429,6 +750,110 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
           <span>{currentTime}</span>
         </div>
       </footer>
+    </div>
+  );
+};
+
+// Sub-component: Playoff Node Card for TV Broadcast
+interface TvMatchNodeCardProps {
+  node: PlayoffMatchNode;
+  isSemi?: boolean;
+}
+
+const TvMatchNodeCard: React.FC<TvMatchNodeCardProps> = ({ node, isSemi = false }) => {
+  const isLive = node.status === 'LIVE';
+  const isCompleted = node.status === 'COMPLETED';
+
+  return (
+    <div
+      className={`rounded-2xl border transition-all overflow-hidden shadow-lg ${
+        isLive
+          ? 'bg-slate-900 border-emerald-500 ring-2 ring-emerald-500/30'
+          : isCompleted
+          ? 'bg-slate-900/90 border-slate-700/80'
+          : 'bg-slate-900/60 border-slate-800'
+      }`}
+    >
+      {/* Node Header */}
+      <div
+        className={`px-3.5 py-1.5 flex items-center justify-between text-[11px] font-bold border-b ${
+          isLive
+            ? 'bg-emerald-950/40 border-emerald-800/40 text-emerald-300'
+            : 'bg-slate-950/60 border-slate-800 text-slate-400'
+        }`}
+      >
+        <span className="truncate pr-2 font-black uppercase tracking-wider">{node.title}</span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {node.court && (
+            <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-bold">
+              Court {node.court}
+            </span>
+          )}
+          {isLive && (
+            <span className="flex items-center gap-1 text-[10px] text-emerald-400 uppercase font-black">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+              Live
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Teams & Scores */}
+      <div className="p-3 space-y-2">
+        {/* Team 1 */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 truncate pr-2">
+            {node.team1.seed && (
+              <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
+                #{node.team1.seed}
+              </span>
+            )}
+            <span
+              className={`text-sm truncate ${
+                node.team1.winner ? 'font-black text-emerald-300' : 'font-bold text-white'
+              }`}
+            >
+              {node.team1.name}
+            </span>
+          </div>
+          {node.team1.score !== undefined && (
+            <span
+              className={`text-lg font-mono font-black ${
+                node.team1.winner ? 'text-emerald-400' : 'text-slate-400'
+              }`}
+            >
+              {node.team1.score}
+            </span>
+          )}
+        </div>
+
+        {/* Team 2 */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 truncate pr-2">
+            {node.team2.seed && (
+              <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
+                #{node.team2.seed}
+              </span>
+            )}
+            <span
+              className={`text-sm truncate ${
+                node.team2.winner ? 'font-black text-emerald-300' : 'font-bold text-white'
+              }`}
+            >
+              {node.team2.name}
+            </span>
+          </div>
+          {node.team2.score !== undefined && (
+            <span
+              className={`text-lg font-mono font-black ${
+                node.team2.winner ? 'text-emerald-400' : 'text-slate-400'
+              }`}
+            >
+              {node.team2.score}
+            </span>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
