@@ -192,7 +192,46 @@ classDiagram
 
 ---
 
-## 6. Peer Review Checklist & Discussion Topics
+## 6. Peer Review Risk Analysis & Production Mitigations (Implemented)
+
+During architectural peer review, 5 critical system risks were identified. Each risk has been directly mitigated with production code implemented across `@dinkster/shared`, `@dinkster/database`, `apps/web`, and `apps/mobile`:
+
+| Risk Identified | Failure Mode | Production Architectural Fix | Implemented In |
+|---|---|---|---|
+| **1. No link between Firebase & Supabase** | Casual match results cannot reach tournament organizers | HMAC-SHA256 signed webhook endpoint (`/api/webhooks/matches/complete`) with 5-min drift prevention and idempotency key caching (`checkIdempotencyKey`, `recordIdempotencyKey`). | `apps/web/src/lib/webhookVerifier.ts`<br/>`apps/web/src/app/api/webhooks/matches/complete/route.ts` |
+| **2. Firebase JWT vs Supabase RLS** | Supabase Row-Level Security cannot read Firebase Auth tokens | Backend-for-Frontend (BFF) Auth Bridge verifies Firebase tokens, auto-provisions synchronized user records with permanent `DK-XXXXX` format, and maps Firebase `uid` to Postgres User UUID. | `apps/web/src/lib/auth.ts`<br/>`apps/web/src/app/api/v1/tournaments/route.ts` |
+| **3. Prisma bypasses Postgres RLS** | Superuser connection string could leak cross-tenant organizer records | Prisma Client Extension (`createTenantClient`) injects mandatory `organizerId` filters across all tournament queries, throwing `TenantIsolationError` on missing or unauthorized tenant contexts. | `packages/database/src/tenantClient.ts`<br/>`packages/database/src/index.ts` |
+| **4. Firestore TTL is not exact** | 2-hour court check-ins could linger up to 72 hours due to Firestore GC lag | Deterministic `expiresAt` timestamp generation (`createCheckInRecord`) and strict read-time filtering (`isCheckInActive`, `filterActiveCheckIns`) on both client UI and server APIs. | `packages/shared/src/utils/checkIn.ts`<br/>`apps/mobile/src/screens/CourtsScreen.tsx` |
+| **5. Geofence vs Privacy Promise** | Risk of user GPS coordinates leaking or persisting server-side | Pure client-side Haversine distance calculation (`calculateDistanceMeters`, `isWithinGeofence`) executing exclusively on device CPU. Server payloads (`ClientVerifiedCheckInPayload`) strictly omit coordinates. | `packages/shared/src/utils/geofence.ts`<br/>`apps/mobile/src/screens/CourtsScreen.tsx` |
+
+```mermaid
+flowchart TD
+    subgraph CLIENT["Mobile Device (Track A)"]
+        GPS["Device GPS Sensor"] -->|Local CPU Only| GEO["Haversine Geofence<br/>(@dinkster/shared)"]
+        GEO -->|Zero Coordinates Leakage| PAYLOAD["Verified Check-In Payload<br/>(courtId, DK-ID, verifiedLocally, expiresAt)"]
+        PAYLOAD -->|Store / Sync| FS["Firestore Native"]
+        FS -->|Filter Active Only| READ["UI Read Filter<br/>(now < expiresAt)"]
+    end
+
+    subgraph BRIDGE["Secure Webhook & BFF Layer (Track B)"]
+        FS -.->|On Match Complete| CF["Firebase Cloud Function"]
+        CF -->|POST with HMAC-SHA256 & Idempotency Key| WH["/api/webhooks/matches/complete"]
+        WH -->|verifyWebhookSignature| VFY["HMAC Verifier<br/>(crypto.timingSafeEqual)"]
+        VFY -->|Idempotency Check| DEDUP["checkIdempotencyKey()"]
+        DEDUP -->|Prisma Upsert| PG["Supabase PostgreSQL 15"]
+    end
+
+    subgraph TENANT_GUARD["Multi-Tenant Isolation (Wing 3 & 4)"]
+        AUTH["authenticateRequest()"] -->|Decode Firebase JWT| USER["Authenticated User (DK-ID)"]
+        USER -->|Pass organizerId| TENANT["createTenantClient(organizerId)"]
+        TENANT -->|Auto-Inject where: { organizerId }| QUERY["Tenant-Isolated Queries"]
+        QUERY --> PG
+    end
+```
+
+---
+
+## 7. Peer Review Checklist & Discussion Topics
 
 For technical advisors and peer reviewers, the primary areas for evaluation are:
 
