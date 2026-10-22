@@ -1,28 +1,30 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   Tv,
   Maximize2,
   Minimize2,
   Share2,
-  Layers,
-  Flame,
-  Radio,
   Clock,
   Trophy,
   Medal,
-  Award,
   ChevronRight,
+  ChevronLeft,
+  ChevronUp,
+  ChevronDown,
   CheckCircle2,
-  Sparkles,
+  Settings,
+  Check,
+  RotateCw,
+  Pause,
+  Play,
 } from 'lucide-react';
 import {
   CourtDeskState,
   TournamentMatch,
   Sponsor,
   DivisionBracketData,
-  PoolGroup,
   PlayoffMatchNode,
 } from '../../types/organizer';
 import { INITIAL_BRACKET_DATA } from '../../constants/initialState';
@@ -46,20 +48,48 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
   sponsors = [],
   onExitTvMode,
   bracketData = INITIAL_BRACKET_DATA,
-  initialMode = 'jumbotron',
 }) => {
-  const [displayMode, setDisplayMode] = useState<'jumbotron' | 'spotlight' | 'bracket' | 'cycle'>(initialMode);
-  const [spotlightCourtNumber, setSpotlightCourtNumber] = useState<number>(1);
-  const [selectedDivisionId, setSelectedDivisionId] = useState<string>('A');
-  const [cycleIndex, setCycleIndex] = useState<number>(0); // 0: Jumbotron, 1: Spotlight, 2: Bracket
-  const [secondsRemaining, setSecondsRemaining] = useState<number>(14);
-  const [isPaused, setIsPaused] = useState<boolean>(false);
+  // Available screen items in rotation
+  const divisionList = useMemo(() => Object.values(bracketData), [bracketData]);
+  const allDivisionIds = useMemo(() => divisionList.map((d) => d.divisionId), [divisionList]);
+
+  // Operator Settings State (Persisted in LocalStorage)
+  const [selectedDivisionIds, setSelectedDivisionIds] = useState<string[]>(allDivisionIds);
+  const [includeLiveCourts, setIncludeLiveCourts] = useState<boolean>(true);
+  const [rotate, setRotate] = useState<boolean>(true);
+  const [dwellSecs, setDwellSecs] = useState<number>(15);
+  const [dwellDraft, setDwellDraft] = useState<string>('15');
+  const [poolsPerView, setPoolsPerView] = useState<number>(4);
+  const [poolsPerViewDraft, setPoolsPerViewDraft] = useState<string>('4');
+  const [poolFlipSecs, setPoolFlipSecs] = useState<number>(8);
+  const [poolFlipDraft, setPoolFlipDraft] = useState<string>('8');
   const [zoomLevel, setZoomLevel] = useState<number>(1.0);
+  const [themeMode, setThemeMode] = useState<'dark' | 'green' | 'light'>('dark');
+
+  // Active Presentation State
+  const [pageIndex, setPageIndex] = useState<number>(0);
+  const [secondsRemaining, setSecondsRemaining] = useState<number>(15);
+  const [poolHalfIndex, setPoolHalfIndex] = useState<number>(0);
+  const [poolHalfRemaining, setPoolHalfRemaining] = useState<number>(8);
+
+  // Operator UI State
+  const [panelOpen, setPanelOpen] = useState<boolean>(false);
+  const [extraSettingsCollapsed, setExtraSettingsCollapsed] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [currentTime, setCurrentTime] = useState<string>('');
 
-  // Update clock every second
+  const autoCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Auto-close operator control panel after 6s of inactivity
+  const scheduleAutoClose = useCallback(() => {
+    if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
+    autoCloseTimerRef.current = setTimeout(() => {
+      setPanelOpen(false);
+    }, 6000);
+  }, []);
+
+  // Update wall clock every second
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
@@ -77,52 +107,144 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-cycle through Jumbotron -> Spotlight -> Bracket Tree Map with elapsed countdown
+  // Compute rotation screen sequence based on operator selections
+  interface ScreenItem {
+    id: string;
+    type: 'division' | 'live-courts';
+    title: string;
+    subtitle: string;
+    divisionData?: DivisionBracketData;
+  }
+
+  const screens: ScreenItem[] = useMemo(() => {
+    const list: ScreenItem[] = [];
+    if (includeLiveCourts) {
+      list.push({
+        id: 'screen-live-courts',
+        type: 'live-courts',
+        title: 'Live Stadium Courts',
+        subtitle: `${courts.filter((c) => c.status === 'live').length} Active Matches · ${courts.length} Total Courts`,
+      });
+    }
+
+    divisionList
+      .filter((d) => selectedDivisionIds.includes(d.divisionId))
+      .forEach((d) => {
+        const hasBracket = d.playoffs.semis.length > 0 || d.playoffs.quarters.length > 0;
+        list.push({
+          id: d.divisionId,
+          type: 'division',
+          title: d.divisionName,
+          subtitle: hasBracket ? 'Playoff Progression & Medal Matches' : 'Round-Robin Pool Play Standings',
+          divisionData: d,
+        });
+      });
+
+    return list;
+  }, [includeLiveCourts, courts, divisionList, selectedDivisionIds]);
+
+  const safePageIndex = screens.length > 0 ? (((pageIndex % screens.length) + screens.length) % screens.length) : 0;
+  const currentScreen = screens[safePageIndex] || null;
+  const nextScreen = screens.length > 1 ? screens[(safePageIndex + 1) % screens.length] : null;
+
+  // Single long-lived timer for automatic division rotation
   useEffect(() => {
-    if (displayMode !== 'cycle' || isPaused) return;
-    const interval = setInterval(() => {
+    if (!rotate || screens.length <= 1) return;
+    const tick = setInterval(() => {
       setSecondsRemaining((prev) => {
         if (prev <= 1) {
-          setCycleIndex((c) => (c + 1) % 3);
-          setSpotlightCourtNumber((c) => (c % courts.length) + 1);
-          return 14;
+          setPageIndex((p) => p + 1);
+          setPoolHalfIndex(0);
+          setPoolHalfRemaining(poolFlipSecs);
+          return dwellSecs;
         }
         return prev - 1;
       });
     }, 1000);
-    return () => clearInterval(interval);
-  }, [displayMode, isPaused, courts.length]);
+    return () => clearInterval(tick);
+  }, [rotate, screens.length, dwellSecs, poolFlipSecs]);
 
-  // Keyboard Shortcuts (F: Fullscreen, Space: Pause/Resume cycle, Arrows: Step views)
+  // Sub-timer for large pool divisions (split pagination)
+  const currentPools = currentScreen?.divisionData?.pools || [];
+  const isPoolSplit = currentPools.length > poolsPerView && poolsPerView > 0;
+  const displayedPools = isPoolSplit
+    ? poolHalfIndex === 0
+      ? currentPools.slice(0, poolsPerView)
+      : currentPools.slice(poolsPerView)
+    : currentPools;
+
+  useEffect(() => {
+    if (!rotate || !isPoolSplit) return;
+    const tick = setInterval(() => {
+      setPoolHalfRemaining((prev) => {
+        if (prev <= 1) {
+          setPoolHalfIndex((h) => (h === 0 ? 1 : 0));
+          return poolFlipSecs;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(tick);
+  }, [rotate, isPoolSplit, poolFlipSecs]);
+
+  // Reset timers on manual step or jump
+  const jumpToScreen = (targetId: string) => {
+    const idx = screens.findIndex((s) => s.id === targetId);
+    if (idx >= 0) {
+      setPageIndex(idx);
+      setSecondsRemaining(dwellSecs);
+      setPoolHalfIndex(0);
+      setPoolHalfRemaining(poolFlipSecs);
+    }
+  };
+
+  const stepScreen = (delta: number) => {
+    if (screens.length <= 1) return;
+    setPageIndex((prev) => prev + delta);
+    setSecondsRemaining(dwellSecs);
+    setPoolHalfIndex(0);
+    setPoolHalfRemaining(poolFlipSecs);
+  };
+
+  // Keyboard Shortcuts (F: Fullscreen, Space: Pause/Resume, C: Controls, Arrows: Step)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.key === 'f' || e.key === 'F') {
         handleToggleFullscreen();
+      } else if (e.key === 'c' || e.key === 'C') {
+        setPanelOpen((v) => !v);
       } else if (e.key === ' ') {
         e.preventDefault();
-        setIsPaused((p) => !p);
+        setRotate((r) => !r);
       } else if (e.key === 'ArrowRight') {
-        if (displayMode === 'spotlight') {
-          setSpotlightCourtNumber((prev) => (prev % courts.length) + 1);
-        } else if (displayMode === 'bracket') {
-          const keys = Object.keys(bracketData);
-          const idx = keys.indexOf(selectedDivisionId);
-          setSelectedDivisionId(keys[(idx + 1) % keys.length]);
-        }
+        stepScreen(1);
       } else if (e.key === 'ArrowLeft') {
-        if (displayMode === 'spotlight') {
-          setSpotlightCourtNumber((prev) => (prev - 2 + courts.length) % courts.length + 1);
-        } else if (displayMode === 'bracket') {
-          const keys = Object.keys(bracketData);
-          const idx = keys.indexOf(selectedDivisionId);
-          setSelectedDivisionId(keys[(idx - 1 + keys.length) % keys.length]);
-        }
+        stepScreen(-1);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [displayMode, courts.length, selectedDivisionId, bracketData]);
+  }, [screens.length, dwellSecs, poolFlipSecs]);
+
+  const handleToggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.().catch(() => {});
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen?.().catch(() => {});
+      setIsFullscreen(false);
+    }
+  };
+
+  const handleCopyShareLink = () => {
+    const url = typeof window !== 'undefined' ? `${window.location.origin}/tv` : 'https://dinkster.app/tv';
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 3000);
+    }
+  };
 
   // Cross-reference live active court by team name
   const findLiveCourtForTeam = (teamName: string): number | null => {
@@ -142,473 +264,600 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
     return null;
   };
 
-  const handleToggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
-      setIsFullscreen(true);
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen().catch(() => {});
-        setIsFullscreen(false);
-      }
-    }
-  };
-
-  const handleCopyShareLink = () => {
-    const url = typeof window !== 'undefined' ? `${window.location.origin}/tv` : 'https://dinkster.app/tv';
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(url);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 3000);
-    }
-  };
-
   const scheduledMatches = matches.filter((m) => m.status === 'SCHEDULED' || m.status === 'PENDING');
   const activeMatchesCount = courts.filter((c) => c.status === 'live').length;
-  const spotlightCourt = courts.find((c) => c.number === spotlightCourtNumber) || courts[0];
-  const activeScreen = displayMode === 'cycle'
-    ? cycleIndex === 0
-      ? 'jumbotron'
-      : cycleIndex === 1
-      ? 'spotlight'
-      : 'bracket'
-    : displayMode;
+
+  // Background Theme Styles
+  const themeBgClass =
+    themeMode === 'green'
+      ? 'bg-[#07241A] text-white'
+      : themeMode === 'light'
+      ? 'bg-slate-100 text-slate-900'
+      : 'bg-slate-950 text-white';
+
+  const themeHeaderClass =
+    themeMode === 'green'
+      ? 'bg-[#051C14]/95 border-[#0A5C43]/40'
+      : themeMode === 'light'
+      ? 'bg-white/95 border-slate-300 text-slate-900 shadow-sm'
+      : 'bg-slate-900/95 border-slate-800 text-white';
+
+  const themeCardBg =
+    themeMode === 'green'
+      ? 'bg-[#0A2E22]/90 border-[#0A5C43]/50'
+      : themeMode === 'light'
+      ? 'bg-white border-slate-200 text-slate-900 shadow-md'
+      : 'bg-slate-900/90 border-slate-800 text-white';
+
+  // Progress Bar percentage (smooth elapsed filling)
+  const barProgressPercent = isPoolSplit
+    ? Math.round(((poolFlipSecs - poolHalfRemaining) / poolFlipSecs) * 100)
+    : Math.round(((dwellSecs - secondsRemaining) / dwellSecs) * 100);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-sans flex flex-col select-none">
-      {/* Top Stadium Bar / TV Controls */}
-      <header className="bg-slate-900/90 border-b border-slate-800 px-6 py-3.5 flex items-center justify-between backdrop-blur sticky top-0 z-50">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
-              <Tv className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-black tracking-tight text-white uppercase">{tournamentName}</span>
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  LIVE TV CAST
-                </span>
+    <div className={`min-h-screen ${themeBgClass} font-sans flex flex-col select-none relative overflow-x-hidden`}>
+      {/* ========================================================
+          SLIDE-DOWN OPERATOR ADMIN CONTROL PANEL
+          ======================================================== */}
+      <div
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-out transform ${
+          panelOpen ? 'translate-y-0 opacity-100 shadow-2xl' : '-translate-y-full opacity-0 pointer-events-none'
+        }`}
+        onClick={scheduleAutoClose}
+        onInput={scheduleAutoClose}
+      >
+        <div className="bg-slate-900 border-b-2 border-emerald-500 text-white p-5 shadow-2xl backdrop-blur-md">
+          {/* Row 1: Divisions Multiselect Filter & Instant Jump */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-black uppercase text-amber-400 tracking-wider mr-2 flex items-center gap-1.5">
+                <Trophy size={14} className="text-amber-400" />
+                Screens:
+              </span>
+
+              {/* Quick Select Buttons */}
+              <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-xl mr-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedDivisionIds(allDivisionIds)}
+                  className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-slate-700 hover:bg-slate-600 text-white"
+                >
+                  All
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDivisionIds([])}
+                  className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-slate-700 hover:bg-slate-600 text-white"
+                >
+                  None
+                </button>
               </div>
-              <p className="text-xs text-slate-400 font-medium">{venueName} &bull; {activeMatchesCount} Courts Live</p>
+
+              {/* Live Courts Screen Chip */}
+              <div
+                className={`flex items-center rounded-xl border text-xs font-bold transition overflow-hidden ${
+                  includeLiveCourts
+                    ? currentScreen?.type === 'live-courts'
+                      ? 'border-amber-400 bg-amber-400/20 text-white ring-1 ring-amber-400'
+                      : 'border-emerald-500/60 bg-emerald-950/40 text-emerald-300'
+                    : 'border-slate-800 bg-slate-800/40 text-slate-500'
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => setIncludeLiveCourts((prev) => !prev)}
+                  className="px-2.5 py-1.5 hover:bg-white/10 border-r border-slate-700 flex items-center justify-center"
+                  title={includeLiveCourts ? 'Exclude from rotation' : 'Include in rotation'}
+                >
+                  {includeLiveCourts ? <Check size={12} className="text-emerald-400 font-black" /> : <span className="w-3 h-3 border border-slate-600 rounded" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIncludeLiveCourts(true);
+                    jumpToScreen('screen-live-courts');
+                  }}
+                  className="px-3 py-1.5 hover:bg-white/10 flex items-center gap-1.5"
+                  title="Jump to Live Courts now"
+                >
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  Live Courts
+                </button>
+              </div>
+
+              {/* Division Chips */}
+              {divisionList.map((d) => {
+                const isSelected = selectedDivisionIds.includes(d.divisionId);
+                const isCurrent = currentScreen?.id === d.divisionId;
+
+                return (
+                  <div
+                    key={d.divisionId}
+                    className={`flex items-center rounded-xl border text-xs font-bold transition overflow-hidden ${
+                      isSelected
+                        ? isCurrent
+                          ? 'border-amber-400 bg-amber-400/20 text-white ring-1 ring-amber-400'
+                          : 'border-slate-700 bg-slate-800 text-slate-200'
+                        : 'border-slate-800 bg-slate-900/60 text-slate-500'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSelectedDivisionIds((prev) =>
+                          prev.includes(d.divisionId) ? prev.filter((id) => id !== d.divisionId) : [...prev, d.divisionId]
+                        )
+                      }
+                      className="px-2.5 py-1.5 hover:bg-white/10 border-r border-slate-700 flex items-center justify-center"
+                      title={isSelected ? 'Exclude from rotation' : 'Include in rotation'}
+                    >
+                      {isSelected ? <Check size={12} className="text-amber-400 font-black" /> : <span className="w-3 h-3 border border-slate-600 rounded" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!isSelected) {
+                          setSelectedDivisionIds((prev) => [...prev, d.divisionId]);
+                        }
+                        jumpToScreen(d.divisionId);
+                      }}
+                      className="px-3 py-1.5 hover:bg-white/10 truncate max-w-[200px]"
+                      title="Jump to this division now"
+                    >
+                      {d.divisionName}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
+
+            {/* Collapse toggle button for advanced row */}
+            <button
+              type="button"
+              onClick={() => setExtraSettingsCollapsed((prev) => !prev)}
+              className="text-slate-400 hover:text-white text-xs font-bold flex items-center gap-1 shrink-0 px-2 py-1 bg-slate-800 rounded-lg"
+            >
+              {extraSettingsCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+              <span>{extraSettingsCollapsed ? 'More Controls' : 'Hide Controls'}</span>
+            </button>
+          </div>
+
+          {/* Row 2: Advanced Operator Overrides & Timing Settings */}
+          {!extraSettingsCollapsed && (
+            <div className="pt-4 flex flex-wrap items-center justify-between gap-6 text-xs font-semibold">
+              {/* Rotation & Dwell Time Input */}
+              <div className="flex items-center gap-3 bg-slate-800/80 p-2 rounded-xl border border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => setRotate((r) => !r)}
+                  className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition ${
+                    rotate ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-400'
+                  }`}
+                  title="Spacebar toggles rotation"
+                >
+                  <RotateCw size={13} className={rotate ? 'animate-spin-slow' : ''} />
+                  <span>{rotate ? 'Auto-Rotate ON' : 'Paused'}</span>
+                </button>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="text-slate-400 text-[11px] uppercase font-bold">Switch every</span>
+                  <input
+                    type="number"
+                    min={3}
+                    max={300}
+                    value={dwellDraft}
+                    onChange={(e) => {
+                      setDwellDraft(e.target.value);
+                      const n = parseInt(e.target.value, 10);
+                      if (!isNaN(n) && n >= 3) {
+                        setDwellSecs(n);
+                        setSecondsRemaining(n);
+                      }
+                    }}
+                    className="w-14 text-center font-mono font-bold bg-slate-900 border border-slate-700 rounded-lg py-1 text-emerald-400 focus:outline-none focus:border-emerald-500"
+                  />
+                  <span className="text-slate-400">sec</span>
+                </div>
+
+                {/* Step Buttons */}
+                <div className="flex items-center gap-1 border-l border-slate-700 pl-2">
+                  <button
+                    type="button"
+                    onClick={() => stepScreen(-1)}
+                    className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-700 hover:bg-slate-600 text-white"
+                    title="Previous screen (Left Arrow)"
+                  >
+                    <ChevronLeft size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => stepScreen(1)}
+                    className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-700 hover:bg-slate-600 text-white"
+                    title="Next screen (Right Arrow)"
+                  >
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Pool Pagination Controls */}
+              <div className="flex items-center gap-3 bg-slate-800/80 p-2 rounded-xl border border-slate-700">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-slate-400 text-[11px] uppercase font-bold">Split above</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={12}
+                    value={poolsPerViewDraft}
+                    onChange={(e) => {
+                      setPoolsPerViewDraft(e.target.value);
+                      const n = parseInt(e.target.value, 10);
+                      if (!isNaN(n) && n >= 1) setPoolsPerView(n);
+                    }}
+                    className="w-12 text-center font-mono font-bold bg-slate-900 border border-slate-700 rounded-lg py-1 text-emerald-400 focus:outline-none"
+                  />
+                  <span className="text-slate-400">pools/view</span>
+                </div>
+
+                <div className="flex items-center gap-1.5 border-l border-slate-700 pl-3">
+                  <span className="text-slate-400 text-[11px] uppercase font-bold">Flip pool half</span>
+                  <input
+                    type="number"
+                    min={3}
+                    max={60}
+                    value={poolFlipDraft}
+                    onChange={(e) => {
+                      setPoolFlipDraft(e.target.value);
+                      const n = parseInt(e.target.value, 10);
+                      if (!isNaN(n) && n >= 3) {
+                        setPoolFlipSecs(n);
+                        setPoolHalfRemaining(n);
+                      }
+                    }}
+                    className="w-12 text-center font-mono font-bold bg-slate-900 border border-slate-700 rounded-lg py-1 text-emerald-400 focus:outline-none"
+                  />
+                  <span className="text-slate-400">sec</span>
+                </div>
+              </div>
+
+              {/* In-App Board Zoom */}
+              <div className="flex items-center gap-2 bg-slate-800/80 p-2 rounded-xl border border-slate-700">
+                <span className="text-slate-400 text-[11px] uppercase font-bold">Zoom</span>
+                <button
+                  type="button"
+                  onClick={() => setZoomLevel((z) => Math.max(0.7, Math.round((z - 0.1) * 10) / 10))}
+                  className="w-6 h-6 flex items-center justify-center rounded bg-slate-700 hover:bg-slate-600 font-bold"
+                >
+                  -
+                </button>
+                <span className="font-mono text-emerald-400 w-12 text-center">{Math.round(zoomLevel * 100)}%</span>
+                <button
+                  type="button"
+                  onClick={() => setZoomLevel((z) => Math.min(1.5, Math.round((z + 0.1) * 10) / 10))}
+                  className="w-6 h-6 flex items-center justify-center rounded bg-slate-700 hover:bg-slate-600 font-bold"
+                >
+                  +
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setZoomLevel(1.0)}
+                  className="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-[10px] font-bold"
+                >
+                  Reset
+                </button>
+              </div>
+
+              {/* Stadium Theme Switcher */}
+              <div className="flex items-center gap-1 bg-slate-800/80 p-1 rounded-xl border border-slate-700">
+                {(['dark', 'green', 'light'] as const).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setThemeMode(t)}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold capitalize transition ${
+                      themeMode === t ? 'bg-amber-500 text-black shadow' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {t === 'dark' ? 'Dark Stadium' : t === 'green' ? 'Green Court' : 'Clean Light'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ========================================================
+          ROCK-SOLID BROADCAST STADIUM HEADER (NEVER SHIFTS)
+          ======================================================== */}
+      <header className={`${themeHeaderClass} px-6 py-3 flex items-center justify-between backdrop-blur sticky top-0 z-40 border-b transition-colors`}>
+        {/* Left: Tournament Branding */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+            <Tv className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-black tracking-tight uppercase">{tournamentName}</span>
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                LIVE BROADCAST
+              </span>
+            </div>
+            <p className="text-xs opacity-70 font-medium">
+              {venueName} &bull; {activeMatchesCount} Courts Active
+            </p>
           </div>
         </div>
 
-        {/* Mode Selector & TV Actions */}
+        {/* Right: Permanent Action Controls (Rock Solid) */}
         <div className="flex items-center gap-3">
-          <div className="bg-slate-800/80 p-1 rounded-xl border border-slate-700/60 flex items-center gap-1">
-            <button
-              onClick={() => setDisplayMode('jumbotron')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
-                displayMode === 'jumbotron'
-                  ? 'bg-emerald-600 text-white shadow'
-                  : 'text-slate-300 hover:text-white'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              {courts.length}-Court Jumbotron
-            </button>
-            <button
-              onClick={() => setDisplayMode('spotlight')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
-                displayMode === 'spotlight'
-                  ? 'bg-emerald-600 text-white shadow'
-                  : 'text-slate-300 hover:text-white'
-              }`}
-            >
-              <Flame className="w-3.5 h-3.5" />
-              Center Court
-            </button>
-            <button
-              onClick={() => setDisplayMode('bracket')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
-                displayMode === 'bracket'
-                  ? 'bg-amber-500 text-black shadow font-extrabold'
-                  : 'text-slate-300 hover:text-white'
-              }`}
-            >
-              <Trophy className="w-3.5 h-3.5" />
-              Brackets & Medals
-            </button>
-            <button
-              onClick={() => setDisplayMode('cycle')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
-                displayMode === 'cycle'
-                  ? 'bg-emerald-600 text-white shadow'
-                  : 'text-slate-300 hover:text-white'
-              }`}
-            >
-              <Radio className="w-3.5 h-3.5" />
-              Auto-Cycle
-            </button>
-          </div>
+          {/* Status Indicator Pill */}
+          <span className="px-3 py-1.5 rounded-xl bg-white/10 text-xs font-extrabold flex items-center gap-1.5 border border-white/10">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            {currentScreen?.type === 'live-courts'
+              ? 'Court Scoreboard'
+              : currentScreen?.divisionData?.playoffs?.semis?.length
+              ? 'Playoffs & Medals'
+              : 'Pool Play'}
+          </span>
 
-          {/* Cycle Timer Pill & Pause Indicator */}
-          {displayMode === 'cycle' && (
-            <button
-              onClick={() => setIsPaused((p) => !p)}
-              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition ${
-                isPaused
-                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                  : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-              }`}
-              title="Spacebar to Pause / Resume Rotation"
-            >
-              <span className={`w-2 h-2 rounded-full ${isPaused ? 'bg-amber-400' : 'bg-emerald-400 animate-ping'}`} />
-              <span>{isPaused ? 'Paused' : `${secondsRemaining}s`}</span>
-            </button>
-          )}
+          {/* Fullscreen Button */}
+          <button
+            onClick={handleToggleFullscreen}
+            className="p-2.5 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 transition flex items-center justify-center shadow-sm"
+            title="Toggle Fullscreen (F)"
+          >
+            {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+          </button>
 
-          {/* In-App Board Zoom Multiplier */}
-          <div className="flex items-center gap-1 bg-slate-800/80 px-2 py-1.5 rounded-xl border border-slate-700/60 text-xs">
-            <span className="text-[10px] uppercase font-bold text-slate-400 mr-0.5">Zoom</span>
-            <button
-              onClick={() => setZoomLevel((z) => Math.max(0.8, Math.round((z - 0.1) * 10) / 10))}
-              className="w-5 h-5 flex items-center justify-center rounded bg-slate-700 hover:bg-slate-600 text-white font-bold"
-              title="Scale TV UI Down"
-            >
-              -
-            </button>
-            <span className="font-mono text-[11px] font-bold text-slate-200 px-1 w-9 text-center">
-              {Math.round(zoomLevel * 100)}%
-            </span>
-            <button
-              onClick={() => setZoomLevel((z) => Math.min(1.4, Math.round((z + 0.1) * 10) / 10))}
-              className="w-5 h-5 flex items-center justify-center rounded bg-slate-700 hover:bg-slate-600 text-white font-bold"
-              title="Scale TV UI Up for Large Screens"
-            >
-              +
-            </button>
-          </div>
-
-          {/* Spotlight Court Dropdown */}
-          {displayMode === 'spotlight' && (
-            <select
-              value={spotlightCourtNumber}
-              onChange={(e) => setSpotlightCourtNumber(Number(e.target.value))}
-              className="bg-slate-800 border border-slate-700 text-white text-xs font-bold rounded-xl px-3 py-2 outline-none"
-            >
-              {courts.map((c) => (
-                <option key={c.number} value={c.number}>
-                  Court {c.number} {c.matchTitle ? `(${c.matchTitle})` : '(Open)'}
-                </option>
-              ))}
-            </select>
-          )}
+          {/* Settings Drawer Button */}
+          <button
+            onClick={() => {
+              setPanelOpen((v) => !v);
+              if (!panelOpen) scheduleAutoClose();
+            }}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow ${
+              panelOpen ? 'bg-amber-500 text-black font-extrabold' : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+            }`}
+            title="Open Admin Controls (Hotkey: C)"
+          >
+            <Settings size={15} />
+            <span>Settings</span>
+          </button>
 
           {/* Share Link */}
           <button
             onClick={handleCopyShareLink}
-            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5"
-            title="Copy Public Screen Link for TV"
+            className="p-2.5 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 transition flex items-center justify-center"
+            title="Copy Public TV URL"
           >
-            <Share2 className="w-3.5 h-3.5" />
-            {copiedLink ? 'Link Copied!' : 'Share TV Link'}
+            <Share2 size={16} />
           </button>
 
-          {/* Fullscreen */}
-          <button
-            onClick={handleToggleFullscreen}
-            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1.5 shadow"
-            title="Press F for Fullscreen"
-          >
-            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-            {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen TV'}
-          </button>
+          {/* Stadium Wall Clock */}
+          <div className="flex items-center gap-2 pl-2 border-l border-white/15 font-mono text-sm font-bold opacity-90">
+            <Clock size={16} className="text-slate-400" />
+            <span>{currentTime}</span>
+          </div>
 
           {onExitTvMode && (
             <button
               onClick={onExitTvMode}
-              className="px-3 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold opacity-70 hover:opacity-100 hover:bg-white/10 transition"
             >
-              Close TV
+              Exit
             </button>
           )}
         </div>
       </header>
 
-      {/* Elapsed Rotation Progress Bar */}
-      {displayMode === 'cycle' && (
+      {/* ========================================================
+          ELAPSED COUNTDOWN GLIDE BAR (0% -> 100%)
+          ======================================================== */}
+      {rotate && screens.length > 1 && (
         <div className="w-full bg-slate-900 h-1 overflow-hidden relative border-b border-slate-800">
           <div
-            className={`h-full bg-gradient-to-r from-emerald-500 to-amber-400 transition-all duration-1000 ease-linear ${
-              isPaused ? 'opacity-30' : ''
-            }`}
-            style={{ width: `${Math.round(((14 - secondsRemaining) / 14) * 100)}%` }}
+            className="h-full bg-gradient-to-r from-emerald-500 via-amber-400 to-amber-500 transition-all duration-1000 ease-linear"
+            style={{ width: `${barProgressPercent}%` }}
           />
         </div>
       )}
 
-      {/* Main TV Screen Content */}
-      <main className="flex-1 p-6 overflow-y-auto" style={{ zoom: zoomLevel }}>
-        {activeScreen === 'jumbotron' ? (
-          /* ====================================================
-             MODE 1: 8-COURT JUMBOTRON GRID (STADIUM VIEW)
-             ==================================================== */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {courts.map((court) => {
-              const sponsor = sponsors.find((s) => s.courtAssigned === court.number);
-              const isLive = court.status === 'live';
-              const isCalled = court.status === 'called';
-              const isBlocked = court.status === 'blocked';
-              const score = court.score || [0, 0];
+      {/* ========================================================
+          MAIN STAGE AREA
+          ======================================================== */}
+      <main className="flex-1 p-6 overflow-y-auto relative" style={{ zoom: zoomLevel }}>
+        {/* Edge Stepper Navigation Arrows */}
+        {screens.length > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={() => stepScreen(-1)}
+              className="fixed left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur z-30 transition opacity-30 hover:opacity-100"
+              title="Previous screen (Left Arrow)"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <button
+              type="button"
+              onClick={() => stepScreen(1)}
+              className="fixed right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur z-30 transition opacity-30 hover:opacity-100"
+              title="Next screen (Right Arrow)"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </>
+        )}
 
-              // Parse team names from matchTitle if available
-              let teamA = 'Team A';
-              let teamB = 'Team B';
-              if (court.matchTitle && court.matchTitle.includes(' vs ')) {
-                const parts = court.matchTitle.split(' vs ');
-                teamA = parts[0];
-                teamB = parts[1];
-              }
+        {/* Current Screen Header Title Strip */}
+        <div className="max-w-[1500px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 mb-6 border-b border-white/10">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-amber-400 text-black">
+                {currentScreen?.type === 'live-courts' ? 'Active Action' : 'Tournament Stage'}
+              </span>
+              <span className="text-xs opacity-75 font-semibold">
+                {currentScreen?.subtitle}
+                {isPoolSplit ? ` · Pools Part ${poolHalfIndex + 1}/2` : ''}
+              </span>
+            </div>
+            <h1 className="font-display font-black text-3xl md:text-4xl tracking-tight">
+              {currentScreen?.title}
+            </h1>
+          </div>
 
-              return (
-                <div
-                  key={court.number}
-                  className={`rounded-2xl border transition-all flex flex-col justify-between overflow-hidden shadow-2xl ${
-                    isLive
-                      ? 'bg-gradient-to-b from-slate-900 to-slate-950 border-emerald-500/40 shadow-emerald-950/20'
-                      : isCalled
-                      ? 'bg-gradient-to-b from-slate-900 to-slate-950 border-amber-500/40'
-                      : isBlocked
-                      ? 'bg-gradient-to-b from-slate-900 to-slate-950 border-red-500/40'
-                      : 'bg-slate-900/60 border-slate-800'
-                  }`}
-                >
-                  {/* Court Header Banner */}
+          {/* Rotation Position & Next Indicator */}
+          <div className="flex items-center gap-3">
+            {rotate && nextScreen && (
+              <span className="px-3.5 py-1.5 rounded-xl bg-white/10 text-xs font-bold border border-white/10">
+                Next: <strong className="text-amber-400">{nextScreen.title}</strong> in {isPoolSplit ? poolHalfRemaining : secondsRemaining}s
+              </span>
+            )}
+            <span className="font-mono text-xs font-black px-3 py-1.5 rounded-xl bg-white/10 border border-white/10">
+              {safePageIndex + 1} / {screens.length}
+            </span>
+          </div>
+        </div>
+
+        {/* Screen Rendering */}
+        <div className="max-w-[1500px] mx-auto">
+          {screens.length === 0 ? (
+            <div className="py-24 text-center">
+              <h3 className="text-2xl font-bold opacity-60">No screens currently selected in rotation.</h3>
+              <p className="opacity-40 text-sm mt-2">Click Settings above and select at least one division or Live Courts.</p>
+            </div>
+          ) : currentScreen?.type === 'live-courts' ? (
+            /* ====================================================
+               SCREEN TYPE A: LIVE STADIUM COURTS GRID
+               ==================================================== */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+              {courts.map((court) => {
+                const sponsor = sponsors.find((s) => s.courtAssigned === court.number);
+                const isLive = court.status === 'live';
+                const isCalled = court.status === 'called';
+                const isBlocked = court.status === 'blocked';
+                const score = court.score || [0, 0];
+
+                let teamA = 'Team A';
+                let teamB = 'Team B';
+                if (court.matchTitle && court.matchTitle.includes(' vs ')) {
+                  const parts = court.matchTitle.split(' vs ');
+                  teamA = parts[0];
+                  teamB = parts[1];
+                }
+
+                return (
                   <div
-                    className={`px-4 py-2.5 flex items-center justify-between border-b ${
+                    key={court.number}
+                    className={`rounded-3xl border-2 flex flex-col justify-between overflow-hidden transition-all shadow-xl ${themeCardBg} ${
                       isLive
-                        ? 'bg-emerald-950/60 border-emerald-800/40 text-emerald-300'
+                        ? 'border-emerald-500 shadow-emerald-950/40 ring-1 ring-emerald-500/30'
                         : isCalled
-                        ? 'bg-amber-950/60 border-amber-800/40 text-amber-300'
+                        ? 'border-amber-500 shadow-amber-950/30'
                         : isBlocked
-                        ? 'bg-red-950/60 border-red-800/40 text-red-300'
-                        : 'bg-slate-800/60 border-slate-700/60 text-slate-400'
+                        ? 'border-red-500/80'
+                        : 'border-slate-800'
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="font-black text-sm tracking-wide uppercase">
-                        Court {court.number}
-                      </span>
-                      {sponsor && (
-                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-white/10 text-white/90">
-                          {sponsor.name}
-                        </span>
-                      )}
-                    </div>
-                    <span
-                      className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                    <div
+                      className={`px-4 py-2.5 flex items-center justify-between border-b ${
                         isLive
-                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                          ? 'bg-emerald-950/60 border-emerald-800/40 text-emerald-300'
                           : isCalled
-                          ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                          ? 'bg-amber-950/60 border-amber-800/40 text-amber-300'
                           : isBlocked
-                          ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                          : 'bg-slate-700/40 text-slate-400'
+                          ? 'bg-red-950/60 border-red-800/40 text-red-300'
+                          : 'bg-slate-800/60 border-slate-700/60 text-slate-400'
                       }`}
                     >
-                      {isLive && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
-                      {court.status.toUpperCase()}
-                    </span>
-                  </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-black text-sm tracking-wide uppercase">Court {court.number}</span>
+                        {sponsor && (
+                          <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-white/10 text-white/90">
+                            {sponsor.name}
+                          </span>
+                        )}
+                      </div>
+                      <span
+                        className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                          isLive
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            : isCalled
+                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                            : isBlocked
+                            ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                            : 'bg-slate-700/40 text-slate-400'
+                        }`}
+                      >
+                        {isLive && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
+                        {court.status.toUpperCase()}
+                      </span>
+                    </div>
 
-                  {/* Court Body: Teams & Live Scores */}
-                  <div className="p-4 flex-1 flex flex-col justify-between">
-                    {court.matchTitle ? (
-                      <div>
-                        {/* Division Subtitle */}
-                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">
-                          Match {court.matchId || 'Live'} &bull; Active Rally
-                        </div>
+                    <div className="p-4 flex-1 flex flex-col justify-between">
+                      {court.matchTitle ? (
+                        <div>
+                          <div className="text-[11px] font-bold opacity-60 uppercase tracking-wider mb-3">
+                            Match {court.matchId || 'Live'} &bull; Active Rally
+                          </div>
 
-                        {/* Team 1 Row */}
-                        <div className="flex items-center justify-between py-2 border-b border-slate-800/80">
-                          <div className="flex items-center gap-2 flex-1 pr-2">
-                            {isLive && score[0] >= score[1] && (
-                              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" title="Serving" />
-                            )}
-                            <span className="font-extrabold text-base tracking-tight text-white truncate">
-                              {teamA}
+                          <div className="flex items-center justify-between py-2 border-b border-white/10">
+                            <div className="flex items-center gap-2 flex-1 pr-2">
+                              {isLive && score[0] >= score[1] && (
+                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" title="Serving" />
+                              )}
+                              <span className="font-extrabold text-base tracking-tight truncate">{teamA}</span>
+                            </div>
+                            <span className="text-3xl font-black text-emerald-400 font-mono tracking-tighter">
+                              {score[0]}
                             </span>
                           </div>
-                          <span className="text-3xl font-black text-emerald-400 font-mono tracking-tighter">
-                            {score[0]}
-                          </span>
-                        </div>
 
-                        {/* Team 2 Row */}
-                        <div className="flex items-center justify-between py-2">
-                          <div className="flex items-center gap-2 flex-1 pr-2">
-                            {isLive && score[1] > score[0] && (
-                              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" title="Serving" />
-                            )}
-                            <span className="font-extrabold text-base tracking-tight text-white truncate">
-                              {teamB}
+                          <div className="flex items-center justify-between py-2">
+                            <div className="flex items-center gap-2 flex-1 pr-2">
+                              {isLive && score[1] > score[0] && (
+                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" title="Serving" />
+                              )}
+                              <span className="font-extrabold text-base tracking-tight truncate">{teamB}</span>
+                            </div>
+                            <span className="text-3xl font-black text-emerald-400 font-mono tracking-tighter">
+                              {score[1]}
                             </span>
                           </div>
-                          <span className="text-3xl font-black text-emerald-400 font-mono tracking-tighter">
-                            {score[1]}
-                          </span>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="py-8 text-center flex flex-col items-center justify-center">
-                        <span className="text-sm font-semibold text-slate-500">Court Ready</span>
-                        <span className="text-xs text-slate-600 mt-1">Awaiting Match Call</span>
-                      </div>
-                    )}
-
-                    {/* Footer Referee & Timer */}
-                    <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-                      <span>Ref: <strong className="text-slate-300">{court.referee || 'Desk Call'}</strong></span>
-                      {court.sinceTime && (
-                        <span className="font-mono text-slate-400">Since {court.sinceTime}</span>
+                      ) : (
+                        <div className="py-8 text-center flex flex-col items-center justify-center">
+                          <span className="text-sm font-semibold opacity-60">Court Open</span>
+                          <span className="text-xs opacity-40 mt-1">Ready for next assignment</span>
+                        </div>
                       )}
+
+                      <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between text-[11px] opacity-70">
+                        <span>Ref: <strong>{court.referee || 'Desk Call'}</strong></span>
+                        {court.sinceTime && <span className="font-mono">Since {court.sinceTime}</span>}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : activeScreen === 'spotlight' ? (
-          /* ====================================================
-             MODE 2: CENTER COURT SPOTLIGHT (GIANT SCOREBOARD)
-             ==================================================== */
-          <div className="max-w-6xl mx-auto flex flex-col justify-center items-center py-4">
-            {spotlightCourt && spotlightCourt.matchTitle ? (
-              <div className="w-full bg-gradient-to-b from-slate-900 to-slate-950 border border-emerald-500/40 rounded-3xl p-8 md:p-12 shadow-2xl shadow-emerald-950/30">
-                {/* Court & Sponsor Banner */}
-                <div className="flex flex-col md:flex-row items-center justify-between border-b border-slate-800 pb-6 mb-8 gap-4">
-                  <div className="flex items-center gap-3">
-                    <span className="px-4 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-black text-sm tracking-widest uppercase">
-                      Court {spotlightCourtNumber}
-                    </span>
-                    <h2 className="text-2xl font-black text-white tracking-tight">
-                      {spotlightCourt.matchTitle}
-                    </h2>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-extrabold uppercase text-slate-400">Referee:</span>
-                    <span className="text-base font-bold text-white bg-slate-800 px-3 py-1 rounded-lg">
-                      {spotlightCourt.referee || 'Head Desk Official'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Giant Live Score Board */}
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-center my-4">
-                  {/* Side 1 */}
-                  <div className="md:col-span-2 text-center md:text-left">
-                    <div className="text-slate-400 text-sm font-bold uppercase tracking-wider mb-2">Team A</div>
-                    <div className="text-4xl md:text-5xl font-black text-white tracking-tight mb-3">
-                      {spotlightCourt.matchTitle.split(' vs ')[0] || 'Team A'}
-                    </div>
-                    {spotlightCourt.score && spotlightCourt.score[0] >= spotlightCourt.score[1] && (
-                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-black uppercase">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                        Serving Side
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Giant Numerals */}
-                  <div className="md:col-span-1 flex items-center justify-center">
-                    <div className="bg-slate-950 border border-slate-800 px-8 py-5 rounded-3xl flex items-center gap-4 shadow-inner">
-                      <span className="text-6xl md:text-8xl font-black text-emerald-400 font-mono tracking-tighter">
-                        {spotlightCourt.score ? spotlightCourt.score[0] : 0}
-                      </span>
-                      <span className="text-4xl font-black text-slate-600">:</span>
-                      <span className="text-6xl md:text-8xl font-black text-emerald-400 font-mono tracking-tighter">
-                        {spotlightCourt.score ? spotlightCourt.score[1] : 0}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Side 2 */}
-                  <div className="md:col-span-2 text-center md:text-right">
-                    <div className="text-slate-400 text-sm font-bold uppercase tracking-wider mb-2">Team B</div>
-                    <div className="text-4xl md:text-5xl font-black text-white tracking-tight mb-3">
-                      {spotlightCourt.matchTitle.split(' vs ')[1] || 'Team B'}
-                    </div>
-                    {spotlightCourt.score && spotlightCourt.score[1] > spotlightCourt.score[0] && (
-                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-black uppercase">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                        Serving Side
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-20">
-                <h3 className="text-2xl font-bold text-slate-400">Court {spotlightCourtNumber} is Currently Open</h3>
-                <p className="text-slate-500 mt-2">Next match will automatically display when dispatched from the desk.</p>
-              </div>
-            )}
-          </div>
-        ) : (
-          /* ====================================================
-             MODE 3: TOURNAMENT BRACKET & MEDAL PROGRESSION TREE
-             Round Robin Pools -> Playoff Tree -> Medal Matches
-             ==================================================== */
-          <div className="max-w-[1500px] mx-auto space-y-6 py-2">
-            {/* Division & Progression Header Bar */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/90 border border-slate-800 p-4 rounded-3xl shadow-xl">
-              <div className="flex items-center gap-2 overflow-x-auto">
-                <span className="text-xs font-black uppercase text-amber-400 tracking-wider mr-2 flex items-center gap-1.5 shrink-0">
-                  <Trophy className="w-4 h-4 text-amber-400" />
-                  Division:
-                </span>
-                {Object.values(bracketData).map((b) => (
-                  <button
-                    key={b.divisionId}
-                    onClick={() => setSelectedDivisionId(b.divisionId)}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
-                      selectedDivisionId === b.divisionId
-                        ? 'bg-amber-500 text-black shadow font-extrabold'
-                        : 'bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700'
-                    }`}
-                  >
-                    {b.divisionName}
-                  </button>
-                ))}
-              </div>
-
-              {/* Broadcast Stage Flow Badges */}
-              <div className="flex items-center gap-2 text-xs font-bold">
-                <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  Stage 1: Round Robin Pools
-                </span>
-                <ChevronRight className="w-4 h-4 text-slate-600" />
-                <span className="px-3 py-1.5 rounded-xl bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                  Stage 2: Playoff Semifinals
-                </span>
-                <ChevronRight className="w-4 h-4 text-slate-600" />
-                <span className="px-3.5 py-1.5 rounded-xl bg-amber-500/25 text-amber-300 border border-amber-500/40 font-black flex items-center gap-1.5 shadow-sm">
-                  <Medal className="w-4 h-4 text-amber-400" />
-                  🥇 Gold & 🥉 Bronze Medal Matches
-                </span>
-              </div>
+                );
+              })}
             </div>
-
-            {/* Stadium Tree Map Grid */}
-            {(() => {
-              const currentBracket = bracketData[selectedDivisionId] || bracketData['A'];
-              const hasPools = currentBracket.pools && currentBracket.pools.length > 0;
+          ) : (
+            /* ====================================================
+               SCREEN TYPE B: DIVISION BRACKET & POOLS TREE MAP
+               ==================================================== */
+            (() => {
+              const d = currentScreen?.divisionData!;
+              const hasBracket = d.playoffs.semis.length > 0 || d.playoffs.quarters.length > 0;
+              const hasPools = displayedPools.length > 0;
 
               return (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                  {/* ====================================================
-                      COLUMN 1: STAGE 1 (POOLS OR QUARTERFINALS)
-                      ==================================================== */}
+                  {/* Left Column: Stage 1 Pools or Quarterfinals */}
                   <div className="lg:col-span-5 space-y-5">
                     {hasPools ? (
                       <>
-                        <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                        <div className="flex items-center justify-between pb-2 border-b border-white/10">
                           <h3 className="text-sm font-black uppercase text-emerald-400 tracking-wider flex items-center gap-2">
                             <span>Stage 1: Round Robin Pools</span>
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300">
@@ -617,22 +866,19 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
                           </h3>
                         </div>
 
-                        {currentBracket.pools.map((pool) => (
-                          <div
-                            key={pool.name}
-                            className="bg-slate-900/90 rounded-2xl border border-slate-800 overflow-hidden shadow-lg"
-                          >
-                            <div className="bg-emerald-950/40 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between">
+                        {displayedPools.map((pool) => (
+                          <div key={pool.name} className={`rounded-2xl border overflow-hidden shadow-lg ${themeCardBg}`}>
+                            <div className="bg-emerald-950/40 border-b border-white/10 px-4 py-2.5 flex items-center justify-between">
                               <span className="font-black text-xs text-emerald-300 uppercase tracking-wider">
                                 {pool.name} Standings
                               </span>
-                              <span className="text-[11px] text-slate-400 font-semibold">
-                                4 Teams &bull; 6 Matches Total
+                              <span className="text-[11px] opacity-70 font-semibold">
+                                {pool.teams.length} Teams &bull; Advance Top 2
                               </span>
                             </div>
 
                             <table className="w-full text-xs text-left">
-                              <thead className="bg-slate-950/60 text-slate-400 font-bold border-b border-slate-800">
+                              <thead className="bg-black/20 opacity-70 font-bold border-b border-white/10">
                                 <tr>
                                   <th className="py-2 px-3">#</th>
                                   <th className="py-2 px-3">Team</th>
@@ -641,31 +887,21 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
                                   <th className="py-2 px-3 text-right">Advancement</th>
                                 </tr>
                               </thead>
-                              <tbody className="divide-y divide-slate-800/60 font-medium">
+                              <tbody className="divide-y divide-white/5 font-medium">
                                 {pool.teams.map((t, idx) => {
                                   const liveCourtNum = findLiveCourtForTeam(t.name);
                                   const isLastQualifier = t.qualified && (!pool.teams[idx + 1] || !pool.teams[idx + 1].qualified);
 
                                   return (
                                     <React.Fragment key={t.id}>
-                                      <tr
-                                        className={
-                                          t.qualified
-                                            ? 'bg-emerald-950/20 text-white font-bold'
-                                            : 'text-slate-400'
-                                        }
-                                      >
-                                        <td className="py-2.5 px-3 font-mono font-bold text-slate-500">
-                                          {idx + 1}
-                                        </td>
+                                      <tr className={t.qualified ? 'bg-emerald-950/20 font-bold' : 'opacity-60'}>
+                                        <td className="py-2.5 px-3 font-mono font-bold opacity-75">{idx + 1}</td>
                                         <td className="py-2.5 px-3">
                                           <div className="flex items-center gap-2">
-                                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
+                                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/10 opacity-75">
                                               #{t.seed}
                                             </span>
-                                            <span className="font-bold text-white truncate max-w-[130px]">
-                                              {t.name}
-                                            </span>
+                                            <span className="font-bold truncate max-w-[130px]">{t.name}</span>
                                             {liveCourtNum && (
                                               <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-emerald-500/30 text-emerald-300 border border-emerald-500/50 flex items-center gap-1 shrink-0 animate-pulse">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
@@ -687,13 +923,14 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
                                               Q{idx + 1} Advancing &rarr;
                                             </span>
                                           ) : (
-                                            <span className="text-[10px] text-slate-600">Eliminated</span>
+                                            <span className="text-[10px] opacity-40">Eliminated</span>
                                           )}
                                         </td>
                                       </tr>
+                                      {/* Visual Playoff Advancement Cutline */}
                                       {isLastQualifier && (
                                         <tr key={`${pool.name}-cutline`}>
-                                          <td colSpan={5} className="py-1 px-3 bg-emerald-950/40 border-y border-emerald-500/40 text-[10px] font-black uppercase tracking-wider text-emerald-400">
+                                          <td colSpan={5} className="py-1 px-3 bg-emerald-950/60 border-y border-emerald-500/40 text-[10px] font-black uppercase tracking-wider text-emerald-400">
                                             <div className="flex items-center justify-between">
                                               <span className="flex items-center gap-1.5">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
@@ -714,25 +951,21 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
                       </>
                     ) : (
                       <>
-                        <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-                          <h3 className="text-sm font-black uppercase text-slate-300 tracking-wider">
-                            Quarterfinals (Round of 8)
-                          </h3>
+                        <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                          <h3 className="text-sm font-black uppercase opacity-75 tracking-wider">Quarterfinals (Round of 8)</h3>
                         </div>
                         <div className="space-y-4">
-                          {currentBracket.playoffs.quarters.map((q) => (
-                            <TvMatchNodeCard key={q.id} node={q} />
+                          {d.playoffs.quarters.map((q) => (
+                            <TvMatchNodeCard key={q.id} node={q} cardBg={themeCardBg} />
                           ))}
                         </div>
                       </>
                     )}
                   </div>
 
-                  {/* ====================================================
-                      COLUMN 2: STAGE 2 (SEMIFINALS BRACKET NODES)
-                      ==================================================== */}
+                  {/* Middle Column: Stage 2 Semifinals */}
                   <div className="lg:col-span-3 space-y-5">
-                    <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                    <div className="flex items-center justify-between pb-2 border-b border-white/10">
                       <h3 className="text-sm font-black uppercase text-blue-400 tracking-wider flex items-center gap-2">
                         <span>Stage 2: Semifinals</span>
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300">
@@ -742,17 +975,15 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
                     </div>
 
                     <div className="space-y-6 pt-2">
-                      {currentBracket.playoffs.semis.map((semi) => (
-                        <TvMatchNodeCard key={semi.id} node={semi} isSemi />
+                      {d.playoffs.semis.map((semi) => (
+                        <TvMatchNodeCard key={semi.id} node={semi} isSemi cardBg={themeCardBg} />
                       ))}
                     </div>
                   </div>
 
-                  {/* ====================================================
-                      COLUMN 3: STAGE 3 (GOLD & BRONZE MEDAL FINALS)
-                      ==================================================== */}
+                  {/* Right Column: Stage 3 Gold & Bronze Medal Matches */}
                   <div className="lg:col-span-4 space-y-6">
-                    <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                    <div className="flex items-center justify-between pb-2 border-b border-white/10">
                       <h3 className="text-sm font-black uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
                         <Trophy className="w-4 h-4 text-amber-400" />
                         <span>Stage 3: Medal Matches</span>
@@ -772,36 +1003,25 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
                       </div>
 
                       <div className="space-y-3">
-                        <div className="flex items-center justify-between py-2 border-b border-slate-800">
+                        <div className="flex items-center justify-between py-2 border-b border-white/10">
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
                               #1
                             </span>
-                            <span className="font-black text-base text-white">
-                              {currentBracket.playoffs.final.team1.name}
-                            </span>
+                            <span className="font-black text-base">{d.playoffs.final.team1.name}</span>
                           </div>
-                          <span className="text-xs font-extrabold px-2 py-0.5 rounded bg-white/10 text-white">
-                            Pool A #1
-                          </span>
+                          <span className="text-xs font-extrabold px-2 py-0.5 rounded bg-white/10">Pool A #1</span>
                         </div>
 
                         <div className="flex items-center justify-between py-2">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-extrabold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
-                              TBD
-                            </span>
-                            <span className="font-black text-base text-slate-300">
-                              {currentBracket.playoffs.final.team2.name}
-                            </span>
+                            <span className="text-xs font-extrabold px-1.5 py-0.5 rounded bg-white/10 opacity-75">TBD</span>
+                            <span className="font-black text-base opacity-75">{d.playoffs.final.team2.name}</span>
                           </div>
-                          <span className="text-xs font-bold text-amber-400/80">
-                            Winner Semi 2
-                          </span>
+                          <span className="text-xs font-bold text-amber-400/80">Winner Semi 2</span>
                         </div>
                       </div>
 
-                      {/* Golden Award Footer */}
                       <div className="mt-4 pt-3 border-t border-amber-400/20 flex items-center justify-between text-[11px] text-amber-200/90 font-semibold">
                         <span>🥇 Gold: Trophy + $1,200</span>
                         <span>🥈 Silver: Medal + $600</span>
@@ -821,69 +1041,63 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
                       </div>
 
                       <div className="space-y-3">
-                        <div className="flex items-center justify-between py-1.5 border-b border-slate-800">
+                        <div className="flex items-center justify-between py-1.5 border-b border-white/10">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-extrabold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
-                              #3
-                            </span>
-                            <span className="font-bold text-sm text-white">
-                              {currentBracket.playoffs.bronze.team1.name}
-                            </span>
+                            <span className="text-xs font-extrabold px-1.5 py-0.5 rounded bg-white/10 opacity-75">#3</span>
+                            <span className="font-bold text-sm">{d.playoffs.bronze.team1.name}</span>
                           </div>
-                          <span className="text-xs text-slate-400">Loser Semi 1</span>
+                          <span className="text-xs opacity-60">Loser Semi 1</span>
                         </div>
 
                         <div className="flex items-center justify-between py-1.5">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-extrabold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
-                              TBD
-                            </span>
-                            <span className="font-bold text-sm text-slate-400">
-                              {currentBracket.playoffs.bronze.team2.name}
-                            </span>
+                            <span className="text-xs font-extrabold px-1.5 py-0.5 rounded bg-white/10 opacity-75">TBD</span>
+                            <span className="font-bold text-sm opacity-60">{d.playoffs.bronze.team2.name}</span>
                           </div>
-                          <span className="text-xs text-slate-400">Loser Semi 2</span>
+                          <span className="text-xs opacity-60">Loser Semi 2</span>
                         </div>
                       </div>
 
                       <div className="mt-3 pt-2.5 border-t border-orange-500/20 flex items-center justify-between text-[11px] text-orange-200/80 font-semibold">
                         <span>🥉 Bronze: Medal + DUPR 4.0+</span>
-                        <span className="text-slate-400">Scheduled 3:45 PM</span>
+                        <span className="opacity-60">Scheduled 3:45 PM</span>
                       </div>
                     </div>
                   </div>
                 </div>
               );
-            })()}
-          </div>
-        )}
+            })()
+          )}
+        </div>
       </main>
 
-      {/* 3-Tier Stadium Broadcast Band */}
-      <footer className="bg-slate-900 border-t border-slate-800 px-6 py-2.5 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-medium shadow-2xl">
+      {/* ========================================================
+          3-TIER STADIUM BROADCAST FOOTER BAND
+          ======================================================== */}
+      <footer className={`${themeHeaderClass} px-6 py-2.5 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-medium border-t transition-colors shadow-2xl`}>
         {/* Tier 1: Finished Today Podium Showcase */}
         <div className="flex items-center gap-2 overflow-hidden shrink-0">
           <span className="px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-extrabold uppercase flex items-center gap-1 shadow-sm">
             <Trophy size={12} className="text-amber-400" />
             Podium
           </span>
-          <span className="text-slate-300 text-xs truncate max-w-[280px]">
+          <span className="opacity-80 text-xs truncate max-w-[280px]">
             <strong>Singles Open:</strong> 🥇 Reyes &bull; 🥈 Chen &bull; 🥉 Patel
           </span>
         </div>
 
         {/* Tier 2: On-Deck Stadium Queue */}
-        <div className="flex items-center gap-2.5 overflow-hidden flex-1 px-4 border-l border-r border-slate-800">
+        <div className="flex items-center gap-2.5 overflow-hidden flex-1 px-4 border-l border-r border-white/10">
           <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-extrabold uppercase shrink-0 flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             On Deck
           </span>
-          <div className="truncate text-slate-300 text-xs">
+          <div className="truncate opacity-80 text-xs">
             {scheduledMatches.length > 0 ? (
               scheduledMatches.slice(0, 3).map((m, i) => (
                 <span key={m.id} className="mr-4">
-                  <strong className="text-white">{m.team1 || 'Team 1'}</strong> vs <strong className="text-white">{m.team2 || 'Team 2'}</strong>
-                  {i < Math.min(scheduledMatches.length - 1, 2) && <span className="text-slate-600 ml-3">&bull;</span>}
+                  <strong>{m.team1 || 'Team 1'}</strong> vs <strong>{m.team2 || 'Team 2'}</strong>
+                  {i < Math.min(scheduledMatches.length - 1, 2) && <span className="opacity-40 ml-3">&bull;</span>}
                 </span>
               ))
             ) : (
@@ -893,11 +1107,11 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
         </div>
 
         {/* Tier 3: Active Rallies & Wall Clock */}
-        <div className="flex items-center gap-4 shrink-0 font-mono text-slate-400 text-xs">
+        <div className="flex items-center gap-4 shrink-0 font-mono opacity-80 text-xs">
           <span className="text-emerald-400 font-bold">{activeMatchesCount} Courts Live</span>
-          <span className="text-slate-600">&bull;</span>
+          <span className="opacity-40">&bull;</span>
           <div className="flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-slate-500" />
+            <Clock className="w-3.5 h-3.5 opacity-60" />
             <span>{currentTime}</span>
           </div>
         </div>
@@ -910,34 +1124,34 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
 interface TvMatchNodeCardProps {
   node: PlayoffMatchNode;
   isSemi?: boolean;
+  cardBg?: string;
 }
 
-const TvMatchNodeCard: React.FC<TvMatchNodeCardProps> = ({ node, isSemi = false }) => {
+const TvMatchNodeCard: React.FC<TvMatchNodeCardProps> = ({ node, isSemi = false, cardBg = 'bg-slate-900/90 border-slate-800' }) => {
   const isLive = node.status === 'LIVE';
   const isCompleted = node.status === 'COMPLETED';
 
   return (
     <div
-      className={`rounded-2xl border transition-all overflow-hidden shadow-lg ${
+      className={`rounded-2xl border transition-all overflow-hidden shadow-lg ${cardBg} ${
         isLive
-          ? 'bg-slate-900 border-emerald-500 ring-2 ring-emerald-500/30'
+          ? 'border-emerald-500 ring-2 ring-emerald-500/30'
           : isCompleted
-          ? 'bg-slate-900/90 border-slate-700/80'
-          : 'bg-slate-900/60 border-slate-800'
+          ? 'border-white/10'
+          : 'border-white/5 opacity-80'
       }`}
     >
-      {/* Node Header */}
       <div
         className={`px-3.5 py-1.5 flex items-center justify-between text-[11px] font-bold border-b ${
           isLive
             ? 'bg-emerald-950/40 border-emerald-800/40 text-emerald-300'
-            : 'bg-slate-950/60 border-slate-800 text-slate-400'
+            : 'bg-black/20 border-white/10 opacity-70'
         }`}
       >
         <span className="truncate pr-2 font-black uppercase tracking-wider">{node.title}</span>
         <div className="flex items-center gap-1.5 shrink-0">
           {node.court && (
-            <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-bold">
+            <span className="px-2 py-0.5 rounded bg-white/10 opacity-80 text-[10px] font-bold">
               Court {node.court}
             </span>
           )}
@@ -950,57 +1164,38 @@ const TvMatchNodeCard: React.FC<TvMatchNodeCardProps> = ({ node, isSemi = false 
         </div>
       </div>
 
-      {/* Teams & Scores */}
       <div className="p-3 space-y-2">
-        {/* Team 1 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 truncate pr-2">
             {node.team1.seed && (
-              <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
+              <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-white/10 opacity-75">
                 #{node.team1.seed}
               </span>
             )}
-            <span
-              className={`text-sm truncate ${
-                node.team1.winner ? 'font-black text-emerald-300' : 'font-bold text-white'
-              }`}
-            >
+            <span className={`text-sm truncate ${node.team1.winner ? 'font-black text-emerald-400' : 'font-bold'}`}>
               {node.team1.name}
             </span>
           </div>
           {node.team1.score !== undefined && (
-            <span
-              className={`text-lg font-mono font-black ${
-                node.team1.winner ? 'text-emerald-400' : 'text-slate-400'
-              }`}
-            >
+            <span className={`text-lg font-mono font-black ${node.team1.winner ? 'text-emerald-400' : 'opacity-60'}`}>
               {node.team1.score}
             </span>
           )}
         </div>
 
-        {/* Team 2 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 truncate pr-2">
             {node.team2.seed && (
-              <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
+              <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-white/10 opacity-75">
                 #{node.team2.seed}
               </span>
             )}
-            <span
-              className={`text-sm truncate ${
-                node.team2.winner ? 'font-black text-emerald-300' : 'font-bold text-white'
-              }`}
-            >
+            <span className={`text-sm truncate ${node.team2.winner ? 'font-black text-emerald-400' : 'font-bold'}`}>
               {node.team2.name}
             </span>
           </div>
           {node.team2.score !== undefined && (
-            <span
-              className={`text-lg font-mono font-black ${
-                node.team2.winner ? 'text-emerald-400' : 'text-slate-400'
-              }`}
-            >
+            <span className={`text-lg font-mono font-black ${node.team2.winner ? 'text-emerald-400' : 'opacity-60'}`}>
               {node.team2.score}
             </span>
           )}

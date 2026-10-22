@@ -36,6 +36,7 @@ android/
 
 # Turborepo & Cache
 .turbo/
+*.tsbuildinfo
 
 # Prisma
 packages/database/dev.db
