@@ -1,4 +1,4 @@
-export type Role = 'org' | 'desk' | 'ref';
+export type Role = 'org' | 'desk' | 'ref' | 'tv';
 export type TabKey =
   | 'dash'
   | 'setup'
@@ -9,7 +9,8 @@ export type TabKey =
   | 'board'
   | 'disputes'
   | 'incidents'
-  | 'card';
+  | 'card'
+  | 'tv';
 
 export interface Division {
   id: string;

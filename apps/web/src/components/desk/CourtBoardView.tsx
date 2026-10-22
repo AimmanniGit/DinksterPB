@@ -43,6 +43,14 @@ export const CourtBoardView: React.FC<CourtBoardViewProps> = ({
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <a
+            href="/tv"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3.5 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-colors flex items-center gap-1.5 shadow-sm"
+          >
+            📺 Open TV Jumbotron
+          </a>
           <button
             onClick={onSimulateWetSpot}
             className="px-3.5 py-2 bg-amber-100 text-amber-800 border border-amber-300 rounded-xl text-xs font-bold hover:bg-amber-200 transition-colors"

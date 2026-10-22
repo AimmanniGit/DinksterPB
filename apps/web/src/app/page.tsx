@@ -14,6 +14,7 @@ import {
   Clock,
   ShieldCheck,
   CheckCircle2,
+  Tv,
 } from 'lucide-react';
 
 import {
@@ -50,6 +51,7 @@ import { SponsorsView } from '../components/organizer/SponsorsView';
 import { RefereeScorecardView } from '../components/referee/RefereeScorecardView';
 import { CopilotView } from '../components/copilot/CopilotView';
 import { ChangeLogView } from '../components/copilot/ChangeLogView';
+import { TvBroadcastView } from '../components/tv/TvBroadcastView';
 
 export default function DinksterWebPlatform() {
   const [role, setRole] = useState<Role>('org');
@@ -336,6 +338,20 @@ export default function DinksterWebPlatform() {
     showToast('Score recorded as official referee score. Match M107 locked.');
   };
 
+  // Fullscreen TV Broadcast View Mode
+  if (role === 'tv') {
+    return (
+      <TvBroadcastView
+        tournamentName={event.name}
+        venueName={event.venue}
+        courts={courts}
+        matches={matches}
+        sponsors={sponsors}
+        onExitTvMode={() => setRole('org')}
+      />
+    );
+  }
+
   return (
     <div className={`min-h-screen grid grid-cols-[260px_1fr] ${theme !== 'default' ? `theme-${theme}` : ''}`}>
       {/* Sidebar */}
@@ -347,19 +363,21 @@ export default function DinksterWebPlatform() {
         </div>
 
         {/* Role Switcher */}
-        <div className="grid grid-cols-3 gap-1 bg-white/10 rounded-xl p-1 mb-2">
-          {(['org', 'desk', 'ref'] as const).map((r) => (
+        <div className="grid grid-cols-4 gap-1 bg-white/10 rounded-xl p-1 mb-2">
+          {(['org', 'desk', 'ref', 'tv'] as const).map((r) => (
             <button
               key={r}
               onClick={() => {
                 setRole(r);
-                setActiveTab(r === 'org' ? 'dash' : r === 'desk' ? 'board' : 'card');
+                if (r !== 'tv') {
+                  setActiveTab(r === 'org' ? 'dash' : r === 'desk' ? 'board' : 'card');
+                }
               }}
               className={`py-1.5 text-xs font-semibold rounded-lg capitalize transition-colors ${
                 role === r ? 'bg-[#EF9F27] text-black shadow-sm' : 'text-white/80 hover:bg-white/10'
               }`}
             >
-              {r === 'org' ? 'Organizer' : r === 'desk' ? 'Desk' : 'Ref'}
+              {r === 'org' ? 'Org' : r === 'desk' ? 'Desk' : r === 'ref' ? 'Ref' : '📺 TV'}
             </button>
           ))}
         </div>
@@ -511,6 +529,13 @@ export default function DinksterWebPlatform() {
                 <span className="px-3 py-1 bg-green-100 text-[#0A5C43] rounded-full text-xs font-bold border border-green-300">
                   {event.status}
                 </span>
+                <button
+                  onClick={() => setRole('tv')}
+                  className="px-3.5 py-2 bg-slate-900 text-white border border-slate-700 rounded-xl font-bold text-xs hover:bg-slate-800 shadow-sm flex items-center gap-1.5 transition"
+                >
+                  <Tv size={15} className="text-emerald-400" />
+                  TV Cast Mode
+                </button>
                 <button
                   onClick={() => {
                     const nextStatus = event.status === 'Draft' ? 'Published' : 'Live';
