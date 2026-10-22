@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   Tv,
   ArrowLeft,
+  ArrowRight,
   ChevronDown,
   Layers,
   ExternalLink,
@@ -450,164 +451,97 @@ export default function DinksterV2Platform() {
     <div className="min-h-screen bg-[#FAF8F3] text-gray-900 font-sans flex flex-col antialiased selection:bg-[#0A5C43] selection:text-white">
       
       {/* ============================================================== */}
-      {/* V2 FLOATING APPLE/TESLA-STYLE TOP NAVIGATION (No Sidebar!) */}
+      {/* V2 MINIMALIST APPLE/TESLA NAVIGATION HIERARCHY */}
+      {/* TIER 1: GLOBAL BRAND & CONTEXTUAL SWITCHER */}
       {/* ============================================================== */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200/80 px-6 py-3 transition">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200/80 px-4 sm:px-6 py-2.5 transition">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           
           {/* Left: Brand + Contextual Breadcrumbs */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <Link href="/" onClick={() => setSelectedTournamentId(null)} className="flex items-center gap-1.5 shrink-0">
               <span className="font-extrabold text-xl tracking-tight text-[#0A5C43]">
                 dink<span className="text-[#EF9F27]">ster</span>
               </span>
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-gray-100 text-gray-600 font-bold border border-gray-200">
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-bold border border-gray-200">
                 v2.4
               </span>
             </Link>
 
             {selectedTournamentId && (
               <>
-                <span className="text-gray-300 font-normal">/</span>
+                <span className="text-gray-300 font-normal shrink-0">/</span>
 
                 {/* Categorized Tournament Switcher (Live, Upcoming, Drafts, Concluded) */}
-                <CategorizedTournamentSwitcher
-                  tournaments={tournaments}
-                  selectedTournamentId={selectedTournamentId}
-                  onSelectTournament={handleSelectTournament}
-                  onExitToFleet={handleExitToFleet}
-                  onOpenCreateModal={() => setShowAgenticCreator(true)}
-                />
+                <div className="min-w-0">
+                  <CategorizedTournamentSwitcher
+                    tournaments={tournaments}
+                    selectedTournamentId={selectedTournamentId}
+                    onSelectTournament={handleSelectTournament}
+                    onExitToFleet={handleExitToFleet}
+                    onOpenCreateModal={() => setShowAgenticCreator(true)}
+                  />
+                </div>
               </>
             )}
           </div>
 
-          {/* Center: Contextual Horizontal Tabs (Only when inside a tournament) */}
-          {selectedTournamentId && (
-            <div className="flex items-center gap-1 bg-gray-100/80 p-1 rounded-xl text-xs font-semibold self-center overflow-x-auto">
-              <button
-                type="button"
-                onClick={() => setWorkspaceTab('overview')}
-                className={`px-3 py-1.5 rounded-lg transition ${
-                  workspaceTab === 'overview'
-                    ? 'bg-white text-gray-900 font-bold shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Overview
-              </button>
-              <button
-                type="button"
-                onClick={() => setWorkspaceTab('desk')}
-                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                  workspaceTab === 'desk'
-                    ? 'bg-white text-[#0A5C43] font-bold shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                {event.status === 'Live' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
-                <span>Courts & Desk</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setWorkspaceTab('players')}
-                className={`px-3 py-1.5 rounded-lg transition ${
-                  workspaceTab === 'players'
-                    ? 'bg-white text-gray-900 font-bold shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Players & Teams
-              </button>
-              <button
-                type="button"
-                onClick={() => setWorkspaceTab('brackets')}
-                className={`px-3 py-1.5 rounded-lg transition ${
-                  workspaceTab === 'brackets'
-                    ? 'bg-white text-gray-900 font-bold shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Brackets & Medals
-              </button>
-              <button
-                type="button"
-                onClick={() => setWorkspaceTab('sponsors')}
-                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                  workspaceTab === 'sponsors'
-                    ? 'bg-white text-gray-900 font-bold shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <span>Sponsors & Deals</span>
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-100 text-amber-900 font-black">
-                  {sponsors.length}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setWorkspaceTab('settings')}
-                className={`px-3 py-1.5 rounded-lg transition ${
-                  workspaceTab === 'settings'
-                    ? 'bg-white text-gray-900 font-bold shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Setup & Settings
-              </button>
-            </div>
-          )}
-
           {/* Right: RBAC Role Switcher & Action Controls */}
-          <div className="flex items-center gap-2.5 self-end md:self-auto shrink-0">
-            {/* RBAC Role Switcher (Founder, Director, Marshall, Volunteer) */}
-            <ActorRoleSwitcher
-              currentProfile={currentActorProfile}
-              onSelectProfile={(p) => {
-                setCurrentActorProfile(p);
-                showToast(`Switched active actor role to ${p.name}`);
-              }}
-            />
-
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             {selectedTournamentId ? (
               <>
+                {/* Copilot AI Assistant (Prominent Intelligence Trigger) */}
+                <button
+                  type="button"
+                  onClick={() => setWorkspaceTab('copilot')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs ${
+                    workspaceTab === 'copilot'
+                      ? 'bg-[#EF9F27] text-black shadow-xs ring-2 ring-[#EF9F27]/40'
+                      : 'bg-emerald-50 text-[#0A5C43] hover:bg-emerald-100 border border-emerald-200'
+                  }`}
+                  title="Open Copilot Tournament AI Assistant"
+                >
+                  <Sparkles size={13} className="text-[#EF9F27]" />
+                  <span className="hidden sm:inline">Copilot AI</span>
+                  <span className="sm:hidden">Copilot</span>
+                </button>
+
+                {/* TV Broadcast Presentation View */}
+                <button
+                  type="button"
+                  onClick={() => setIsTvFullscreen(true)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white transition flex items-center gap-1.5 shadow-2xs"
+                  title="Launch Jumbotron & Court Board Cast View"
+                >
+                  <Tv size={13} className="text-emerald-400" />
+                  <span className="hidden md:inline">TV Cast</span>
+                </button>
+
                 {/* Public Registration Link */}
                 <Link
                   href={`/t/${event.slug || 'austin-winter-open-2026'}`}
                   target="_blank"
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 transition flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-xl text-xs font-medium bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 transition flex items-center gap-1.5"
+                  title="Open Public Player Registration Portal"
                 >
-                  <span>Player Portal</span>
+                  <span className="hidden md:inline">Player Portal</span>
                   <ExternalLink size={12} className="text-gray-400" />
                 </Link>
 
-                {/* TV Jumbotron Mode */}
-                <button
-                  type="button"
-                  onClick={() => setIsTvFullscreen(true)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white transition flex items-center gap-1.5 shadow-2xs"
-                >
-                  <Tv size={13} className="text-emerald-400" />
-                  <span>TV Cast</span>
-                </button>
+                <div className="h-4 w-[1px] bg-gray-200 mx-0.5 hidden sm:block" />
 
-                {/* Copilot AI Assistant */}
-                <button
-                  type="button"
-                  onClick={() => setWorkspaceTab('copilot')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
-                    workspaceTab === 'copilot'
-                      ? 'bg-[#EF9F27] text-black font-bold shadow-xs'
-                      : 'bg-emerald-50 text-[#0A5C43] hover:bg-emerald-100 border border-emerald-200'
-                  }`}
-                >
-                  <Sparkles size={13} className="text-[#EF9F27]" />
-                  <span>Copilot AI</span>
-                </button>
+                {/* RBAC Role Switcher (Founder, Director, Marshall, Volunteer) */}
+                <ActorRoleSwitcher
+                  currentProfile={currentActorProfile}
+                  onSelectProfile={(p) => {
+                    setCurrentActorProfile(p);
+                    showToast(`Switched active actor role to ${p.name}`);
+                  }}
+                />
               </>
             ) : (
               /* Fleet Level Top Actions */
-              <>
+              <div className="flex items-center gap-2.5">
                 <button
                   type="button"
                   onClick={() => setShowAgenticCreator(true)}
@@ -616,11 +550,129 @@ export default function DinksterV2Platform() {
                   <Sparkles size={15} className="text-[#EF9F27]" />
                   <span>Create with Copilot AI</span>
                 </button>
-              </>
+
+                <div className="h-4 w-[1px] bg-gray-200 mx-0.5" />
+
+                <ActorRoleSwitcher
+                  currentProfile={currentActorProfile}
+                  onSelectProfile={(p) => {
+                    setCurrentActorProfile(p);
+                    showToast(`Switched active actor role to ${p.name}`);
+                  }}
+                />
+              </div>
             )}
           </div>
         </div>
       </header>
+
+      {/* ============================================================== */}
+      {/* TIER 2: WORKSPACE SUB-NAVIGATION (DEDICATED, UNCLUTTERED BAR)  */}
+      {/* ============================================================== */}
+      {selectedTournamentId && (
+        <div className="sticky top-[53px] z-30 bg-white/95 backdrop-blur-md border-b border-gray-200/90 shadow-2xs">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
+            {/* Clean Underline Navigation Tabs with Zero Scrollbars */}
+            <nav className="flex items-center space-x-1 sm:space-x-4 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-1">
+              <button
+                type="button"
+                onClick={() => setWorkspaceTab('overview')}
+                className={`py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition whitespace-nowrap ${
+                  workspaceTab === 'overview'
+                    ? 'bg-gray-100 text-gray-900 font-bold'
+                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Overview
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setWorkspaceTab('desk')}
+                className={`py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition flex items-center gap-1.5 whitespace-nowrap ${
+                  workspaceTab === 'desk'
+                    ? 'bg-emerald-50 text-[#0A5C43] font-bold border border-emerald-200/60'
+                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                {event.status === 'Live' && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />}
+                <span>Courts & Live Desk</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setWorkspaceTab('players')}
+                className={`py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition whitespace-nowrap ${
+                  workspaceTab === 'players'
+                    ? 'bg-gray-100 text-gray-900 font-bold'
+                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Players & Teams
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setWorkspaceTab('brackets')}
+                className={`py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition whitespace-nowrap ${
+                  workspaceTab === 'brackets'
+                    ? 'bg-gray-100 text-gray-900 font-bold'
+                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Brackets & Medals
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setWorkspaceTab('sponsors')}
+                className={`py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition flex items-center gap-1.5 whitespace-nowrap ${
+                  workspaceTab === 'sponsors'
+                    ? 'bg-amber-50 text-amber-900 font-bold border border-amber-200/60'
+                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <span>Sponsors & Deals</span>
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-200/80 text-amber-950 font-black">
+                  {sponsors.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setWorkspaceTab('settings')}
+                className={`py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition whitespace-nowrap ${
+                  workspaceTab === 'settings'
+                    ? 'bg-gray-100 text-gray-900 font-bold'
+                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Event Settings
+              </button>
+            </nav>
+
+            {/* Quick Context / Exit to Fleet shortcut */}
+            <div className="hidden lg:flex items-center gap-3 text-xs text-gray-500 shrink-0">
+              <span className="flex items-center gap-1 font-medium">
+                <MapPin size={12} className="text-gray-400" />
+                <span>{event.venue}</span>
+              </span>
+              <span>•</span>
+              <span className="font-semibold text-gray-700">{courts.length} Courts Assigned</span>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={handleExitToFleet}
+                className="text-gray-500 hover:text-[#0A5C43] font-semibold transition flex items-center gap-1"
+                title="Return to Fleet Directory"
+              >
+                <span>Fleet Directory</span>
+                <ArrowRight size={11} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toast Notification */}
       {toastMessage && (
