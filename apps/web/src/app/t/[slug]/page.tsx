@@ -25,6 +25,13 @@ import {
   Check,
   Clock,
   ChevronRight,
+  Edit2,
+  Save,
+  X,
+  ExternalLink,
+  Copy,
+  AlertCircle,
+  Zap,
 } from 'lucide-react';
 import {
   INITIAL_EVENT,
@@ -66,6 +73,17 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
   const [signInOtpSent, setSignInOtpSent] = useState(false);
   const [showMyRegistrationsDrawer, setShowMyRegistrationsDrawer] = useState(false);
 
+  // Player Profile Edit State
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editFullName, setEditFullName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editAge, setEditAge] = useState('');
+  const [editEmergencyPhone, setEditEmergencyPhone] = useState('');
+
+  // DUPR Upcoming Integration Modal
+  const [showDuprModal, setShowDuprModal] = useState(false);
+  const [copiedCodeSuccess, setCopiedCodeSuccess] = useState(false);
+
   const eventName = INITIAL_EVENT.name;
   const eventVenue = INITIAL_EVENT.venue;
   const eventDates = INITIAL_EVENT.dates;
@@ -77,7 +95,12 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
     try {
       const stored = localStorage.getItem('dinkster_player_session');
       if (stored) {
-        setSignedInPlayer(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        setSignedInPlayer(parsed);
+        setEditFullName(parsed.fullName || '');
+        setEditPhone(parsed.phone || '');
+        setEditAge(parsed.age ? String(parsed.age) : '34');
+        setEditEmergencyPhone(parsed.emergencyPhone || '(512) 555-0100');
       }
     } catch (e) {
       // ignore in SSR
@@ -145,6 +168,9 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
     };
 
     setSignedInPlayer(updatedAccount);
+    setEditFullName(updatedAccount.fullName);
+    setEditPhone(updatedAccount.phone || '');
+    setEditAge(updatedAccount.age ? String(updatedAccount.age) : '34');
     try {
       localStorage.setItem('dinkster_player_session', JSON.stringify(updatedAccount));
     } catch (e) {}
@@ -163,33 +189,62 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
       id: `PL-${Date.now().toString().slice(-4)}`,
       dinksterId: 'DK-84920',
       email: signInEmail,
-      fullName: signInEmail.split('@')[0].replace(/[^a-zA-Z]/g, ' ').toUpperCase() || 'ALEX MILLER',
+      fullName: signInEmail.toLowerCase().includes('alex')
+        ? 'Alex Miller'
+        : signInEmail.split('@')[0].replace(/[^a-zA-Z]/g, ' ').toUpperCase() || 'ALEX MILLER',
       phone: '(512) 555-0199',
       duprRating: 3.82,
       duprId: '2B48A',
       age: 34,
+      emergencyPhone: '(512) 555-0100',
       registeredDivisions: [
         {
           tournamentSlug: params.slug,
           tournamentName: eventName,
           divisionId: 'A',
-          divisionName: "Men's Doubles 3.5 to 4.0",
+          divisionName: "Mixed Doubles 3.5 to 4.0",
           teamName: 'Miller & Partner',
           isCaptain: true,
           scheduleDay: 'Saturday',
-          teammateCode: 'TM-8492',
-          amountPaid: 60,
+          teammateCode: 'TP-8492', // Team Pre-Paid code
+          amountPaid: 80,
         },
       ],
     };
+
     setSignedInPlayer(demoAccount);
+    setEditFullName(demoAccount.fullName);
+    setEditPhone(demoAccount.phone || '');
+    setEditAge(String(demoAccount.age || 34));
+    setEditEmergencyPhone(demoAccount.emergencyPhone || '(512) 555-0100');
+
     try {
       localStorage.setItem('dinkster_player_session', JSON.stringify(demoAccount));
     } catch (e) {}
+
     setShowSignInModal(false);
     setSignInOtpSent(false);
     setSignInEmail('');
     setSignInOtp('');
+  };
+
+  const handleSaveProfileUpdates = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!signedInPlayer) return;
+
+    const updated: PlayerAccount = {
+      ...signedInPlayer,
+      fullName: editFullName.trim() || signedInPlayer.fullName,
+      phone: editPhone.trim() || signedInPlayer.phone,
+      age: parseInt(editAge, 10) || signedInPlayer.age,
+      emergencyPhone: editEmergencyPhone.trim() || signedInPlayer.emergencyPhone,
+    };
+
+    setSignedInPlayer(updated);
+    setIsEditingProfile(false);
+    try {
+      localStorage.setItem('dinkster_player_session', JSON.stringify(updated));
+    } catch (e) {}
   };
 
   const handleSignOut = () => {
@@ -198,6 +253,14 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
       localStorage.removeItem('dinkster_player_session');
     } catch (e) {}
     setShowMyRegistrationsDrawer(false);
+  };
+
+  const copyTeammateCode = (code: string) => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(code);
+      setCopiedCodeSuccess(true);
+      setTimeout(() => setCopiedCodeSuccess(false), 2500);
+    }
   };
 
   // Multi-Division Upsell Engine:
@@ -238,36 +301,36 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
 
   return (
     <div className="min-h-screen bg-[#FAF8F3] text-gray-900 font-sans flex flex-col antialiased">
-      {/* Top Header - Player-Centric Navigation */}
-      <header className="bg-white border-b border-gray-200 px-6 py-3.5 flex items-center justify-between sticky top-0 z-40">
+      {/* Top Header - Streamlined to ONLY 'Have a Team Code' and 'Sign In / Register' */}
+      <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-40">
         <Link href="/" className="flex items-center gap-2">
           <div className="text-xl font-bold tracking-tight text-[#0A5C43]">
             dink<span className="text-[#EF9F27]">ster</span>
           </div>
-          <span className="px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-600">
+          <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-gray-100 text-gray-600">
             Player Portal
           </span>
         </Link>
 
         <div className="flex items-center gap-2.5">
-          {/* Teammate Code button */}
+          {/* 1. Teammate Code button */}
           <button
             type="button"
             onClick={handleOpenJoinCodeDialog}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-800 transition flex items-center gap-1.5 border border-gray-200"
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-50 hover:bg-gray-100 text-gray-800 transition flex items-center gap-1.5 border border-gray-200"
           >
-            <KeyRound size={13} className="text-gray-500" />
-            <span className="hidden sm:inline">Have a Teammate Code?</span>
-            <span className="sm:hidden">Join Code</span>
+            <KeyRound size={13} className="text-[#0A5C43]" />
+            <span className="hidden sm:inline">Have a Team Code?</span>
+            <span className="sm:hidden">Team Code</span>
           </button>
 
-          {/* Player Account Sign-In / User Pill */}
+          {/* 2. Player Account Sign-In / Register / User Pill */}
           {signedInPlayer ? (
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setShowMyRegistrationsDrawer(true)}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-[#0A5C43] border border-emerald-200 transition flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-[#0A5C43] border border-emerald-300 transition flex items-center gap-2 shadow-2xs"
               >
                 <User size={13} className="text-[#0A5C43]" />
                 <span className="font-bold">{signedInPlayer.fullName.split(' ')[0]}</span>
@@ -292,20 +355,12 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
             <button
               type="button"
               onClick={() => setShowSignInModal(true)}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-200 transition flex items-center gap-1.5"
+              className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#0A5C43] hover:bg-[#084734] text-white transition flex items-center gap-1.5 shadow-2xs"
             >
               <LogIn size={13} />
-              <span>Sign In / Free Dink Account</span>
+              <span>Sign In / Register</span>
             </button>
           )}
-
-          <button
-            type="button"
-            onClick={() => handleOpenRegistration(INITIAL_DIVISIONS[0])}
-            className="px-4 py-1.5 bg-[#0A5C43] hover:bg-[#084734] text-white rounded-lg text-xs font-semibold transition shadow-xs"
-          >
-            Register Player
-          </button>
         </div>
       </header>
 
@@ -315,7 +370,8 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
           <div className="flex items-center gap-2">
             <Users size={16} className="text-[#0A5C43] shrink-0" />
             <span>
-              You have an invitation to join team code <strong>{teammateCodeToJoin}</strong>.
+              You have an invitation to join team code <strong>{teammateCodeToJoin}</strong>{' '}
+              ({teammateCodeToJoin.startsWith('TP-') ? 'Pre-Paid by Captain ($0 cost)' : 'Partner Self-Pay'}).
             </span>
           </div>
           <button
@@ -323,14 +379,14 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
             onClick={() => handleOpenRegistration(INITIAL_DIVISIONS[0], teammateCodeToJoin)}
             className="px-3 py-1 bg-[#0A5C43] text-white font-semibold rounded-md hover:bg-[#084734]"
           >
-            Complete Registration
+            Join Team
           </button>
         </div>
       )}
 
-      {/* Hero Section - Clean, Pleasant, Balanced Typography */}
-      <section className="bg-gradient-to-b from-[#0A5C43] to-[#0E3D2F] text-white py-10 px-6">
-        <div className="max-w-4xl mx-auto space-y-3">
+      {/* Hero Section */}
+      <section className="bg-gradient-to-b from-[#0A5C43] to-[#0E3D2F] text-white py-9 px-6">
+        <div className="max-w-4xl mx-auto space-y-2.5">
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#EF9F27] text-black">
               Official Tournament
@@ -347,46 +403,123 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
 
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs md:text-sm text-white/90 pt-1">
             <div className="flex items-center gap-1.5">
-              <Calendar size={16} className="text-[#EF9F27]" />
+              <Calendar size={15} className="text-[#EF9F27]" />
               <span>{eventDates}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <MapPin size={16} className="text-[#EF9F27]" />
+              <MapPin size={15} className="text-[#EF9F27]" />
               <span>{eventVenue}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <ShieldCheck size={16} className="text-emerald-300" />
+              <ShieldCheck size={15} className="text-emerald-300" />
               <span>DUPR Sanctioned &bull; {courtSurface}</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* SMART MULTI-DIVISION UPSELL RECOMMENDATION BANNER */}
-      {signedInPlayer && eligibleAddonDivisions.length > 0 && playerRegisteredInThisEvent.length > 0 && (
-        <div className="bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-transparent border-b border-amber-300/40 px-6 py-3">
-          <div className="max-w-4xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-            <div className="flex items-start gap-2.5">
-              <Sparkles size={16} className="text-[#EF9F27] shrink-0 mt-0.5" />
-              <div>
-                <strong className="text-gray-900 font-bold block">
-                  You are eligible to play in multiple divisions!
-                </strong>
-                <span className="text-gray-600">
-                  You are registered in <strong>{playerRegisteredInThisEvent[0].divisionName}</strong> ({playerRegisteredInThisEvent[0].scheduleDay}). You qualify for{' '}
-                  <strong className="text-emerald-900">{eligibleAddonDivisions[0].name}</strong> ({eligibleAddonDivisions[0].scheduleDay}) with no schedule conflict.
-                </span>
-              </div>
-            </div>
+      {/* PROMINENT HIGHLIGHTED ROW FOR SIGNED-IN PLAYER */}
+      {signedInPlayer && (
+        <div className="bg-[#FAF8F3] px-6 pt-5 pb-1">
+          <div className="max-w-4xl mx-auto">
+            {playerRegisteredInThisEvent.length > 0 ? (
+              /* PLAYER IS REGISTERED: SHOW STATUS CONFIRMATION & TEAMS + NON-PUSHY UPSELL */
+              <div className="bg-white rounded-2xl p-4 border-2 border-emerald-500 shadow-sm space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-emerald-100 text-[#0A5C43] flex items-center justify-center font-bold shrink-0 mt-0.5">
+                      ✓
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                          Registered Player
+                        </span>
+                        <span className="text-xs font-bold text-gray-900">
+                          {signedInPlayer.fullName} ({signedInPlayer.dinksterId})
+                        </span>
+                      </div>
+                      <div className="text-sm font-bold text-[#0A5C43] mt-1">
+                        You are registered for {playerRegisteredInThisEvent.map((r) => r.divisionName).join(', ')}
+                      </div>
+                      <div className="text-xs text-gray-600 mt-0.5 flex items-center gap-2 flex-wrap">
+                        <span>Team: <strong>{playerRegisteredInThisEvent[0].teamName}</strong></span>
+                        <span>&bull;</span>
+                        <span>
+                          Partner Code:{' '}
+                          <strong className="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-gray-900 border">
+                            {playerRegisteredInThisEvent[0].teammateCode}
+                          </strong>{' '}
+                          ({playerRegisteredInThisEvent[0].teammateCode?.startsWith('TP-') ? 'Team Pre-paid' : 'Team Unpaid'})
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => copyTeammateCode(playerRegisteredInThisEvent[0].teammateCode || '')}
+                          className="text-[#0A5C43] hover:underline font-semibold flex items-center gap-0.5"
+                        >
+                          {copiedCodeSuccess ? <Check size={12} /> : <Copy size={12} />}
+                          <span>{copiedCodeSuccess ? 'Copied' : 'Copy'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
 
-            <button
-              type="button"
-              onClick={() => handleOpenRegistration(eligibleAddonDivisions[0])}
-              className="px-3.5 py-1.5 bg-[#0A5C43] hover:bg-[#084734] text-white rounded-lg font-semibold shrink-0 shadow-xs flex items-center gap-1 self-start sm:self-auto"
-            >
-              <span>Add for +${eligibleAddonDivisions[0].entryFee}</span>
-              <ArrowRight size={13} />
-            </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowMyRegistrationsDrawer(true)}
+                    className="px-3.5 py-1.5 bg-gray-900 hover:bg-black text-white rounded-xl text-xs font-semibold transition self-start sm:self-auto shrink-0 shadow-2xs"
+                  >
+                    View Account & Team Details &rarr;
+                  </button>
+                </div>
+
+                {/* Non-Pushy Multi-Division Add-On Recommendation */}
+                {eligibleAddonDivisions.length > 0 && (
+                  <div className="pt-2.5 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-emerald-50/50 p-2.5 rounded-xl text-xs">
+                    <div className="flex items-center gap-2">
+                      <Sparkles size={15} className="text-[#EF9F27] shrink-0" />
+                      <span className="text-emerald-950">
+                        <strong>Eligible to play another division!</strong> Enter{' '}
+                        <strong className="text-[#0A5C43]">{eligibleAddonDivisions[0].name}</strong> on{' '}
+                        <strong>{eligibleAddonDivisions[0].scheduleDay || 'Sunday'}</strong> with no schedule conflict.
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenRegistration(eligibleAddonDivisions[0])}
+                      className="px-3 py-1.5 bg-[#0A5C43] hover:bg-[#084734] text-white rounded-lg font-semibold text-xs transition whitespace-nowrap self-start sm:self-auto shadow-2xs"
+                    >
+                      Add Division (+${eligibleAddonDivisions[0].entryFee})
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* PLAYER IS SIGNED IN BUT NOT REGISTERED IN THIS EVENT */
+              <div className="bg-white rounded-2xl p-4 border border-emerald-300 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 text-[#0A5C43] flex items-center justify-center font-bold shrink-0">
+                    <User size={15} />
+                  </div>
+                  <div>
+                    <div className="font-bold text-gray-900">
+                      Welcome, {signedInPlayer.fullName}! (Dinkster ID: {signedInPlayer.dinksterId})
+                    </div>
+                    <p className="text-gray-600 mt-0.5">
+                      Based on your DUPR rating ({signedInPlayer.duprRating || '3.50'}), we recommend entering{' '}
+                      <strong>{INITIAL_DIVISIONS[0].name}</strong>.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleOpenRegistration(INITIAL_DIVISIONS[0])}
+                  className="px-3.5 py-2 bg-[#0A5C43] hover:bg-[#084734] text-white rounded-xl font-bold transition shadow-xs whitespace-nowrap self-start sm:self-auto"
+                >
+                  Register for {INITIAL_DIVISIONS[0].name.split(' ')[0]} &rarr;
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -450,102 +583,91 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
                 <p className="text-xs text-gray-600 mt-1">Match scores automatically submit to DUPR player profiles.</p>
               </div>
               <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
-                <span className="text-xs font-semibold text-gray-500 uppercase block mb-1">Free Dinkster Account</span>
-                <span className="font-bold text-base text-amber-800">Player Profile & Mobile App</span>
-                <p className="text-xs text-gray-600 mt-1">Automatic Dinkster ID (`DK-XXXXX`) for match scores & court calls.</p>
+                <span className="text-xs font-semibold text-gray-500 uppercase block mb-1">Schedule & Courts</span>
+                <span className="font-bold text-base text-gray-900">{totalCourts} Dedicated Courts</span>
+                <p className="text-xs text-gray-600 mt-1">Surface: {courtSurface} &bull; Franklin X-40 tournament balls.</p>
               </div>
             </div>
 
-            {/* Division Selection Section */}
+            {/* Divisions List */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-bold text-gray-900">Available Divisions</h2>
-                  <p className="text-xs text-gray-500">
-                    Registration fee is <strong>per person</strong>. Register for multiple divisions across Saturday and Sunday to maximize tournament play.
-                  </p>
+                  <h2 className="text-lg font-bold text-gray-900">Competition Divisions</h2>
+                  <p className="text-xs text-gray-500">Entry fee is per player. Select your division below.</p>
                 </div>
-                <span className="text-xs text-gray-500 font-medium">{INITIAL_DIVISIONS.length} Divisions</span>
+                <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                  {INITIAL_DIVISIONS.length} Divisions Open
+                </span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 gap-3.5">
                 {INITIAL_DIVISIONS.map((div) => {
-                  const isAlreadyRegistered = playerRegisteredInThisEvent.some((rd) => rd.divisionId === div.id);
+                  const isPlayerRegisteredInThisDiv = playerRegisteredInThisEvent.some((r) => r.divisionId === div.id);
 
                   return (
                     <div
                       key={div.id}
-                      className={`bg-white rounded-xl border p-5 shadow-xs transition flex flex-col justify-between ${
-                        isAlreadyRegistered ? 'border-emerald-500 ring-1 ring-emerald-500/30' : 'border-gray-200 hover:border-[#0A5C43]/50'
+                      className={`bg-white rounded-xl border p-5 transition shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+                        isPlayerRegisteredInThisDiv
+                          ? 'border-emerald-500 ring-1 ring-emerald-500/20 bg-emerald-50/10'
+                          : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
-                      <div>
-                        <div className="flex justify-between items-start gap-2 mb-2">
-                          <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
-                            {div.format}
-                          </span>
-                          {/* Fee per person */}
-                          <div className="text-right">
-                            <span className="text-lg font-bold text-[#0A5C43]">${div.entryFee}</span>
-                            <span className="text-xs text-gray-500 font-normal"> / player</span>
-                          </div>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-base font-bold text-gray-900">{div.name}</span>
+                          {div.isPilot && (
+                            <span className="px-2 py-0.5 bg-amber-100 text-amber-900 font-bold text-[10px] rounded-full">
+                              Pilot Rules
+                            </span>
+                          )}
+                          {isPlayerRegisteredInThisDiv && (
+                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold text-[10px] rounded-full flex items-center gap-1">
+                              <Check size={11} /> Registered
+                            </span>
+                          )}
                         </div>
 
-                        <h3 className="text-base font-bold text-gray-900 mb-1">
-                          {div.name}
-                        </h3>
-
-                        {div.scheduleDay && (
-                          <div className="text-xs font-semibold text-amber-800 flex items-center gap-1 mb-2">
-                            <Clock size={12} />
-                            <span>{div.scheduleDay} {div.timeSlot ? `(${div.timeSlot})` : ''}</span>
-                          </div>
-                        )}
-
-                        <div className="space-y-1 text-xs text-gray-600 mb-5">
-                          <div className="flex justify-between">
-                            <span>Skill Level:</span>
-                            <strong className="text-gray-900">
-                              {div.minDupr === 0 ? 'Open Rating' : `${div.minDupr} - ${div.maxDupr} DUPR`}
-                            </strong>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Age Bracket:</span>
-                            <span className="text-gray-900 font-medium">{div.ageBracket || 'All Ages'}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Field Limit:</span>
-                            <span className="text-gray-900 font-medium">{div.teamCap} Teams Max</span>
-                          </div>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-600">
+                          <span>
+                            DUPR Range: <strong>{div.minDupr === 0 ? 'All Levels' : `${div.minDupr} - ${div.maxDupr}`}</strong>
+                          </span>
+                          <span>&bull;</span>
+                          <span>Format: <strong>{div.format}</strong></span>
+                          <span>&bull;</span>
+                          <span>Cap: <strong>{div.teamCap} teams</strong></span>
+                          {div.scheduleDay && (
+                            <>
+                              <span>&bull;</span>
+                              <span className="text-emerald-800 font-semibold">Schedule: {div.scheduleDay}</span>
+                            </>
+                          )}
                         </div>
                       </div>
 
-                      <div className="space-y-2 pt-2 border-t border-gray-100">
-                        {isAlreadyRegistered ? (
-                          <div className="py-2 px-3 rounded-lg bg-emerald-50 text-emerald-800 text-xs font-bold flex items-center justify-center gap-1.5 border border-emerald-200">
-                            <Check size={14} className="text-emerald-700" />
-                            <span>You are Registered!</span>
-                          </div>
+                      <div className="flex items-center gap-4 self-end md:self-auto">
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-[#0A5C43]">${div.entryFee}</div>
+                          <span className="text-[10px] text-gray-400 block font-semibold">per player</span>
+                        </div>
+
+                        {isPlayerRegisteredInThisDiv ? (
+                          <button
+                            type="button"
+                            onClick={() => setShowMyRegistrationsDrawer(true)}
+                            className="px-4 py-2 bg-emerald-50 border border-emerald-300 text-[#0A5C43] font-bold text-xs rounded-lg hover:bg-emerald-100 transition"
+                          >
+                            View Team
+                          </button>
                         ) : (
                           <button
                             type="button"
                             onClick={() => handleOpenRegistration(div)}
-                            className="w-full py-2 bg-[#0A5C43] hover:bg-[#084734] text-white rounded-lg text-xs font-semibold transition shadow-xs"
+                            className="px-4 py-2 bg-[#0A5C43] hover:bg-[#084734] text-white font-semibold text-xs rounded-lg transition shadow-xs flex items-center gap-1"
                           >
-                            {div.format.toLowerCase().includes('singles') ? 'Register Player' : 'Register as Captain'}
-                          </button>
-                        )}
-
-                        {!isAlreadyRegistered && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedDivision(div);
-                              handleOpenJoinCodeDialog();
-                            }}
-                            className="w-full text-center text-[11px] text-[#0A5C43] hover:underline font-medium block"
-                          >
-                            Have a team code for this division?
+                            <span>Register</span>
+                            <ArrowRight size={13} />
                           </button>
                         )}
                       </div>
@@ -555,13 +677,25 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
               </div>
             </div>
 
-            {/* Electronic Waiver Notice */}
-            <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-600 flex items-start gap-3">
-              <ShieldCheck size={18} className="text-[#0A5C43] shrink-0 mt-0.5" />
-              <div>
-                <strong className="text-gray-900 block font-semibold mb-0.5">Electronic Player Waiver Required</strong>
-                <span>
-                  All players must sign the digital liability waiver and concussion safety agreement upon individual registration.
+            {/* DINKSTER MOBILE APP PROMO */}
+            <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#0A5C43] flex items-center justify-center shrink-0">
+                  <Smartphone size={22} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-gray-900">Download the Dinkster Mobile App</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    View live match court assignments, get push notifications when your team is called, and self-report scores.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs font-mono font-semibold px-2.5 py-1 rounded bg-gray-100 text-gray-700">
+                  iOS & Android
+                </span>
+                <span className="text-xs font-bold text-[#0A5C43] bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded">
+                  Free
                 </span>
               </div>
             </div>
@@ -570,12 +704,15 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
 
         {/* TAB 2: LIVE DRAW & BRACKETS */}
         {activeTab === 'draw' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
+          <div className="space-y-6">
+            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs flex justify-between items-center">
               <div>
-                <h2 className="text-lg font-bold text-gray-900">Live Brackets & Pool Play</h2>
-                <p className="text-xs text-gray-500">View real-time match schedules, court assignments, and playoff progressions.</p>
+                <h3 className="text-sm font-bold text-gray-900">Live Tournament Draw & Standings</h3>
+                <p className="text-xs text-gray-500">Real-time match scores updated directly from referee scorecards and desk.</p>
               </div>
+              <span className="text-xs font-mono font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded">
+                Live Feed
+              </span>
             </div>
             <BracketsPlayoffsView />
           </div>
@@ -583,123 +720,138 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
 
         {/* TAB 3: SPONSORS */}
         {activeTab === 'sponsors' && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-bold text-gray-900">Tournament Sponsors & Partners</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {INITIAL_SPONSORS.map((s, idx) => (
-                <div key={idx} className="bg-white p-5 rounded-xl border border-gray-200 text-center shadow-xs">
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
-                    {s.tier} Partner
-                  </span>
-                  <h3 className="text-base font-bold text-gray-900 mt-2">{s.name}</h3>
-                  <p className="text-xs text-gray-500 mt-1">Official Court {s.courtAssigned} Sponsor</p>
-                </div>
-              ))}
+          <div className="space-y-6">
+            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs text-center space-y-4">
+              <h2 className="text-lg font-bold text-gray-900">Official Tournament Partners</h2>
+              <p className="text-xs text-gray-500 max-w-md mx-auto">
+                Thank you to the brand partners supporting the {eventName}.
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
+                {INITIAL_SPONSORS.map((sp, idx) => (
+                  <div key={idx} className="p-4 rounded-xl border border-gray-200 bg-gray-50 flex flex-col items-center justify-center">
+                    <span className="font-bold text-sm text-gray-900">{sp.name}</span>
+                    <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mt-1">
+                      {sp.tier} Partner
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
       </main>
 
-      {/* QUICK JOIN CODE MODAL */}
+      {/* QUICK JOIN CODE MODAL (Dialog) */}
       {showJoinCodeDialog && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-200 space-y-4">
-            <div>
-              <h3 className="text-base font-bold text-gray-900">Enter Teammate Invite Code</h3>
-              <p className="text-xs text-gray-500 mt-0.5">
-                If your captain already registered the team, enter your unique invite code below to join:
-              </p>
+            <div className="flex justify-between items-center border-b pb-3">
+              <div className="flex items-center gap-2">
+                <KeyRound size={16} className="text-[#0A5C43]" />
+                <h3 className="text-base font-bold text-gray-900">Join Team</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowJoinCodeDialog(false)}
+                className="w-7 h-7 rounded-full bg-gray-100 text-gray-600 font-bold flex items-center justify-center"
+              >
+                ✕
+              </button>
             </div>
 
-            <form onSubmit={handleSubmitJoinCode} className="space-y-3.5">
-              <input
-                type="text"
-                required
-                autoFocus
-                placeholder="e.g. TM-8429"
-                value={inputTeammateCode}
-                onChange={(e) => setInputTeammateCode(e.target.value.toUpperCase())}
-                className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2 font-mono text-sm font-bold uppercase text-gray-900 focus:outline-none focus:border-[#0A5C43]"
-              />
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowJoinCodeDialog(false)}
-                  className="px-3.5 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 bg-[#0A5C43] text-white text-xs font-semibold rounded-lg hover:bg-[#084734]"
-                >
-                  Join Team
-                </button>
+            <form onSubmit={handleSubmitJoinCode} className="space-y-3 text-xs">
+              <p className="text-gray-600">
+                Enter the team partner invite code (e.g. <strong>TP-8492</strong> for pre-paid or <strong>TU-8492</strong>) provided by your team captain.
+              </p>
+              <div>
+                <label className="font-semibold text-gray-700 block mb-1">Partner Invite Code</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. TP-8492 or TU-8492"
+                  value={inputTeammateCode}
+                  onChange={(e) => setInputTeammateCode(e.target.value.toUpperCase())}
+                  className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-center text-sm font-mono font-bold text-gray-900 uppercase focus:outline-none focus:border-[#0A5C43]"
+                />
               </div>
+              <button
+                type="submit"
+                className="w-full py-2.5 bg-[#0A5C43] hover:bg-[#084734] text-white rounded-lg font-semibold shadow-xs transition"
+              >
+                Join Partner &rarr;
+              </button>
             </form>
           </div>
         </div>
       )}
 
-      {/* SIGN IN / FREE DINKSTER ACCOUNT MODAL */}
+      {/* SIGN IN / REGISTER WITH EMAIL OTP MODAL */}
       {showSignInModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-200 space-y-4">
             <div className="flex justify-between items-center border-b pb-3">
-              <div>
-                <h3 className="text-base font-bold text-gray-900">Sign In to Player Account</h3>
-                <p className="text-xs text-gray-500">Access your registrations, DUPR sync & Dinkster ID.</p>
+              <div className="flex items-center gap-2">
+                <User size={16} className="text-[#0A5C43]" />
+                <h3 className="text-base font-bold text-gray-900">Sign In / Register</h3>
               </div>
               <button
                 type="button"
-                onClick={() => setShowSignInModal(false)}
-                className="w-7 h-7 rounded-full bg-gray-100 text-gray-500 font-bold flex items-center justify-center"
+                onClick={() => {
+                  setShowSignInModal(false);
+                  setSignInOtpSent(false);
+                }}
+                className="w-7 h-7 rounded-full bg-gray-100 text-gray-600 font-bold flex items-center justify-center"
               >
                 ✕
               </button>
             </div>
 
             {!signInOtpSent ? (
-              <form onSubmit={handleSendSignInOtp} className="space-y-3">
+              <form onSubmit={handleSendSignInOtp} className="space-y-3 text-xs">
+                <p className="text-gray-600">
+                  Enter your email to sign in or register for your free Dinkster Player Account.
+                </p>
                 <div>
-                  <label className="text-xs font-semibold text-gray-700 block mb-1">Email Address</label>
+                  <label className="font-semibold text-gray-700 block mb-1">Email Address</label>
                   <input
                     type="email"
                     required
-                    placeholder="you@domain.com"
+                    placeholder="e.g. alex@example.com"
                     value={signInEmail}
                     onChange={(e) => setSignInEmail(e.target.value)}
-                    className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-[#0A5C43]"
+                    className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-900 focus:outline-none focus:border-[#0A5C43]"
                   />
                 </div>
                 <button
                   type="submit"
-                  className="w-full py-2 bg-[#0A5C43] hover:bg-[#084734] text-white rounded-xl text-xs font-semibold shadow-xs"
+                  className="w-full py-2.5 bg-[#0A5C43] hover:bg-[#084734] text-white rounded-lg font-semibold shadow-xs transition"
                 >
-                  Send One-Time Sign-In Code
+                  Send One-Time Code
                 </button>
               </form>
             ) : (
-              <form onSubmit={handleConfirmSignInOtp} className="space-y-3">
-                <div className="text-xs text-gray-600">
-                  Enter code sent to <strong>{signInEmail}</strong>:
+              <form onSubmit={handleConfirmSignInOtp} className="space-y-3 text-xs">
+                <p className="text-gray-600">
+                  We sent a 6-digit code to <strong>{signInEmail}</strong>.
+                </p>
+                <div>
+                  <label className="font-semibold text-gray-700 block mb-1">Enter Code</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="123456"
+                    maxLength={6}
+                    value={signInOtp}
+                    onChange={(e) => setSignInOtp(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-center text-lg font-mono text-gray-900 focus:outline-none focus:border-[#0A5C43]"
+                  />
                 </div>
-                <input
-                  type="text"
-                  maxLength={6}
-                  required
-                  placeholder="e.g. 123456"
-                  value={signInOtp}
-                  onChange={(e) => setSignInOtp(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-sm font-mono tracking-widest text-gray-900 focus:outline-none"
-                />
                 <button
                   type="button"
                   onClick={() => setSignInOtp('123456')}
                   className="text-[11px] text-[#0A5C43] font-semibold hover:underline block"
                 >
-                  Demo Shortcut: Fill '123456'
+                  Demo Shortcut: Fill &apos;123456&apos;
                 </button>
                 <button
                   type="submit"
@@ -713,26 +865,29 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
         </div>
       )}
 
-      {/* MY REGISTRATIONS DRAWER / MODAL */}
+      {/* MY REGISTRATIONS & PROFILE DRAWER */}
       {showMyRegistrationsDrawer && signedInPlayer && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-end p-0">
-          <div className="bg-white h-full max-w-md w-full p-6 shadow-2xl border-l border-gray-200 overflow-y-auto space-y-5 animate-slide-left">
+          <div className="bg-white h-full max-w-md w-full p-6 shadow-2xl border-l border-gray-200 overflow-y-auto space-y-5">
             <div className="flex justify-between items-center border-b pb-3">
               <div className="flex items-center gap-2">
                 <User size={18} className="text-[#0A5C43]" />
-                <h3 className="text-base font-bold text-gray-900">Player Account</h3>
+                <h3 className="text-base font-bold text-gray-900">Player Profile & Account</h3>
               </div>
               <button
                 type="button"
-                onClick={() => setShowMyRegistrationsDrawer(false)}
+                onClick={() => {
+                  setShowMyRegistrationsDrawer(false);
+                  setIsEditingProfile(false);
+                }}
                 className="w-8 h-8 rounded-full bg-gray-100 text-gray-600 font-bold flex items-center justify-center"
               >
                 ✕
               </button>
             </div>
 
-            {/* Profile Overview Card */}
-            <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 space-y-2">
+            {/* Profile Details Card (View & Edit Modes) */}
+            <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200 space-y-3">
               <div className="flex justify-between items-start">
                 <div>
                   <h4 className="font-bold text-base text-gray-900">{signedInPlayer.fullName}</h4>
@@ -742,10 +897,108 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
                   {signedInPlayer.dinksterId}
                 </span>
               </div>
-              <div className="flex items-center gap-4 text-xs text-gray-600 pt-1">
-                <span>DUPR: <strong>{signedInPlayer.duprRating || '3.50'}</strong></span>
-                <span>Phone: <strong>{signedInPlayer.phone}</strong></span>
-              </div>
+
+              {!isEditingProfile ? (
+                /* VIEW PROFILE MODE */
+                <div className="space-y-2 pt-1 border-t text-xs text-gray-600">
+                  <div className="flex justify-between">
+                    <span>Phone:</span>
+                    <strong className="text-gray-900">{signedInPlayer.phone || 'Not provided'}</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Age:</span>
+                    <strong className="text-gray-900">{signedInPlayer.age || '34'}</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Emergency Contact:</span>
+                    <strong className="text-gray-900">{signedInPlayer.emergencyPhone || '(512) 555-0100'}</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>DUPR Rating:</span>
+                    <strong className="text-emerald-800">{signedInPlayer.duprRating || '3.50'}</strong>
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingProfile(true)}
+                      className="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
+                    >
+                      <Edit2 size={13} />
+                      <span>Edit Profile Details</span>
+                    </button>
+
+                    {/* CONNECT WITH DUPR BUTTON */}
+                    <button
+                      type="button"
+                      onClick={() => setShowDuprModal(true)}
+                      className="px-3 py-1.5 bg-[#EF9F27] hover:bg-[#d88c1c] text-black rounded-lg text-xs font-bold flex items-center gap-1 transition shadow-2xs"
+                    >
+                      <Zap size={13} />
+                      <span>Connect with DUPR</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* EDIT PROFILE MODE */
+                <form onSubmit={handleSaveProfileUpdates} className="space-y-2.5 pt-2 border-t text-xs">
+                  <div>
+                    <label className="font-semibold text-gray-700 block mb-0.5">Full Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={editFullName}
+                      onChange={(e) => setEditFullName(e.target.value)}
+                      className="w-full bg-white border border-gray-300 rounded px-2.5 py-1.5 text-xs text-gray-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-semibold text-gray-700 block mb-0.5">Mobile Phone</label>
+                    <input
+                      type="tel"
+                      required
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
+                      className="w-full bg-white border border-gray-300 rounded px-2.5 py-1.5 text-xs text-gray-900"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="font-semibold text-gray-700 block mb-0.5">Age</label>
+                      <input
+                        type="number"
+                        value={editAge}
+                        onChange={(e) => setEditAge(e.target.value)}
+                        className="w-full bg-white border border-gray-300 rounded px-2.5 py-1.5 text-xs text-gray-900"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-semibold text-gray-700 block mb-0.5">Emergency Phone</label>
+                      <input
+                        type="tel"
+                        value={editEmergencyPhone}
+                        onChange={(e) => setEditEmergencyPhone(e.target.value)}
+                        className="w-full bg-white border border-gray-300 rounded px-2.5 py-1.5 text-xs text-gray-900"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      type="submit"
+                      className="flex-1 py-1.5 bg-[#0A5C43] text-white rounded font-bold text-xs hover:bg-[#084734]"
+                    >
+                      Save Updates
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingProfile(false)}
+                      className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded font-semibold text-xs hover:bg-gray-300"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
 
             {/* Registered Divisions in this Event */}
@@ -770,10 +1023,22 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
                       <div className="text-xs text-gray-600">
                         <span>Team: <strong>{rd.teamName}</strong> ({rd.isCaptain ? 'Captain' : 'Partner'})</span>
                       </div>
-                      {rd.teammateCode && rd.isCaptain && (
-                        <div className="p-2 bg-gray-50 rounded-lg text-xs font-mono flex justify-between items-center">
-                          <span>Partner Code: <strong>{rd.teammateCode}</strong></span>
-                          <span className="text-[11px] text-[#0A5C43] font-sans font-semibold">Share with partner</span>
+                      {rd.teammateCode && (
+                        <div className="p-2.5 bg-gray-50 rounded-lg text-xs flex justify-between items-center border">
+                          <div>
+                            <span className="font-mono font-bold text-gray-900">{rd.teammateCode}</span>
+                            <span className="text-[10px] text-gray-500 block">
+                              {rd.teammateCode.startsWith('TP-') ? 'Team Paid (Partner joins for $0)' : 'Team Unpaid (Partner pays upon joining)'}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => copyTeammateCode(rd.teammateCode || '')}
+                            className="text-[#0A5C43] font-semibold text-xs hover:underline flex items-center gap-1"
+                          >
+                            {copiedCodeSuccess ? <Check size={12} /> : <Copy size={12} />}
+                            <span>{copiedCodeSuccess ? 'Copied' : 'Copy'}</span>
+                          </button>
                         </div>
                       )}
                     </div>
@@ -806,9 +1071,14 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
             )}
 
             {/* Dinkster Mobile App Access Callout */}
-            <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-600 flex items-center gap-2.5">
-              <Smartphone size={20} className="text-[#0A5C43] shrink-0" />
-              <span>Use <strong>{signedInPlayer.email}</strong> on the Dinkster mobile app to view match courts, enter scores, and track tournament draws.</span>
+            <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-950 flex items-center gap-3">
+              <Smartphone size={22} className="text-[#0A5C43] shrink-0" />
+              <div>
+                <strong className="block font-bold">Download Dinkster Mobile App</strong>
+                <span className="text-[11px] text-emerald-900">
+                  Sign in with <strong>{signedInPlayer.email}</strong> on iOS & Android to view live court numbers, get match push notifications, and enter scores.
+                </span>
+              </div>
             </div>
 
             <button
@@ -817,6 +1087,49 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
               className="w-full py-2 border border-gray-200 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-50"
             >
               Sign Out of Dinkster
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* DUPR UPCOMING FEATURE MODAL */}
+      {showDuprModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-200 space-y-4">
+            <div className="flex justify-between items-center border-b pb-3">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#EF9F27] text-black">
+                  Upcoming Feature
+                </span>
+                <h3 className="text-sm font-bold text-gray-900">Connect with DUPR</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDuprModal(false)}
+                className="w-7 h-7 rounded-full bg-gray-100 text-gray-600 font-bold flex items-center justify-center"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-gray-600 leading-relaxed">
+              <p>
+                <strong>Official DUPR API sync is under active development.</strong>
+              </p>
+              <p>
+                Once live, connecting your DUPR profile will automatically sync your verified ratings and make DUPR-sanctioned division registration mandatory and seamless.
+              </p>
+              <p className="p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 text-[11px]">
+                Currently, your scores are recorded and exported at tournament conclusion for manual DUPR rating submission.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowDuprModal(false)}
+              className="w-full py-2 bg-gray-900 text-white rounded-xl text-xs font-semibold hover:bg-black"
+            >
+              Got It
             </button>
           </div>
         </div>

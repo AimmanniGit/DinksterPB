@@ -24,6 +24,13 @@ import {
   MessageSquare,
   Bot,
   Zap,
+  BarChart3,
+  X,
+  CreditCard,
+  ShieldCheck,
+  Building2,
+  ChevronRight,
+  Eye,
 } from 'lucide-react';
 
 interface TournamentFleetDirectoryProps {
@@ -32,6 +39,8 @@ interface TournamentFleetDirectoryProps {
   onSelectTournament: (tournamentId: string) => void;
   onCreateTournament: (newEvent: TournamentEvent) => void;
 }
+
+export type ActorPerspective = 'all' | 'founder' | 'admin' | 'director';
 
 export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> = ({
   tournaments,
@@ -44,6 +53,12 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createMode, setCreateMode] = useState<'copilot' | 'manual'>('copilot');
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
+
+  // Actor-Centric Perspective Filter
+  const [actorPerspective, setActorPerspective] = useState<ActorPerspective>('all');
+
+  // Interactive KPI Breakdown Modal State
+  const [activeKpiModal, setActiveKpiModal] = useState<'tournaments' | 'players' | 'revenue' | 'courts' | null>(null);
 
   // Form State for Manual Setup
   const [name, setName] = useState('');
@@ -84,7 +99,6 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
 
   // Overall & Dynamic Filtered Statistics
   const dynamicStats = useMemo(() => {
-    // Determine which pool of tournaments to calculate stats for
     const targetPool = statusFilter === 'all'
       ? tournaments
       : tournaments.filter((t) => t.status === statusFilter);
@@ -94,7 +108,6 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
     const totalPlayers = targetPool.reduce((acc, t) => acc + (t.registeredCount || 0), 0);
     const totalCourtsCount = targetPool.reduce((acc, t) => acc + (t.totalCourts || 0), 0);
 
-    // Counts for badge pills
     const liveCount = tournaments.filter((t) => t.status === 'Live').length;
     const upcomingCount = tournaments.filter((t) => t.status === 'Published').length;
     const draftsCount = tournaments.filter((t) => t.status === 'Draft').length;
@@ -110,6 +123,7 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
       draftsCount,
       concludedCount,
       totalCount: tournaments.length,
+      targetPool,
     };
   }, [tournaments, statusFilter]);
 
@@ -126,7 +140,6 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
     setTimeout(() => {
       setIsCopilotThinking(false);
 
-      // Intelligent heuristic parsing based on user query
       const lower = text.toLowerCase();
       let proposedCity = 'Austin, TX';
       if (lower.includes('dallas')) proposedCity = 'Dallas, TX';
@@ -316,6 +329,35 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
         </div>
       </div>
 
+      {/* ACTOR PERSPECTIVE TOGGLE BAR */}
+      <div className="flex items-center justify-between bg-white px-4 py-2.5 rounded-xl border border-gray-200 shadow-2xs text-xs">
+        <div className="flex items-center gap-2 text-gray-500">
+          <Eye size={14} className="text-[#0A5C43]" />
+          <span className="font-semibold text-gray-700">Actor View:</span>
+        </div>
+        <div className="flex items-center gap-1.5 overflow-x-auto">
+          {[
+            { id: 'all', label: 'All Perspectives' },
+            { id: 'founder', label: '👑 Founder / Executive' },
+            { id: 'admin', label: '🛠️ Operations Admin' },
+            { id: 'director', label: '📋 On-Site Director' },
+          ].map((act) => (
+            <button
+              key={act.id}
+              type="button"
+              onClick={() => setActorPerspective(act.id as ActorPerspective)}
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
+                actorPerspective === act.id
+                  ? 'bg-emerald-50 text-[#0A5C43] border border-emerald-300 font-bold'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              {act.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* 2. FILTER & SEARCH BAR (Positioned directly below the top card, above KPIs) */}
       <div className="bg-white p-3.5 rounded-2xl border border-gray-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
         {/* Status Filter Chips */}
@@ -391,22 +433,31 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
         </div>
       </div>
 
-      {/* 3. DYNAMIC FLEET KPI METRIC CARDS (Calculates according to the selected status filter!) */}
+      {/* 3. DYNAMIC INTERACTIVE KPI METRIC CARDS (Clickable for Actor Breakdown!) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Card 1: Tournament Events Count */}
-        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
-          <span className="text-[11px] font-semibold text-gray-500 uppercase block">
-            {statusFilter === 'all'
-              ? 'Total Tournaments'
-              : statusFilter === 'Live'
-              ? 'Live Tournaments'
-              : statusFilter === 'Published'
-              ? 'Upcoming Tournaments'
-              : statusFilter === 'Draft'
-              ? 'Draft Setups'
-              : 'Past Tournaments'}
-          </span>
-          <div className="text-xl font-bold text-gray-900 my-1">
+        <div
+          onClick={() => setActiveKpiModal('tournaments')}
+          className="bg-white p-4 rounded-xl border border-gray-200 hover:border-[#0A5C43] hover:shadow-md transition cursor-pointer shadow-xs group"
+          title="Click to view detailed Tournaments breakdown"
+        >
+          <div className="flex justify-between items-center">
+            <span className="text-[11px] font-semibold text-gray-500 uppercase block">
+              {statusFilter === 'all'
+                ? 'Total Tournaments'
+                : statusFilter === 'Live'
+                ? 'Live Tournaments'
+                : statusFilter === 'Published'
+                ? 'Upcoming Tournaments'
+                : statusFilter === 'Draft'
+                ? 'Draft Setups'
+                : 'Past Tournaments'}
+            </span>
+            <span className="text-[10px] text-[#0A5C43] font-bold opacity-0 group-hover:opacity-100 transition flex items-center gap-0.5">
+              Breakdown &rarr;
+            </span>
+          </div>
+          <div className="text-xl font-bold text-gray-900 my-1 group-hover:text-[#0A5C43] transition">
             {dynamicStats.poolCount} {dynamicStats.poolCount === 1 ? 'Event' : 'Events'}
           </div>
           <div className="text-xs text-gray-500 flex items-center gap-1.5">
@@ -429,19 +480,28 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
         </div>
 
         {/* Card 2: Players Metric */}
-        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
-          <span className="text-[11px] font-semibold text-gray-500 uppercase block">
-            {statusFilter === 'all'
-              ? 'Total Players'
-              : statusFilter === 'Live'
-              ? 'Active Live Players'
-              : statusFilter === 'Published'
-              ? 'Registered Players'
-              : statusFilter === 'Draft'
-              ? 'Planned Capacity'
-              : 'Completed Entries'}
-          </span>
-          <div className="text-xl font-bold text-gray-900 my-1">
+        <div
+          onClick={() => setActiveKpiModal('players')}
+          className="bg-white p-4 rounded-xl border border-gray-200 hover:border-[#0A5C43] hover:shadow-md transition cursor-pointer shadow-xs group"
+          title="Click to view detailed Players breakdown"
+        >
+          <div className="flex justify-between items-center">
+            <span className="text-[11px] font-semibold text-gray-500 uppercase block">
+              {statusFilter === 'all'
+                ? 'Total Players'
+                : statusFilter === 'Live'
+                ? 'Active Live Players'
+                : statusFilter === 'Published'
+                ? 'Registered Players'
+                : statusFilter === 'Draft'
+                ? 'Planned Capacity'
+                : 'Completed Entries'}
+            </span>
+            <span className="text-[10px] text-[#0A5C43] font-bold opacity-0 group-hover:opacity-100 transition flex items-center gap-0.5">
+              Breakdown &rarr;
+            </span>
+          </div>
+          <div className="text-xl font-bold text-gray-900 my-1 group-hover:text-[#0A5C43] transition">
             {dynamicStats.poolPlayers} Players
           </div>
           <div className="text-xs text-gray-500">
@@ -456,18 +516,27 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
         </div>
 
         {/* Card 3: Revenue Metric */}
-        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
-          <span className="text-[11px] font-semibold text-gray-500 uppercase block">
-            {statusFilter === 'all'
-              ? 'Gross Revenue'
-              : statusFilter === 'Live'
-              ? 'Live Event Revenue'
-              : statusFilter === 'Published'
-              ? 'Upcoming Collections'
-              : statusFilter === 'Draft'
-              ? 'Projected Revenue'
-              : 'Historical Revenue'}
-          </span>
+        <div
+          onClick={() => setActiveKpiModal('revenue')}
+          className="bg-white p-4 rounded-xl border border-gray-200 hover:border-[#0A5C43] hover:shadow-md transition cursor-pointer shadow-xs group"
+          title="Click to view financial breakdown & platform fees"
+        >
+          <div className="flex justify-between items-center">
+            <span className="text-[11px] font-semibold text-gray-500 uppercase block">
+              {statusFilter === 'all'
+                ? 'Gross Revenue'
+                : statusFilter === 'Live'
+                ? 'Live Event Revenue'
+                : statusFilter === 'Published'
+                ? 'Upcoming Collections'
+                : statusFilter === 'Draft'
+                ? 'Projected Revenue'
+                : 'Historical Revenue'}
+            </span>
+            <span className="text-[10px] text-[#0A5C43] font-bold opacity-0 group-hover:opacity-100 transition flex items-center gap-0.5">
+              Breakdown &rarr;
+            </span>
+          </div>
           <div className="text-xl font-bold text-[#0A5C43] my-1">
             ${dynamicStats.poolRev.toLocaleString()}
           </div>
@@ -481,19 +550,28 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
         </div>
 
         {/* Card 4: Competition Courts Metric */}
-        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
-          <span className="text-[11px] font-semibold text-gray-500 uppercase block">
-            {statusFilter === 'all'
-              ? 'Competition Courts'
-              : statusFilter === 'Live'
-              ? 'Active Live Courts'
-              : statusFilter === 'Published'
-              ? 'Reserved Courts'
-              : statusFilter === 'Draft'
-              ? 'Allocated Courts'
-              : 'Utilized Courts'}
-          </span>
-          <div className="text-xl font-bold text-gray-900 my-1">
+        <div
+          onClick={() => setActiveKpiModal('courts')}
+          className="bg-white p-4 rounded-xl border border-gray-200 hover:border-[#0A5C43] hover:shadow-md transition cursor-pointer shadow-xs group"
+          title="Click to view court surface & venue allocations"
+        >
+          <div className="flex justify-between items-center">
+            <span className="text-[11px] font-semibold text-gray-500 uppercase block">
+              {statusFilter === 'all'
+                ? 'Competition Courts'
+                : statusFilter === 'Live'
+                ? 'Active Live Courts'
+                : statusFilter === 'Published'
+                ? 'Reserved Courts'
+                : statusFilter === 'Draft'
+                ? 'Allocated Courts'
+                : 'Utilized Courts'}
+            </span>
+            <span className="text-[10px] text-[#0A5C43] font-bold opacity-0 group-hover:opacity-100 transition flex items-center gap-0.5">
+              Breakdown &rarr;
+            </span>
+          </div>
+          <div className="text-xl font-bold text-gray-900 my-1 group-hover:text-[#0A5C43] transition">
             {dynamicStats.poolCourts} Courts
           </div>
           <div className="text-xs text-gray-500">
@@ -504,7 +582,7 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
         </div>
       </div>
 
-      {/* 4. TOURNAMENTS GRID */}
+      {/* 4. TOURNAMENTS GRID - ENTIRE TILE IS DIRECTLY CLICKABLE! */}
       <div className="space-y-3">
         {filteredTournaments.length === 0 ? (
           <div className="py-12 bg-white rounded-xl border border-gray-200 text-center">
@@ -530,8 +608,9 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
             return (
               <div
                 key={t.id}
-                className={`bg-white rounded-xl border transition shadow-xs hover:border-[#0A5C43] p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${
-                  isLive ? 'border-emerald-300 ring-1 ring-emerald-500/20' : 'border-gray-200'
+                onClick={() => onSelectTournament(t.id)}
+                className={`bg-white rounded-xl border transition shadow-xs hover:border-[#0A5C43] hover:shadow-md cursor-pointer p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 group ${
+                  isLive ? 'border-emerald-400 ring-1 ring-emerald-500/20 bg-emerald-50/20' : 'border-gray-200'
                 }`}
               >
                 {/* Event Overview Info */}
@@ -558,7 +637,10 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
 
                     <button
                       type="button"
-                      onClick={() => copyCode(t.joinCode, t.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        copyCode(t.joinCode, t.id);
+                      }}
                       className="text-[11px] text-gray-500 hover:text-gray-800"
                       title="Copy Join Code"
                     >
@@ -566,8 +648,9 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
                     </button>
                   </div>
 
-                  <h3 className="text-base font-bold text-gray-900">
-                    {t.name}
+                  <h3 className="text-base font-bold text-gray-900 group-hover:text-[#0A5C43] transition flex items-center gap-2">
+                    <span>{t.name}</span>
+                    <ChevronRight size={15} className="text-gray-400 opacity-0 group-hover:opacity-100 transition" />
                   </h3>
 
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
@@ -614,6 +697,7 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
                     <Link
                       href={`/t/${t.slug}`}
                       target="_blank"
+                      onClick={(e) => e.stopPropagation()}
                       className="p-2 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 transition"
                       title="Open Public Player Registration Portal"
                     >
@@ -624,6 +708,7 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
                       <Link
                         href="/tv"
                         target="_blank"
+                        onClick={(e) => e.stopPropagation()}
                         className="p-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-amber-400 transition"
                         title="Open TV Jumbotron Scoreboard"
                       >
@@ -633,14 +718,13 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
 
                     <button
                       type="button"
-                      onClick={() => onSelectTournament(t.id)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition flex items-center gap-1.5 ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition flex items-center gap-1.5 pointer-events-none ${
                         isLive
-                          ? 'bg-[#0A5C43] hover:bg-[#084734] text-white font-bold'
-                          : 'bg-gray-900 hover:bg-black text-white'
+                          ? 'bg-[#0A5C43] text-white font-bold'
+                          : 'bg-gray-900 text-white'
                       }`}
                     >
-                      <span>{isLive ? 'Open Live Desk' : 'Manage Event'}</span>
+                      <span>{isLive ? 'Open Live Desk' : 'Open Workspace'}</span>
                       <ArrowRight size={13} />
                     </button>
                   </div>
@@ -651,7 +735,152 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
         )}
       </div>
 
-      {/* 5. CREATE NEW TOURNAMENT MODAL (Supports AI Copilot or Manual Setup!) */}
+      {/* 5. INTERACTIVE KPI BREAKDOWN MODAL */}
+      {activeKpiModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-gray-200 space-y-4 max-h-[85vh] flex flex-col">
+            <div className="flex justify-between items-center border-b pb-3 shrink-0">
+              <div className="flex items-center gap-2">
+                <BarChart3 size={18} className="text-[#0A5C43]" />
+                <div>
+                  <h3 className="text-base font-bold text-gray-900">
+                    {activeKpiModal === 'tournaments' && 'Tournaments Fleet Breakdown'}
+                    {activeKpiModal === 'players' && 'Player Participation & Roster Breakdown'}
+                    {activeKpiModal === 'revenue' && 'Financial Ledger & Revenue Breakdown'}
+                    {activeKpiModal === 'courts' && 'Court Allocations & Surface Breakdown'}
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    Detailed metric analytics for {statusFilter === 'all' ? 'All Tournaments' : `${statusFilter} Tournaments`}.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveKpiModal(null)}
+                className="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold flex items-center justify-center"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-3 text-xs">
+              {activeKpiModal === 'tournaments' && (
+                <div className="space-y-2">
+                  {dynamicStats.targetPool.map((t) => (
+                    <div
+                      key={t.id}
+                      onClick={() => {
+                        setActiveKpiModal(null);
+                        onSelectTournament(t.id);
+                      }}
+                      className="p-3 bg-gray-50 hover:bg-emerald-50/60 rounded-xl border border-gray-200 flex justify-between items-center cursor-pointer transition"
+                    >
+                      <div>
+                        <div className="font-bold text-gray-900">{t.name}</div>
+                        <div className="text-gray-500 text-[11px]">
+                          {t.dates} &bull; {t.venue} ({t.city}, {t.state})
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          t.status === 'Live' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-200 text-gray-800'
+                        }`}>
+                          {t.status}
+                        </span>
+                        <span className="text-[#0A5C43] font-semibold text-xs">Open &rarr;</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {activeKpiModal === 'players' && (
+                <div className="space-y-3">
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 flex justify-between">
+                    <span>Total Participants in Selection:</span>
+                    <strong>{dynamicStats.poolPlayers} Players</strong>
+                  </div>
+                  {dynamicStats.targetPool.map((t) => (
+                    <div key={t.id} className="p-3 bg-white rounded-xl border border-gray-200 space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-gray-900">{t.name}</span>
+                        <span className="font-mono text-gray-600 text-xs">
+                          {t.registeredCount || 0} / {t.maxCapacity || 64} ({Math.round(((t.registeredCount || 0) / (t.maxCapacity || 64)) * 100)}% filled)
+                        </span>
+                      </div>
+                      <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-[#0A5C43]"
+                          style={{ width: `${Math.min(100, (((t.registeredCount || 0) / (t.maxCapacity || 64)) * 100))}%` }}
+                        />
+                      </div>
+                      <div className="text-[11px] text-gray-500 flex justify-between">
+                        <span>{t.divisionsCount || 3} Divisions Open</span>
+                        <span>Estimated Team Capacity: {(t.totalCourts || 8) * 4} Teams</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {activeKpiModal === 'revenue' && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                      <span className="text-[10px] uppercase font-bold text-emerald-800 block">Gross Invoiced</span>
+                      <strong className="text-base text-emerald-950">${dynamicStats.poolRev.toLocaleString()}</strong>
+                    </div>
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl">
+                      <span className="text-[10px] uppercase font-bold text-gray-500 block">10% Platform Cut</span>
+                      <strong className="text-base text-gray-900">${Math.round(dynamicStats.poolRev * 0.1).toLocaleString()}</strong>
+                    </div>
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl">
+                      <span className="text-[10px] uppercase font-bold text-gray-500 block">Director Net</span>
+                      <strong className="text-base text-gray-900">${Math.round(dynamicStats.poolRev * 0.9).toLocaleString()}</strong>
+                    </div>
+                  </div>
+                  {dynamicStats.targetPool.map((t) => (
+                    <div key={t.id} className="p-3 bg-white rounded-xl border border-gray-200 flex justify-between items-center">
+                      <div>
+                        <div className="font-bold text-gray-900">{t.name}</div>
+                        <div className="text-gray-500 text-[11px]">{t.status} &bull; {t.registeredCount || 0} Paid Registrations</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-[#0A5C43] text-sm">${(t.revenue || 0).toLocaleString()}</div>
+                        <div className="text-[10px] text-gray-400">Stripe Connect: Settled</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {activeKpiModal === 'courts' && (
+                <div className="space-y-3">
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-900 flex justify-between">
+                    <span>Active Competition Courts Across Facilities:</span>
+                    <strong>{dynamicStats.poolCourts} Courts</strong>
+                  </div>
+                  {dynamicStats.targetPool.map((t) => (
+                    <div key={t.id} className="p-3 bg-white rounded-xl border border-gray-200 flex justify-between items-center">
+                      <div>
+                        <div className="font-bold text-gray-900">{t.name}</div>
+                        <div className="text-gray-500 text-[11px]">{t.venue}</div>
+                        <div className="text-[11px] text-gray-600 mt-0.5">Surface: {t.courtSurface || 'Acrylic Hardcourt'}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-gray-900 text-sm">{t.totalCourts} Courts</div>
+                        <div className="text-[10px] text-emerald-700 font-semibold">{t.ballType || 'Franklin X-40'}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. CREATE NEW TOURNAMENT MODAL (Supports AI Copilot or Manual Setup!) */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-gray-200 space-y-4 max-h-[90vh] flex flex-col">

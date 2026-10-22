@@ -130,7 +130,12 @@ export const TournamentRegistrationModal: React.FC<TournamentRegistrationModalPr
   // Calculate pricing per person
   const isDoubles = !division.format.toLowerCase().includes('singles');
   const pricePerPlayer = division.entryFee;
-  const isCoveredByCaptain = isTeammateJoining && existingTeamCode?.startsWith('TM-PAID');
+  // Code prefixes: TP = Team Paid (entire team covered), TU = Team Unpaid (partner pays self)
+  const isCoveredByCaptain = isTeammateJoining && (
+    existingTeamCode?.startsWith('TP-') ||
+    existingTeamCode?.startsWith('TMP-') ||
+    existingTeamCode?.startsWith('TM-PAID')
+  );
 
   const totalAmountDue = isTeammateJoining
     ? (isCoveredByCaptain ? 0 : pricePerPlayer)
@@ -253,11 +258,12 @@ export const TournamentRegistrationModal: React.FC<TournamentRegistrationModalPr
     setTimeout(() => {
       setIsProcessingPayment(false);
 
+      // Generate Code: TP-XXXX = Team Paid, TU-XXXX = Team Unpaid
       const generatedTeamCode = isTeammateJoining
-        ? existingTeamCode || `TM-${Math.floor(1000 + Math.random() * 9000)}`
+        ? existingTeamCode || `TU-${Math.floor(1000 + Math.random() * 9000)}`
         : paymentChoice === 'entire-team'
-        ? `TM-PAID-${Math.floor(1000 + Math.random() * 9000)}`
-        : `TM-${Math.floor(1000 + Math.random() * 9000)}`;
+        ? `TP-${Math.floor(1000 + Math.random() * 9000)}`
+        : `TU-${Math.floor(1000 + Math.random() * 9000)}`;
 
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://dinkster.app';
       const inviteUrl = `${baseUrl}/t/${eventSlug}?join=${generatedTeamCode}`;
@@ -774,8 +780,19 @@ export const TournamentRegistrationModal: React.FC<TournamentRegistrationModalPr
             {registeredRecord.isCaptain && (
               <div className="p-4 bg-gray-50 border border-gray-200 rounded-2xl text-left space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-gray-700 uppercase">Teammate Invite Code</span>
-                  <span className="font-mono font-bold text-sm bg-white px-2.5 py-1 rounded border border-gray-300 text-gray-900">
+                  <div>
+                    <span className="text-[11px] font-bold text-gray-700 uppercase block">Teammate Invite Code</span>
+                    <span className="text-[10px] text-gray-500">
+                      {registeredRecord.teammateCode?.startsWith('TP-')
+                        ? 'Code Prefix TP: Team Paid (Partner joins for $0)'
+                        : 'Code Prefix TU: Team Unpaid (Partner pays upon joining)'}
+                    </span>
+                  </div>
+                  <span className={`font-mono font-bold text-sm px-2.5 py-1 rounded border ${
+                    registeredRecord.teammateCode?.startsWith('TP-')
+                      ? 'bg-emerald-50 text-emerald-900 border-emerald-300'
+                      : 'bg-amber-50 text-amber-900 border-amber-300'
+                  }`}>
                     {registeredRecord.teammateCode}
                   </span>
                 </div>
