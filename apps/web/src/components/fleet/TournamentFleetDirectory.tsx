@@ -30,7 +30,6 @@ import {
   ShieldCheck,
   Building2,
   ChevronRight,
-  Eye,
 } from 'lucide-react';
 
 interface TournamentFleetDirectoryProps {
@@ -39,8 +38,6 @@ interface TournamentFleetDirectoryProps {
   onSelectTournament: (tournamentId: string) => void;
   onCreateTournament: (newEvent: TournamentEvent) => void;
 }
-
-export type ActorPerspective = 'all' | 'founder' | 'admin' | 'director';
 
 export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> = ({
   tournaments,
@@ -53,9 +50,6 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createMode, setCreateMode] = useState<'copilot' | 'manual'>('copilot');
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
-
-  // Actor-Centric Perspective Filter
-  const [actorPerspective, setActorPerspective] = useState<ActorPerspective>('all');
 
   // Interactive KPI Breakdown Modal State
   const [activeKpiModal, setActiveKpiModal] = useState<'tournaments' | 'players' | 'revenue' | 'courts' | null>(null);
@@ -326,35 +320,6 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
             <Plus size={15} />
             <span>Create New Tournament</span>
           </button>
-        </div>
-      </div>
-
-      {/* ACTOR PERSPECTIVE TOGGLE BAR */}
-      <div className="flex items-center justify-between bg-white px-4 py-2.5 rounded-xl border border-gray-200 shadow-2xs text-xs">
-        <div className="flex items-center gap-2 text-gray-500">
-          <Eye size={14} className="text-[#0A5C43]" />
-          <span className="font-semibold text-gray-700">Actor View:</span>
-        </div>
-        <div className="flex items-center gap-1.5 overflow-x-auto">
-          {[
-            { id: 'all', label: 'All Perspectives' },
-            { id: 'founder', label: '👑 Founder / Executive' },
-            { id: 'admin', label: '🛠️ Operations Admin' },
-            { id: 'director', label: '📋 On-Site Director' },
-          ].map((act) => (
-            <button
-              key={act.id}
-              type="button"
-              onClick={() => setActorPerspective(act.id as ActorPerspective)}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
-                actorPerspective === act.id
-                  ? 'bg-emerald-50 text-[#0A5C43] border border-emerald-300 font-bold'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              {act.label}
-            </button>
-          ))}
         </div>
       </div>
 
