@@ -8,6 +8,7 @@ import {
   Dispute,
   Incident,
   DivisionBracketData,
+  UserActorProfile,
 } from '../types/organizer';
 
 export const INITIAL_EVENT: TournamentEvent = {
@@ -209,10 +210,212 @@ export const INITIAL_REGISTRATIONS: Registration[] = TEAM_NAMES.map((name, i) =>
 }));
 
 export const INITIAL_SPONSORS: Sponsor[] = [
-  { name: 'Volt Paddles', tier: 'Title', courtAssigned: 2 },
-  { name: 'Hill Country Hydration', tier: 'Gold', courtAssigned: null },
-  { name: 'Barton Springs Bakery', tier: 'Community', courtAssigned: null },
+  // 1. Global Fleet-Wide Title Partner
+  {
+    id: 'sp-global-joola',
+    name: 'JOOLA Pickleball Global',
+    tier: 'Title Presenting',
+    scope: 'global',
+    category: 'title',
+    categoryLabel: 'Official Global Paddle & Title Partner',
+    courtAssigned: null,
+    amountPaid: 15000,
+    startDate: 'Jan 1, 2026',
+    endDate: 'Dec 31, 2026',
+    assetDescription: 'Headline logo across all Dinkster tournament portals, jumbo TV broadcasts, and official balls.',
+    websiteUrl: 'https://joola.com',
+    deliverables: {
+      jumboTvDisplay: true,
+      playerPortalBanner: true,
+      courtBanners: true,
+      mobileAppShoutout: true,
+    },
+  },
+  // 2. Event Court Naming Rights
+  {
+    id: 'sp-court-selkirk',
+    name: 'Selkirk Center Stadium',
+    tier: 'Premier Diamond',
+    scope: 'event',
+    category: 'court',
+    categoryLabel: 'Stadium Court 1 Naming Partner',
+    courtAssigned: 1,
+    amountPaid: 2500,
+    assetDescription: 'Exclusive physical baseline banners, TV match broadcast corner graphic, and court call audio.',
+    websiteUrl: 'https://selkirk.com',
+    deliverables: {
+      jumboTvDisplay: true,
+      playerPortalBanner: true,
+      courtBanners: true,
+      mobileAppShoutout: true,
+    },
+  },
+  {
+    id: 'sp-court-volt',
+    name: 'Volt Performance Court',
+    tier: 'Official Gold',
+    scope: 'event',
+    category: 'court',
+    categoryLabel: 'Court 2 Naming Partner',
+    courtAssigned: 2,
+    amountPaid: 1200,
+    assetDescription: 'Court 2 sideline windscreen branding and TV broadcast scoreboard mention.',
+    deliverables: {
+      jumboTvDisplay: true,
+      courtBanners: true,
+      playerPortalBanner: false,
+    },
+  },
+  // 3. Division & Medal Presentation Partner
+  {
+    id: 'sp-medal-vulcan',
+    name: 'Vulcan Pickleball Medals',
+    tier: 'Official Gold',
+    scope: 'event',
+    category: 'division_medal',
+    categoryLabel: "Men's & Mixed 3.5 Gold/Silver Medal Sponsor",
+    courtAssigned: null,
+    divisionAssigned: 'A',
+    amountPaid: 1800,
+    assetDescription: 'Custom engraved medals with Vulcan logo, 3D Olympic podium broadcast ceremony backdrop.',
+    websiteUrl: 'https://vulcansportinggoods.com',
+    deliverables: {
+      jumboTvDisplay: true,
+      playerPortalBanner: true,
+      courtBanners: false,
+      mobileAppShoutout: true,
+    },
+  },
+  // 4. Hydration & Nutrition Partner
+  {
+    id: 'sp-hydration-electrolit',
+    name: 'Electrolit Rapid Recovery',
+    tier: 'Official Gold',
+    scope: 'event',
+    category: 'hydration',
+    categoryLabel: 'Official Hydration & Player Village Station',
+    courtAssigned: null,
+    amountPaid: 1500,
+    assetDescription: 'Free cold beverage stations at player check-in desk, branded court towel sets.',
+    deliverables: {
+      jumboTvDisplay: true,
+      playerPortalBanner: true,
+      courtBanners: true,
+      mobileAppShoutout: true,
+    },
+  },
+  // 5. Official Cash Prize & Financial Sponsor
+  {
+    id: 'sp-finance-frost',
+    name: 'Frost Bank Cash Prize',
+    tier: 'Premier Diamond',
+    scope: 'event',
+    category: 'finance',
+    categoryLabel: 'Official Cash Prize & Banking Partner',
+    courtAssigned: null,
+    amountPaid: 3000,
+    assetDescription: 'Oversized winner check presentation, digital prize payouts partner, player welcome bag coupon.',
+    deliverables: {
+      jumboTvDisplay: true,
+      playerPortalBanner: true,
+      courtBanners: true,
+      mobileAppShoutout: true,
+    },
+  },
+  // 6. Presentation Asset: Digital Scorecards & Clipboards
+  {
+    id: 'sp-asset-crbn',
+    name: 'CRBN Digital Scorecards',
+    tier: 'Supporting Silver',
+    scope: 'event',
+    category: 'scorecards',
+    categoryLabel: 'Referee Scorecards & Desk Clipboards',
+    courtAssigned: null,
+    amountPaid: 800,
+    assetDescription: 'Logo on referee clipboard covers, official score verification stamps, and desk screens.',
+    deliverables: {
+      jumboTvDisplay: true,
+      playerPortalBanner: false,
+      courtBanners: false,
+      mobileAppShoutout: true,
+    },
+  },
 ];
+
+export const INITIAL_ACTOR_PROFILES: Record<string, UserActorProfile> = {
+  founder: {
+    id: 'actor-founder',
+    name: 'AJ (Founder & Owner)',
+    email: 'founder@dinkster.app',
+    role: 'founder',
+    roleTitle: 'Head / Founder (Unrestricted)',
+    avatarInitials: 'AJ',
+    permissions: {
+      canViewFinancials: true,
+      canManageFleet: true,
+      canManageGlobalSponsors: true,
+      canManageEventSponsors: true,
+      canEditTournamentRules: true,
+      canDispatchCourts: true,
+      canResolveDisputes: true,
+      canInputScores: true,
+    },
+  },
+  director: {
+    id: 'actor-director',
+    name: 'Marcus Vance',
+    email: 'marcus@dinkster.app',
+    role: 'director',
+    roleTitle: 'Tournament Director (Ops & Desk)',
+    avatarInitials: 'MV',
+    permissions: {
+      canViewFinancials: true,
+      canManageFleet: false,
+      canManageGlobalSponsors: false,
+      canManageEventSponsors: true,
+      canEditTournamentRules: true,
+      canDispatchCourts: true,
+      canResolveDisputes: true,
+      canInputScores: true,
+    },
+  },
+  marshall: {
+    id: 'actor-marshall',
+    name: 'Rachel Gill',
+    email: 'rachel.ref@dinkster.app',
+    role: 'marshall',
+    roleTitle: 'Desk Marshall / Head Referee',
+    avatarInitials: 'RG',
+    permissions: {
+      canViewFinancials: false, // Financials hidden
+      canManageFleet: false,
+      canManageGlobalSponsors: false,
+      canManageEventSponsors: false,
+      canEditTournamentRules: false,
+      canDispatchCourts: true,
+      canResolveDisputes: true,
+      canInputScores: true,
+    },
+  },
+  volunteer: {
+    id: 'actor-volunteer',
+    name: 'Kevin Patel',
+    email: 'volunteer@dinkster.app',
+    role: 'volunteer',
+    roleTitle: 'Scorekeeper / Volunteer',
+    avatarInitials: 'KP',
+    permissions: {
+      canViewFinancials: false, // Financials hidden
+      canManageFleet: false,
+      canManageGlobalSponsors: false,
+      canManageEventSponsors: false,
+      canEditTournamentRules: false,
+      canDispatchCourts: false,
+      canResolveDisputes: false,
+      canInputScores: true,
+    },
+  },
+};
 
 export function generateInitialMatches(): TournamentMatch[] {
   const matches: TournamentMatch[] = [];

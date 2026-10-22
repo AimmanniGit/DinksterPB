@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CopilotProposal, TournamentMatch } from '../../types/organizer';
 import { Sparkles, Bot, ShieldCheck, CheckCircle2, ArrowRight, Zap, RefreshCw } from 'lucide-react';
+import { VoiceInputButton } from './VoiceInputButton';
 
 interface CopilotViewProps {
   role: 'org' | 'desk';
@@ -255,14 +256,20 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
           </div>
 
           {/* Input Row */}
-          <div className="flex gap-2 pt-3 border-t border-gray-100 mt-2">
+          <div className="flex items-center gap-2 pt-3 border-t border-gray-100 mt-2">
             <input
               type="text"
-              placeholder="Ask Copilot (e.g. 'Are courts on schedule?', 'Switch pool to games to 9')..."
+              placeholder="Ask Copilot or use voice (e.g. 'Are courts on schedule?', 'Move wet court matches')..."
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2 text-xs font-medium text-gray-900 focus:outline-none focus:border-[#0A5C43]"
+            />
+            {/* Hands-free Voice Input Button (Drive / Walk Dictation) */}
+            <VoiceInputButton
+              onTranscript={(transcript) => setInputText(transcript)}
+              onAutoSend={(transcript) => handleSend(transcript)}
+              autoSendEnabled={true}
             />
             <button
               type="button"

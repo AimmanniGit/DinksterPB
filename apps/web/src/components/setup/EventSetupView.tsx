@@ -8,6 +8,7 @@ import {
   Sponsor,
 } from '../../types/organizer';
 import { CreatableCombobox } from './CreatableCombobox';
+import { SponsorsManagementHub } from '../sponsors';
 import {
   Trophy,
   Calendar,
@@ -42,6 +43,10 @@ interface EventSetupViewProps {
   onUpdateDivision?: (id: string, updated: Division) => void;
   onDeleteDivision?: (id: string) => void;
   onPublish?: () => void;
+  onAddSponsor?: (sponsor: Sponsor) => void;
+  onUpdateSponsor?: (index: number, updated: Sponsor) => void;
+  onDeleteSponsor?: (index: number) => void;
+  onAssignCourt?: (sponsorIndex: number, courtNumber: number | null) => void;
 }
 
 // Preset options for searchable and creatable comboboxes
@@ -117,6 +122,10 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
   onUpdateDivision,
   onDeleteDivision,
   onPublish,
+  onAddSponsor = () => {},
+  onUpdateSponsor = () => {},
+  onDeleteSponsor = () => {},
+  onAssignCourt = () => {},
 }) => {
   // Division Add / Edit State
   const [editingDivisionId, setEditingDivisionId] = useState<string | null>(null);
@@ -650,6 +659,19 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Card 5: Sponsorship & Commercial Partners (Global & Event Naming Rights) */}
+          <div className="bg-white p-5 md:p-6 rounded-2xl border border-black/10 shadow-sm space-y-4">
+            <SponsorsManagementHub
+              sponsors={sponsors}
+              totalCourts={event.totalCourts || 8}
+              divisions={divisions}
+              onAddSponsor={onAddSponsor}
+              onUpdateSponsor={onUpdateSponsor}
+              onDeleteSponsor={onDeleteSponsor}
+              onAssignCourt={onAssignCourt}
+            />
           </div>
         </div>
 

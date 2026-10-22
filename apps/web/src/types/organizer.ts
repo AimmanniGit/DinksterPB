@@ -175,10 +175,59 @@ export interface Registration {
   seed: number | null;
 }
 
+export type SponsorScope = 'global' | 'event';
+export type SponsorCategory =
+  | 'title'           // Title / Presenting Partner
+  | 'court'           // Court Naming Rights (Court 1, Court 2...)
+  | 'division_medal'  // Division / Medal Sponsor (Gold / Silver / Bronze)
+  | 'hydration'       // Hydration & Nutrition (Electrolit, Celsius...)
+  | 'finance'         // Official Financial / Bank Partner (Chase, Frost...)
+  | 'paddles_gear'    // Paddles & Balls (Joola, Selkirk, Franklin...)
+  | 'scorecards'      // Digital Scorecards & Desk Clipboards
+  | 'apparel'         // Official Tournament Apparel & Merch
+  | 'vendor_village'; // On-Site Vendor Village Booth
+
 export interface Sponsor {
+  id?: string;
   name: string;
-  tier: 'Title' | 'Gold' | 'Community';
-  courtAssigned: number | null;
+  tier: 'Title' | 'Gold' | 'Community' | 'Premier Diamond' | 'Title Presenting' | 'Supporting Silver' | 'Official Gold';
+  scope?: SponsorScope; // 'global' (fleet-wide multi-event) or 'event' (this tournament)
+  category?: SponsorCategory;
+  categoryLabel?: string;
+  courtAssigned: number | null; // e.g., Court 1, Court 2
+  divisionAssigned?: string | null; // e.g., Division A, Gold/Silver/Bronze
+  assetDescription?: string; // e.g., "Official digital scorecard sponsor & desk clipboards"
+  amountPaid?: number; // Contract cash value, e.g. $2,500
+  startDate?: string;
+  endDate?: string; // Time-bound for global contracts
+  websiteUrl?: string;
+  deliverables?: {
+    jumboTvDisplay?: boolean;
+    playerPortalBanner?: boolean;
+    courtBanners?: boolean;
+    mobileAppShoutout?: boolean;
+  };
+}
+
+export type UserRole = 'founder' | 'director' | 'marshall' | 'volunteer';
+
+export interface UserActorProfile {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  roleTitle: string;
+  avatarInitials: string;
+  permissions: {
+    canViewFinancials: boolean; // Gross revenue, entry fee intake, bank payouts
+    canManageFleet: boolean; // Create, archive, delete tournaments across fleet
+    canManageGlobalSponsors: boolean; // Manage company-wide annual sponsor deals
+    canManageEventSponsors: boolean; // Manage tournament-level court/medal sponsors
+    canEditTournamentRules: boolean; // Scoring rules, mid-tournament rule pivot
+    canDispatchCourts: boolean; // Match caller, live court assignments
+    canResolveDisputes: boolean; // Incident logging, referee disputes
+    canInputScores: boolean; // Score entry
+  };
 }
 
 export interface TournamentMatch {

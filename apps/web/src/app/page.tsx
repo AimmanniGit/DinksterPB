@@ -45,6 +45,7 @@ import {
   Incident,
   ChangeLogEntry,
   CopilotProposal,
+  UserActorProfile,
 } from '../types/organizer';
 
 import {
@@ -58,6 +59,7 @@ import {
   generateCourts,
   INITIAL_DISPUTES,
   INITIAL_INCIDENTS,
+  INITIAL_ACTOR_PROFILES,
 } from '../constants/initialState';
 
 import { TournamentFleetDirectory } from '../components/fleet';
@@ -68,6 +70,10 @@ import { RefereeScorecardView } from '../components/referee';
 import { CopilotView, ChangeLogView, AgenticTournamentCreator } from '../components/copilot';
 import { TvBroadcastView } from '../components/tv';
 import { BracketsPlayoffsView } from '../components/brackets';
+import { SponsorsManagementHub } from '../components/sponsors';
+import { CategorizedTournamentSwitcher } from '../components/navigation/CategorizedTournamentSwitcher';
+import { ActorRoleSwitcher } from '../components/rbac/ActorRoleSwitcher';
+import { PlatformFooter } from '../components/footer/PlatformFooter';
 
 export default function DinksterV2Platform() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -80,8 +86,11 @@ export default function DinksterV2Platform() {
   const [selectedTournamentId, setSelectedTournamentId] = useState<string | null>('tourn-austin-live');
   
   // Workspace Tab State (Clean V2 navigation tabs)
-  // 'overview' | 'desk' | 'players' | 'brackets' | 'settings' | 'copilot'
-  const [workspaceTab, setWorkspaceTab] = useState<'overview' | 'desk' | 'players' | 'brackets' | 'settings' | 'copilot'>('overview');
+  // 'overview' | 'desk' | 'players' | 'brackets' | 'sponsors' | 'settings' | 'copilot'
+  const [workspaceTab, setWorkspaceTab] = useState<'overview' | 'desk' | 'players' | 'brackets' | 'sponsors' | 'settings' | 'copilot'>('overview');
+
+  // RBAC Current Active Role Profile
+  const [currentActorProfile, setCurrentActorProfile] = useState<UserActorProfile>(INITIAL_ACTOR_PROFILES.founder);
 
   // Agentic Copilot Creator Modal
   const [showAgenticCreator, setShowAgenticCreator] = useState(false);
@@ -160,6 +169,29 @@ export default function DinksterV2Platform() {
   const handleExitToFleet = () => {
     setSelectedTournamentId(null);
     showToast('Returned to All Tournaments Fleet Directory.');
+  };
+
+  // Sponsor & Partner Actions
+  const handleAddSponsor = (newSponsor: Sponsor) => {
+    setSponsors((prev) => [newSponsor, ...prev]);
+    showToast(`Added sponsor: ${newSponsor.name}`);
+  };
+
+  const handleUpdateSponsor = (index: number, updated: Sponsor) => {
+    setSponsors((prev) => prev.map((s, idx) => (idx === index ? updated : s)));
+    showToast(`Updated sponsor: ${updated.name}`);
+  };
+
+  const handleDeleteSponsor = (index: number) => {
+    setSponsors((prev) => prev.filter((_, idx) => idx !== index));
+    showToast('Sponsor removed.');
+  };
+
+  const handleAssignCourt = (sponsorIndex: number, courtNumber: number | null) => {
+    setSponsors((prev) =>
+      prev.map((s, idx) => (idx === sponsorIndex ? { ...s, courtAssigned: courtNumber } : s))
+    );
+    showToast(courtNumber ? `Assigned to Court ${courtNumber}` : 'Court assignment cleared');
   };
 
   // Court & Match Actions (Scoped to Current Tournament)
@@ -430,55 +462,22 @@ export default function DinksterV2Platform() {
                 dink<span className="text-[#EF9F27]">ster</span>
               </span>
               <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-gray-100 text-gray-600 font-bold border border-gray-200">
-                v2
+                v2.4
               </span>
             </Link>
 
             {selectedTournamentId && (
               <>
                 <span className="text-gray-300 font-normal">/</span>
-                
-                {/* Back to All Tournaments */}
-                <button
-                  type="button"
-                  onClick={handleExitToFleet}
-                  className="text-xs font-semibold text-gray-500 hover:text-gray-900 transition flex items-center gap-1"
-                >
-                  <ArrowLeft size={13} />
-                  <span>Fleet</span>
-                </button>
 
-                <span className="text-gray-300 font-normal">/</span>
-
-                {/* Quick Tournament Switcher Dropdown */}
-                <div className="relative inline-block">
-                  <select
-                    value={selectedTournamentId}
-                    onChange={(e) => handleSelectTournament(e.target.value)}
-                    className="text-xs font-bold bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg pl-2.5 pr-7 py-1 text-gray-900 appearance-none cursor-pointer focus:outline-none"
-                  >
-                    {tournaments.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown size={13} className="absolute right-2 top-2 pointer-events-none text-gray-400" />
-                </div>
-
-                {/* Status Dot */}
-                <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1 ${
-                    event.status === 'Live'
-                      ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                      : event.status === 'Published'
-                      ? 'bg-blue-50 text-blue-800 border-blue-300'
-                      : 'bg-amber-50 text-amber-800 border-amber-300'
-                  }`}
-                >
-                  {event.status === 'Live' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
-                  <span>{event.status}</span>
-                </span>
+                {/* Categorized Tournament Switcher (Live, Upcoming, Drafts, Concluded) */}
+                <CategorizedTournamentSwitcher
+                  tournaments={tournaments}
+                  selectedTournamentId={selectedTournamentId}
+                  onSelectTournament={handleSelectTournament}
+                  onExitToFleet={handleExitToFleet}
+                  onOpenCreateModal={() => setShowAgenticCreator(true)}
+                />
               </>
             )}
           </div>
@@ -533,6 +532,20 @@ export default function DinksterV2Platform() {
               </button>
               <button
                 type="button"
+                onClick={() => setWorkspaceTab('sponsors')}
+                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
+                  workspaceTab === 'sponsors'
+                    ? 'bg-white text-gray-900 font-bold shadow-xs'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <span>Sponsors & Deals</span>
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-100 text-amber-900 font-black">
+                  {sponsors.length}
+                </span>
+              </button>
+              <button
+                type="button"
                 onClick={() => setWorkspaceTab('settings')}
                 className={`px-3 py-1.5 rounded-lg transition ${
                   workspaceTab === 'settings'
@@ -545,8 +558,17 @@ export default function DinksterV2Platform() {
             </div>
           )}
 
-          {/* Right: Quick Launch Direct Actions */}
-          <div className="flex items-center gap-2 self-end md:self-auto shrink-0">
+          {/* Right: RBAC Role Switcher & Action Controls */}
+          <div className="flex items-center gap-2.5 self-end md:self-auto shrink-0">
+            {/* RBAC Role Switcher (Founder, Director, Marshall, Volunteer) */}
+            <ActorRoleSwitcher
+              currentProfile={currentActorProfile}
+              onSelectProfile={(p) => {
+                setCurrentActorProfile(p);
+                showToast(`Switched active actor role to ${p.name}`);
+              }}
+            />
+
             {selectedTournamentId ? (
               <>
                 {/* Public Registration Link */}
@@ -675,9 +697,21 @@ export default function DinksterV2Platform() {
                     <span className="text-xs text-emerald-700 font-semibold">100% capacity filled</span>
                   </div>
                   <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
-                    <span className="text-[11px] font-semibold text-gray-500 uppercase block">Gross Revenue</span>
-                    <div className="text-2xl font-bold text-[#0A5C43] my-1">${(event.revenue || 3630).toLocaleString()}</div>
-                    <span className="text-xs text-gray-500">10% Platform fee: $363</span>
+                    {currentActorProfile.permissions.canViewFinancials ? (
+                      <>
+                        <span className="text-[11px] font-semibold text-gray-500 uppercase block">Gross Revenue</span>
+                        <div className="text-2xl font-bold text-[#0A5C43] my-1">${(event.revenue || 3630).toLocaleString()}</div>
+                        <span className="text-xs text-gray-500">10% Platform fee: $363</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-[11px] font-semibold text-gray-500 uppercase block">Court Utilization</span>
+                        <div className="text-2xl font-bold text-[#0A5C43] my-1">
+                          {courts.filter((c) => c.status === 'live').length} of {courts.length} Courts
+                        </div>
+                        <span className="text-xs text-emerald-700 font-semibold">Live match dispatch active</span>
+                      </>
+                    )}
                   </div>
                   <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
                     <span className="text-[11px] font-semibold text-gray-500 uppercase block">Matches Completed</span>
@@ -844,6 +878,21 @@ export default function DinksterV2Platform() {
               />
             )}
 
+            {/* TAB: SPONSORS & COMMERCIAL PARTNERS */}
+            {workspaceTab === 'sponsors' && (
+              <div className="space-y-6">
+                <SponsorsManagementHub
+                  sponsors={sponsors}
+                  totalCourts={event.totalCourts || 8}
+                  divisions={divisions}
+                  onAddSponsor={handleAddSponsor}
+                  onUpdateSponsor={handleUpdateSponsor}
+                  onDeleteSponsor={handleDeleteSponsor}
+                  onAssignCourt={handleAssignCourt}
+                />
+              </div>
+            )}
+
             {/* TAB: SETUP & SETTINGS */}
             {workspaceTab === 'settings' && (
               <EventSetupView
@@ -870,6 +919,10 @@ export default function DinksterV2Platform() {
                   setDivisions((prev) => prev.filter((d) => d.id !== id));
                   showToast('Division removed.');
                 }}
+                onAddSponsor={handleAddSponsor}
+                onUpdateSponsor={handleUpdateSponsor}
+                onDeleteSponsor={handleDeleteSponsor}
+                onAssignCourt={handleAssignCourt}
                 onPublish={() => {
                   const updated = {
                     ...event,
@@ -907,10 +960,8 @@ export default function DinksterV2Platform() {
         onCreated={handleAgenticTournamentCreated}
       />
 
-      {/* Footer */}
-      <footer className="border-t border-gray-200 bg-white py-6 px-6 text-center text-xs text-gray-500">
-        <p>&copy; {new Date().getFullYear()} Dinkster Platform V2 &bull; Designed for Pickleball Tournament Excellence.</p>
-      </footer>
+      {/* Rich Multi-Tier Platform Footer with Emergency Desk Support & Hotline */}
+      <PlatformFooter />
     </div>
   );
 }

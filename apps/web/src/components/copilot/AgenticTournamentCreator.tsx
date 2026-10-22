@@ -19,6 +19,7 @@ import {
   FileText,
   Flame,
 } from 'lucide-react';
+import { VoiceInputButton } from './VoiceInputButton';
 
 interface AgenticTournamentCreatorProps {
   isOpen: boolean;
@@ -477,8 +478,14 @@ export const AgenticTournamentCreator: React.FC<AgenticTournamentCreatorProps> =
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-            placeholder="Type your tournament instructions in plain English..."
+            placeholder="Type or speak instructions (e.g. '16 courts Dallas with 4 divisions and Franklin balls')..."
             className="flex-1 bg-gray-50 border border-gray-300 rounded-2xl px-4 py-2.5 text-xs text-gray-900 focus:outline-none focus:border-[#0A5C43]"
+          />
+          {/* Hands-free Voice Input (Driving / Walking) */}
+          <VoiceInputButton
+            onTranscript={(transcript) => setInputText(transcript)}
+            onAutoSend={(transcript) => handleSendMessage(transcript)}
+            autoSendEnabled={true}
           />
           <button
             type="button"
