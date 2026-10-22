@@ -1,7 +1,10 @@
 export type Role = 'org' | 'desk' | 'ref' | 'tv';
 export type TabKey =
+  | 'fleet'
   | 'dash'
+  | 'overview'
   | 'setup'
+  | 'divisions'
   | 'regs'
   | 'brackets'
   | 'sponsors'
@@ -97,15 +100,18 @@ export interface Division {
   isPilot?: boolean;
   ageBracket?: string;
   scoringFormat?: string;
+  scheduleDay?: 'Saturday' | 'Sunday' | 'Friday' | string;
+  timeSlot?: string;
 }
 
 export interface TournamentEvent {
+  id: string;
   name: string;
-  slug?: string;
-  joinCode?: string;
+  slug: string;
+  joinCode: string;
   dates: string;
   venue: string;
-  status: 'Draft' | 'Published' | 'Live';
+  status: 'Live' | 'Published' | 'Draft' | 'Concluded';
   requireWaiver: boolean;
   seedByDupr: boolean;
   totalCourts: number;
@@ -116,7 +122,49 @@ export interface TournamentEvent {
   rulesNotes?: string;
   contactEmail?: string;
   sanctioningBody?: string;
+  city?: string;
+  state?: string;
+  divisionsCount?: number;
+  registeredCount?: number;
+  maxCapacity?: number;
+  revenue?: number;
 }
+
+export interface PlayerAccount {
+  id: string;
+  dinksterId: string;
+  email: string;
+  fullName: string;
+  phone: string;
+  duprRating?: number;
+  duprId?: string;
+  age?: number;
+  emergencyName?: string;
+  emergencyPhone?: string;
+  registeredDivisions: Array<{
+    tournamentSlug: string;
+    tournamentName: string;
+    divisionId: string;
+    divisionName: string;
+    teamName: string;
+    isCaptain: boolean;
+    scheduleDay?: string;
+    teammateCode?: string;
+    amountPaid: number;
+  }>;
+}
+
+export interface TournamentFleetStats {
+  totalTournaments: number;
+  liveCount: number;
+  upcomingCount: number;
+  draftCount: number;
+  concludedCount: number;
+  totalRevenue: number;
+  totalPlayers: number;
+  activeCourtsTotal: number;
+}
+
 
 export interface Registration {
   id: string;

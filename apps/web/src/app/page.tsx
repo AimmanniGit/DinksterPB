@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import Link from 'next/link';
 import {
   Trophy,
   LayoutDashboard,
@@ -15,6 +16,14 @@ import {
   ShieldCheck,
   CheckCircle2,
   Tv,
+  ArrowLeft,
+  ChevronDown,
+  Layers,
+  ExternalLink,
+  MapPin,
+  Plus,
+  Play,
+  RotateCcw,
 } from 'lucide-react';
 
 import {
@@ -34,6 +43,7 @@ import {
 
 import {
   INITIAL_EVENT,
+  INITIAL_TOURNAMENT_FLEET,
   INITIAL_DIVISIONS,
   INITIAL_REGISTRATIONS,
   INITIAL_SPONSORS,
@@ -44,6 +54,7 @@ import {
   INITIAL_INCIDENTS,
 } from '../constants/initialState';
 
+import { TournamentFleetDirectory } from '../components/fleet';
 import { EventSetupView } from '../components/setup';
 import { CourtBoardView, DisputesView } from '../components/desk';
 import { RegistrationsView, SponsorsView } from '../components/organizer';
@@ -54,12 +65,17 @@ import { BracketsPlayoffsView } from '../components/brackets';
 
 export default function DinksterWebPlatform() {
   const [role, setRole] = useState<Role>('org');
-  const [activeTab, setActiveTab] = useState<TabKey>('dash');
   const [theme, setTheme] = useState('default');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [tvInitialMode, setTvInitialMode] = useState<'jumbotron' | 'spotlight' | 'bracket' | 'cycle'>('jumbotron');
 
-  // Tournament Data State
+  // Multi-Tournament Fleet State
+  const [tournaments, setTournaments] = useState<TournamentEvent[]>(INITIAL_TOURNAMENT_FLEET);
+  // Default to the live tournament 'tourn-austin-live', but user can toggle to Fleet directory anytime (or set null)
+  const [selectedTournamentId, setSelectedTournamentId] = useState<string | null>('tourn-austin-live');
+  const [activeTab, setActiveTab] = useState<TabKey>('overview');
+
+  // Active Tournament Data State (Austin Winter Open or dynamically loaded)
   const [event, setEvent] = useState<TournamentEvent>(INITIAL_EVENT);
   const [divisions, setDivisions] = useState<Division[]>(INITIAL_DIVISIONS);
   const [registrations, setRegistrations] = useState<Registration[]>(INITIAL_REGISTRATIONS);
@@ -75,6 +91,12 @@ export default function DinksterWebPlatform() {
   const [clockMinutes, setClockMinutes] = useState(13 * 60 + 42); // 1:42 PM
   const [mixedProjectedOffset, setMixedProjectedOffset] = useState(18); // 18m behind
 
+  // Active Selected Tournament Entity
+  const currentTournament = useMemo(() => {
+    if (!selectedTournamentId) return null;
+    return tournaments.find((t) => t.id === selectedTournamentId) || tournaments[0];
+  }, [tournaments, selectedTournamentId]);
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
@@ -86,9 +108,35 @@ export default function DinksterWebPlatform() {
     return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
   };
 
-  // ==========================================
-  // DISPATCHERS
-  // ==========================================
+  // Fleet Level Actions
+  const handleSelectTournament = (tournamentId: string) => {
+    const found = tournaments.find((t) => t.id === tournamentId);
+    if (found) {
+      setSelectedTournamentId(tournamentId);
+      setEvent(found);
+      setActiveTab('overview');
+      setRole('org');
+      showToast(`Switched workspace to ${found.name}`);
+    }
+  };
+
+  const handleCreateTournament = (newEvent: TournamentEvent) => {
+    setTournaments((prev) => [newEvent, ...prev]);
+    setSelectedTournamentId(newEvent.id);
+    setEvent(newEvent);
+    setActiveTab('setup');
+    setRole('org');
+    showToast(`Created "${newEvent.name}". Workspace opened.`);
+  };
+
+  const handleExitToFleet = () => {
+    setSelectedTournamentId(null);
+    setActiveTab('fleet');
+    setRole('org');
+    showToast('Returned to Fleet Directory (All Tournaments).');
+  };
+
+  // Court & Match Actions (Scoped to Current Tournament)
   const handleCallNextMatch = (courtNumber: number) => {
     const scheduled = matches.find((m) => m.status === 'SCHEDULED');
     if (!scheduled) {
@@ -275,6 +323,8 @@ export default function DinksterWebPlatform() {
           entryFee: prop.data.fee,
           teamCap: 16,
           isPilot: true,
+          scheduleDay: 'Sunday',
+          timeSlot: '3:00 PM - 7:00 PM',
         },
       ]);
       showToast('Pilot division added! Check Event Setup.');
@@ -299,7 +349,7 @@ export default function DinksterWebPlatform() {
     prop.status = 'executed';
   };
 
-  const handleRejectProposal = (propId: number) => {
+  const handleRejectProposal = (_propId: number) => {
     showToast('Proposal rejected.');
   };
 
@@ -324,7 +374,7 @@ export default function DinksterWebPlatform() {
     showToast('Change rolled back to original rules.');
   };
 
-  const handleRefFinalScore = (sets: [number, number][]) => {
+  const handleRefFinalScore = (_sets: [number, number][]) => {
     setMatches((prev) =>
       prev.map((m) =>
         m.id === 'M107'
@@ -356,70 +406,162 @@ export default function DinksterWebPlatform() {
   return (
     <div className={`min-h-screen grid grid-cols-[260px_1fr] ${theme !== 'default' ? `theme-${theme}` : ''}`}>
       {/* Sidebar */}
-      <aside className="bg-[#0A5C43] text-white p-5 flex flex-col gap-3 sticky top-0 h-screen select-none">
+      <aside className="bg-[#0A5C43] text-white p-5 flex flex-col gap-3 sticky top-0 h-screen select-none overflow-y-auto">
         {/* Brand */}
-        <div className="font-display font-extrabold text-2xl tracking-tight mb-1">
-          dink<span className="text-[#EF9F27]">ster</span>
-          <span className="text-xs font-mono font-normal ml-2 opacity-70">platform v5</span>
+        <div className="flex items-center justify-between mb-1">
+          <div className="font-bold text-xl tracking-tight text-white">
+            dink<span className="text-[#EF9F27]">ster</span>
+            <span className="text-[11px] font-mono font-normal ml-2 opacity-75">platform v5</span>
+          </div>
         </div>
 
-        {/* Role Switcher */}
-        <div className="grid grid-cols-4 gap-1 bg-white/10 rounded-xl p-1 mb-2">
-          {(['org', 'desk', 'ref', 'tv'] as const).map((r) => (
+        {/* Workspace Switcher / Context Indicator */}
+        {selectedTournamentId ? (
+          <div className="bg-white/10 p-3 rounded-xl border border-white/15">
+            <div className="flex items-center justify-between text-[11px] text-white/70 font-semibold mb-1">
+              <span>Active Tournament</span>
+              <span
+                className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                  currentTournament?.status === 'Live'
+                    ? 'bg-emerald-400/20 text-emerald-300'
+                    : 'bg-white/20 text-white'
+                }`}
+              >
+                {currentTournament?.status || 'Active'}
+              </span>
+            </div>
+            <div className="font-semibold text-xs text-white truncate mb-2">
+              {currentTournament?.name || 'Tournament'}
+            </div>
             <button
-              key={r}
-              onClick={() => {
-                setRole(r);
-                if (r !== 'tv') {
-                  setActiveTab(r === 'org' ? 'dash' : r === 'desk' ? 'board' : 'card');
-                }
-              }}
-              className={`py-1.5 text-xs font-semibold rounded-lg capitalize transition-colors ${
-                role === r ? 'bg-[#EF9F27] text-black shadow-sm' : 'text-white/80 hover:bg-white/10'
-              }`}
+              type="button"
+              onClick={handleExitToFleet}
+              className="w-full text-center py-1.5 px-2 bg-white/10 hover:bg-white/20 text-white/90 rounded-lg text-[11px] font-semibold transition flex items-center justify-center gap-1.5"
             >
-              {r === 'org' ? 'Org' : r === 'desk' ? 'Desk' : r === 'ref' ? 'Ref' : '📺 TV'}
+              <ArrowLeft size={13} />
+              <span>All Tournaments Fleet</span>
             </button>
-          ))}
-        </div>
+          </div>
+        ) : (
+          <div className="bg-white/10 p-3 rounded-xl border border-white/15 text-xs text-white/80">
+            <div className="font-bold text-white mb-0.5">Fleet Overview Mode</div>
+            <div className="text-[11px] text-white/70">Managing {tournaments.length} tournaments across tenure</div>
+          </div>
+        )}
+
+        {/* In-Tournament Role Switcher */}
+        {selectedTournamentId && (
+          <div className="grid grid-cols-4 gap-1 bg-white/10 rounded-xl p-1">
+            {(['org', 'desk', 'ref', 'tv'] as const).map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => {
+                  setRole(r);
+                  if (r !== 'tv') {
+                    setActiveTab(r === 'org' ? 'overview' : r === 'desk' ? 'board' : 'card');
+                  }
+                }}
+                className={`py-1.5 text-xs font-semibold rounded-lg capitalize transition-colors ${
+                  role === r ? 'bg-[#EF9F27] text-black shadow-xs font-bold' : 'text-white/80 hover:bg-white/10'
+                }`}
+              >
+                {r === 'org' ? 'Org' : r === 'desk' ? 'Desk' : r === 'ref' ? 'Ref' : '📺 TV'}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Navigation Items */}
-        <nav className="flex flex-col gap-1">
-          {role === 'org' && (
+        <nav className="flex flex-col gap-1 mt-1">
+          {/* Top-Level Fleet Navigation */}
+          {!selectedTournamentId ? (
             <>
               <NavItem
-                icon={<LayoutDashboard size={18} />}
-                label="Dashboard"
-                active={activeTab === 'dash'}
-                onClick={() => setActiveTab('dash')}
+                icon={<LayoutDashboard size={17} />}
+                label="Fleet Directory"
+                active={activeTab === 'fleet'}
+                badge={String(tournaments.length)}
+                onClick={() => setActiveTab('fleet')}
               />
               <NavItem
-                icon={<Calendar size={18} />}
-                label="Event Setup"
+                icon={<Award size={17} />}
+                label="Global Sponsors"
+                active={activeTab === 'sponsors'}
+                onClick={() => setActiveTab('sponsors')}
+              />
+              <NavItem
+                icon={<Sparkles size={17} />}
+                label="Fleet Copilot AI"
+                active={activeTab === 'copilot'}
+                onClick={() => {
+                  setCopilotInitialPrompt(undefined);
+                  setActiveTab('copilot');
+                }}
+              />
+              <NavItem
+                icon={<ClipboardList size={17} />}
+                label="Platform Audit Log"
+                active={activeTab === 'log'}
+                badge={changeLog.length > 0 ? String(changeLog.length) : undefined}
+                onClick={() => setActiveTab('log')}
+              />
+            </>
+          ) : role === 'org' ? (
+            /* Tournament-Scoped Director Navigation */
+            <>
+              <NavItem
+                icon={<LayoutDashboard size={17} />}
+                label="Tournament Overview"
+                active={activeTab === 'overview' || activeTab === 'dash'}
+                onClick={() => setActiveTab('overview')}
+              />
+              <NavItem
+                icon={<Calendar size={17} />}
+                label="Event Setup & Courts"
                 active={activeTab === 'setup'}
                 onClick={() => setActiveTab('setup')}
               />
               <NavItem
-                icon={<Trophy size={18} />}
+                icon={<Layers size={17} />}
+                label="Divisions & Rules"
+                active={activeTab === 'divisions'}
+                badge={`${divisions.length}`}
+                onClick={() => setActiveTab('divisions')}
+              />
+              <NavItem
+                icon={<Users size={17} />}
+                label="Registrations"
+                active={activeTab === 'regs'}
+                badge={`${registrations.length}/16`}
+                onClick={() => setActiveTab('regs')}
+              />
+              <NavItem
+                icon={<Trophy size={17} />}
+                label="Desk & Court Board"
+                active={activeTab === 'board'}
+                onClick={() => setActiveTab('board')}
+              />
+              <NavItem
+                icon={<Award size={17} />}
                 label="Brackets & Medals"
                 active={activeTab === 'brackets'}
                 onClick={() => setActiveTab('brackets')}
               />
               <NavItem
-                icon={<Users size={18} />}
-                label="Registrations"
-                active={activeTab === 'regs'}
-                badge="16/16"
-                onClick={() => setActiveTab('regs')}
+                icon={<Tv size={17} />}
+                label="TV Jumbotron Cast"
+                active={activeTab === 'tv'}
+                onClick={() => setActiveTab('tv')}
               />
               <NavItem
-                icon={<Award size={18} />}
-                label="Sponsors"
+                icon={<Award size={17} />}
+                label="Tournament Sponsors"
                 active={activeTab === 'sponsors'}
                 onClick={() => setActiveTab('sponsors')}
               />
               <NavItem
-                icon={<Sparkles size={18} />}
+                icon={<Sparkles size={17} />}
                 label="Copilot AI"
                 active={activeTab === 'copilot'}
                 onClick={() => {
@@ -428,48 +570,46 @@ export default function DinksterWebPlatform() {
                 }}
               />
               <NavItem
-                icon={<ClipboardList size={18} />}
+                icon={<ClipboardList size={17} />}
                 label="Change Log"
                 active={activeTab === 'log'}
                 badge={changeLog.length > 0 ? String(changeLog.length) : undefined}
                 onClick={() => setActiveTab('log')}
               />
             </>
-          )}
-
-          {role === 'desk' && (
+          ) : role === 'desk' ? (
+            /* Scoped Desk Operations Navigation */
             <>
               <NavItem
-                icon={<Trophy size={18} />}
+                icon={<Trophy size={17} />}
                 label="Court Board"
                 active={activeTab === 'board'}
                 onClick={() => setActiveTab('board')}
               />
               <NavItem
-                icon={<AlertCircle size={18} />}
-                label="Disputes"
+                icon={<AlertCircle size={17} />}
+                label="Silent Host Disputes"
                 active={activeTab === 'disputes'}
                 badge={disputes.filter((d) => d.status !== 'Resolved').length > 0 ? '2' : undefined}
                 onClick={() => setActiveTab('disputes')}
               />
               <NavItem
-                icon={<Flame size={18} />}
+                icon={<Flame size={17} />}
                 label="Incidents"
                 active={activeTab === 'incidents'}
                 onClick={() => setActiveTab('incidents')}
               />
               <NavItem
-                icon={<Sparkles size={18} />}
+                icon={<Sparkles size={17} />}
                 label="Desk Copilot"
                 active={activeTab === 'copilot'}
                 onClick={() => setActiveTab('copilot')}
               />
             </>
-          )}
-
-          {role === 'ref' && (
+          ) : (
+            /* Scoped Referee Navigation */
             <NavItem
-              icon={<Trophy size={18} />}
+              icon={<Trophy size={17} />}
               label="Referee Scorecard"
               active={activeTab === 'card'}
               onClick={() => setActiveTab('card')}
@@ -505,61 +645,169 @@ export default function DinksterWebPlatform() {
             </select>
           </div>
 
-          <div className="flex items-center gap-2 opacity-80">
-            <Clock size={14} />
+          <div className="flex items-center gap-2 opacity-80 text-[11px]">
+            <Clock size={13} />
             <span>Tournament Clock: {formatClock(clockMinutes)}</span>
           </div>
         </div>
       </aside>
 
       {/* Main Content Pane */}
-      <main className="p-8 overflow-y-auto bg-[#FAF8F3]">
+      <main className="p-7 overflow-y-auto bg-[#FAF8F3]">
         {/* Toast Notification */}
         {toastMessage && (
-          <div className="fixed bottom-6 right-6 z-50 bg-[#0E2A20] text-white px-5 py-3 rounded-2xl shadow-xl border border-white/20 flex items-center gap-3 animate-bounce">
-            <CheckCircle2 size={18} className="text-[#5DCAA5]" />
-            <span className="text-xs font-bold">{toastMessage}</span>
+          <div className="fixed bottom-6 right-6 z-50 bg-[#0E2A20] text-white px-4 py-2.5 rounded-xl shadow-lg border border-white/20 flex items-center gap-2.5 animate-bounce text-xs font-semibold">
+            <CheckCircle2 size={16} className="text-[#5DCAA5]" />
+            <span>{toastMessage}</span>
           </div>
         )}
 
-        {/* VIEW: DASHBOARD */}
-        {activeTab === 'dash' && role === 'org' && (
-          <div>
-            <header className="flex justify-between items-center mb-6">
+        {/* TOURNAMENT-SCOPED CONTEXT HEADER (When inside a tournament) */}
+        {selectedTournamentId && (
+          <div className="mb-6 bg-white p-4 rounded-2xl border border-gray-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start md:items-center gap-3">
+              <button
+                type="button"
+                onClick={handleExitToFleet}
+                title="Back to All Tournaments Fleet Directory"
+                className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-800 transition"
+              >
+                <ArrowLeft size={18} />
+              </button>
+
               <div>
-                <h1 className="font-display font-bold text-3xl">{event.name}</h1>
-                <p className="text-sm text-gray-600">
-                  {event.dates} &bull; {event.venue}
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  {/* Quick Tournament Switcher Dropdown */}
+                  <div className="relative inline-block">
+                    <select
+                      value={selectedTournamentId}
+                      onChange={(e) => handleSelectTournament(e.target.value)}
+                      className="text-xs font-semibold bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg px-2.5 py-1 text-gray-800 pr-7 appearance-none cursor-pointer"
+                    >
+                      {tournaments.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name} ({t.status})
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown size={13} className="absolute right-2 top-2 pointer-events-none text-gray-500" />
+                  </div>
+
+                  {/* Status Badge */}
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border flex items-center gap-1.5 ${
+                      event.status === 'Live'
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                        : event.status === 'Published'
+                        ? 'bg-blue-50 text-blue-800 border-blue-300'
+                        : event.status === 'Draft'
+                        ? 'bg-amber-50 text-amber-800 border-amber-300'
+                        : 'bg-gray-100 text-gray-700 border-gray-300'
+                    }`}
+                  >
+                    {event.status === 'Live' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
+                    <span>{event.status}</span>
+                  </span>
+
+                  {/* Game Join Code */}
+                  <span className="text-[11px] font-mono font-semibold bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
+                    Code: {event.joinCode || 'D-8421'}
+                  </span>
+                </div>
+
+                <h1 className="text-xl font-bold text-gray-900 tracking-tight">{event.name}</h1>
+                <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-2">
+                  <span>{event.dates}</span>
+                  <span>&bull;</span>
+                  <span>{event.venue}</span>
+                  <span>&bull;</span>
+                  <span>{event.totalCourts || 8} Competition Courts</span>
                 </p>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="px-3 py-1 bg-green-100 text-[#0A5C43] rounded-full text-xs font-bold border border-green-300">
-                  {event.status}
-                </span>
-                <button
-                  onClick={() => setRole('tv')}
-                  className="px-3.5 py-2 bg-slate-900 text-white border border-slate-700 rounded-xl font-bold text-xs hover:bg-slate-800 shadow-sm flex items-center gap-1.5 transition"
-                >
-                  <Tv size={15} className="text-emerald-400" />
-                  TV Cast Mode
-                </button>
-                <button
-                  onClick={() => {
-                    const nextStatus = event.status === 'Draft' ? 'Published' : 'Live';
-                    setEvent({ ...event, status: nextStatus });
-                    showToast(`Tournament status updated to ${nextStatus}.`);
-                  }}
-                  className="px-4 py-2 bg-[#0A5C43] text-white rounded-xl font-bold text-sm hover:opacity-95 shadow-sm"
-                >
-                  {event.status === 'Draft' ? 'Publish Event' : 'Launch Tournament Live'}
-                </button>
-              </div>
-            </header>
+            </div>
 
+            {/* Right Action Links */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Public Player Registration Portal */}
+              <Link
+                href={`/t/${event.slug || 'austin-winter-open-2026'}`}
+                target="_blank"
+                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
+              >
+                <span>Player Portal</span>
+                <ExternalLink size={13} />
+              </Link>
+
+              {/* TV Broadcast Jumbotron */}
+              <button
+                type="button"
+                onClick={() => setRole('tv')}
+                className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
+              >
+                <Tv size={13} className="text-emerald-400" />
+                <span>TV Cast</span>
+              </button>
+
+              {/* Status Action Button */}
+              {event.status === 'Draft' ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const updated = { ...event, status: 'Published' as const };
+                    setEvent(updated);
+                    setTournaments((prev) => prev.map((t) => (t.id === event.id ? updated : t)));
+                    showToast(`Tournament published! Registration is now open.`);
+                  }}
+                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs transition"
+                >
+                  Publish Event
+                </button>
+              ) : event.status === 'Published' ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const updated = { ...event, status: 'Live' as const };
+                    setEvent(updated);
+                    setTournaments((prev) => prev.map((t) => (t.id === event.id ? updated : t)));
+                    showToast(`Tournament is now LIVE! Court desk and TV broadcasting activated.`);
+                  }}
+                  className="px-3 py-1.5 bg-[#0A5C43] hover:bg-[#084734] text-white rounded-lg text-xs font-semibold shadow-xs transition"
+                >
+                  Launch Live Desk
+                </button>
+              ) : null}
+            </div>
+          </div>
+        )}
+
+        {/* ============================================================== */}
+        {/* VIEW: FLEET DIRECTORY (All Tournaments Top-Level View) */}
+        {/* ============================================================== */}
+        {(!selectedTournamentId || activeTab === 'fleet') && (
+          <TournamentFleetDirectory
+            tournaments={tournaments}
+            onSelectTournament={handleSelectTournament}
+            onCreateTournament={handleCreateTournament}
+          />
+        )}
+
+        {/* ============================================================== */}
+        {/* VIEW: TOURNAMENT OVERVIEW & DASHBOARD */}
+        {/* ============================================================== */}
+        {selectedTournamentId && (activeTab === 'overview' || activeTab === 'dash') && role === 'org' && (
+          <div className="space-y-6">
             {/* Top KPI Cards */}
-            <div className="grid grid-cols-4 gap-4 mb-6">
-              <KpiCard label="Teams Paid" value="15 of 16" subtext="Mixed 3.5 to 4.0" />
-              <KpiCard label="Gross Revenue" value="$3,630" subtext="10% platform fee: $363" />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <KpiCard
+                label="Teams Paid"
+                value="15 of 16"
+                subtext="Mixed 3.5 to 4.0 division"
+              />
+              <KpiCard
+                label="Gross Revenue"
+                value={`$${(event.revenue || 3630).toLocaleString()}`}
+                subtext="10% platform fee: $363"
+              />
               <KpiCard
                 label="Matches Completed"
                 value={`${matches.filter((m) => m.status === 'COMPLETED').length} of ${matches.length}`}
@@ -568,14 +816,23 @@ export default function DinksterWebPlatform() {
               <KpiCard
                 label="Open Disputes"
                 value={String(disputes.filter((d) => d.status !== 'Resolved').length)}
-                subtext="1 line call, 1 score diff"
+                subtext="Silent host resolution active"
               />
             </div>
 
             {/* Dual Column Content */}
-            <div className="grid grid-cols-[1.4fr_1fr] gap-6">
-              <section className="bg-white p-6 rounded-2xl border border-black/10 shadow-sm">
-                <h2 className="font-display font-bold text-xl mb-4">Projected Finish by Division</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-6">
+              {/* Projected Finish Times */}
+              <section className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-base font-bold text-gray-900">Projected Finish by Division</h2>
+                    <p className="text-xs text-gray-500">Live AI schedule pacing across active courts</p>
+                  </div>
+                  <span className="text-xs font-semibold text-gray-500">
+                    Clock: {formatClock(clockMinutes)}
+                  </span>
+                </div>
 
                 <DivisionProgress
                   title="Mixed Doubles 3.5 to 4.0"
@@ -597,48 +854,64 @@ export default function DinksterWebPlatform() {
                 />
 
                 {mixedProjectedOffset > 0 ? (
-                  <div className="mt-6 p-4 bg-[#FEF3E2] border border-[#FAC775] rounded-xl flex items-center justify-between">
+                  <div className="mt-5 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between gap-4">
                     <div>
-                      <p className="font-bold text-sm text-[#7A4A00]">
-                        Mixed 3.5 to 4.0 is running {mixedProjectedOffset}m behind
+                      <p className="font-bold text-xs text-amber-900">
+                        Mixed 3.5 to 4.0 is running {mixedProjectedOffset}m behind schedule
                       </p>
-                      <p className="text-xs text-[#7A4A00]">
+                      <p className="text-[11px] text-amber-800 mt-0.5">
                         Shortening 14 upcoming pool matches to games to 9 win by 2 will save 22 mins.
                       </p>
                     </div>
                     <button
+                      type="button"
                       onClick={() => {
                         setCopilotInitialPrompt(
                           'Courts are running behind. Switch the remaining pool matches in Mixed Doubles 3.5 to 4.0 to games to 9, win by 2.'
                         );
                         setActiveTab('copilot');
                       }}
-                      className="px-3.5 py-2 bg-[#EF9F27] text-black font-bold text-xs rounded-lg shadow-sm hover:opacity-90"
+                      className="px-3 py-1.5 bg-[#EF9F27] text-black font-semibold text-xs rounded-lg hover:opacity-90 shrink-0"
                     >
                       Ask Copilot
                     </button>
                   </div>
                 ) : (
-                  <div className="mt-6 p-4 bg-[#E8F7F1] border border-[#5DCAA5] rounded-xl text-xs font-bold text-[#0A5C43]">
-                    ✓ Pool play rules successfully adjusted. All courts on target for 6:06 PM finish.
+                  <div className="mt-5 p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-semibold text-emerald-900 flex items-center gap-2">
+                    <CheckCircle2 size={15} className="text-emerald-600" />
+                    <span>Pool play rules successfully adjusted. All courts on target for 6:06 PM finish.</span>
                   </div>
                 )}
               </section>
 
-              <section className="bg-white p-6 rounded-2xl border border-black/10 shadow-sm flex flex-col justify-between">
+              {/* Courts Overview Summary */}
+              <section className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs flex flex-col justify-between">
                 <div>
-                  <h2 className="font-display font-bold text-xl mb-4">Courts Overview</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h2 className="text-base font-bold text-gray-900">Courts Overview</h2>
+                      <p className="text-xs text-gray-500">{event.totalCourts || courts.length} active competition courts</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('board')}
+                      className="text-xs font-semibold text-[#0A5C43] hover:underline"
+                    >
+                      Manage Desk &rarr;
+                    </button>
+                  </div>
+
                   <div className="grid grid-cols-4 gap-2 mb-4">
                     {courts.map((c) => (
-                      <div key={c.number} className="p-2.5 border rounded-xl text-center">
-                        <div className="font-bold text-xs">Court {c.number}</div>
+                      <div key={c.number} className="p-2.5 border border-gray-200 rounded-xl text-center bg-gray-50">
+                        <div className="font-bold text-xs text-gray-800">Court {c.number}</div>
                         <span
-                          className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider block mt-1 ${
+                          className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider block mt-1 ${
                             c.status === 'live'
-                              ? 'bg-green-100 text-[#0A5C43]'
+                              ? 'bg-emerald-100 text-emerald-800'
                               : c.status === 'called'
                               ? 'bg-amber-100 text-amber-800'
-                              : 'bg-gray-100 text-gray-600'
+                              : 'bg-gray-200 text-gray-700'
                           }`}
                         >
                           {c.status}
@@ -647,22 +920,27 @@ export default function DinksterWebPlatform() {
                     ))}
                   </div>
                 </div>
-                <div className="text-xs text-gray-500 pt-3 border-t">
-                  Court 2 presented by Volt Paddles &bull; 2 courts available for assignments.
+
+                <div className="text-xs text-gray-500 pt-3 border-t border-gray-100 flex items-center justify-between">
+                  <span>Court 2 presented by Volt Paddles</span>
+                  <span className="font-semibold text-emerald-700">2 courts available</span>
                 </div>
               </section>
             </div>
           </div>
         )}
 
-        {/* VIEW: SETUP */}
-        {activeTab === 'setup' && (
+        {/* ============================================================== */}
+        {/* VIEW: EVENT SETUP & GENERAL RULES */}
+        {/* ============================================================== */}
+        {selectedTournamentId && (activeTab === 'setup' || activeTab === 'divisions') && (
           <EventSetupView
             event={event}
             divisions={divisions}
             sponsors={sponsors}
             onUpdateEvent={(updated) => {
               setEvent(updated);
+              setTournaments((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
               if (updated.totalCourts && updated.totalCourts !== courts.length) {
                 setCourts((prev) => generateCourts(updated.totalCourts, prev));
                 showToast(`Competition courts updated to ${updated.totalCourts} courts.`);
@@ -681,19 +959,23 @@ export default function DinksterWebPlatform() {
               showToast('Division removed.');
             }}
             onPublish={() => {
-              setEvent((prev) => ({
-                ...prev,
-                status: 'Published',
-                slug: prev.slug || prev.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-                joinCode: prev.joinCode || 'D-8421',
-              }));
+              const updated = {
+                ...event,
+                status: 'Published' as const,
+                slug: event.slug || event.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+                joinCode: event.joinCode || 'D-8421',
+              };
+              setEvent(updated);
+              setTournaments((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
               showToast('Tournament published to independent web portal & Dinkster app!');
             }}
           />
         )}
 
-        {/* VIEW: BRACKETS & PLAYOFFS */}
-        {activeTab === 'brackets' && (
+        {/* ============================================================== */}
+        {/* VIEW: BRACKETS & PLAYOFFS & MEDAL PODIUM */}
+        {/* ============================================================== */}
+        {selectedTournamentId && activeTab === 'brackets' && (
           <BracketsPlayoffsView
             onOpenTvMode={() => {
               setTvInitialMode('bracket');
@@ -702,8 +984,10 @@ export default function DinksterWebPlatform() {
           />
         )}
 
-        {/* VIEW: REGISTRATIONS */}
-        {activeTab === 'regs' && (
+        {/* ============================================================== */}
+        {/* VIEW: REGISTRATIONS & PLAYER ACCOUNTS */}
+        {/* ============================================================== */}
+        {selectedTournamentId && activeTab === 'regs' && (
           <RegistrationsView
             registrations={registrations}
             onAutoSeed={handleAutoSeed}
@@ -711,7 +995,9 @@ export default function DinksterWebPlatform() {
           />
         )}
 
-        {/* VIEW: SPONSORS */}
+        {/* ============================================================== */}
+        {/* VIEW: SPONSORS (Event-Scoped or Global) */}
+        {/* ============================================================== */}
         {activeTab === 'sponsors' && (
           <SponsorsView
             sponsors={sponsors}
@@ -729,8 +1015,10 @@ export default function DinksterWebPlatform() {
           />
         )}
 
-        {/* VIEW: COURT BOARD */}
-        {activeTab === 'board' && (
+        {/* ============================================================== */}
+        {/* VIEW: COURT BOARD (Desk Operations) */}
+        {/* ============================================================== */}
+        {selectedTournamentId && activeTab === 'board' && (
           <CourtBoardView
             courts={courts}
             sponsors={sponsors}
@@ -745,7 +1033,92 @@ export default function DinksterWebPlatform() {
           />
         )}
 
+        {/* ============================================================== */}
+        {/* VIEW: TV BROADCAST / JUMBOTRON DISPLAY CONFIGURATION */}
+        {/* ============================================================== */}
+        {selectedTournamentId && activeTab === 'tv' && (
+          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+                  TV Jumbotron & Court Casting
+                </h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Real-time broadcast graphics, podium ceremonies, court schedules, and sponsor rotation.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRole('tv')}
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs transition"
+              >
+                <Tv size={15} className="text-emerald-400" />
+                <span>Launch Fullscreen TV View</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div
+                onClick={() => {
+                  setTvInitialMode('jumbotron');
+                  setRole('tv');
+                }}
+                className="p-5 border border-gray-200 hover:border-gray-900 rounded-xl cursor-pointer transition bg-gray-50 hover:bg-white"
+              >
+                <div className="flex items-center gap-2 text-xs font-bold text-gray-900 mb-2">
+                  <Tv size={16} className="text-[#0A5C43]" />
+                  <span>Jumbotron Court Board</span>
+                </div>
+                <p className="text-xs text-gray-600">
+                  Live scores across all {event.totalCourts || 8} courts, next upcoming match calls, and ticker.
+                </p>
+              </div>
+
+              <div
+                onClick={() => {
+                  setTvInitialMode('bracket');
+                  setRole('tv');
+                }}
+                className="p-5 border border-gray-200 hover:border-gray-900 rounded-xl cursor-pointer transition bg-gray-50 hover:bg-white"
+              >
+                <div className="flex items-center gap-2 text-xs font-bold text-gray-900 mb-2">
+                  <Award size={16} className="text-amber-600" />
+                  <span>Podium & Medal Matches</span>
+                </div>
+                <p className="text-xs text-gray-600">
+                  Gold, Silver, Bronze podium ceremony with winner banners and photo spotlight.
+                </p>
+              </div>
+
+              <div
+                onClick={() => {
+                  setTvInitialMode('cycle');
+                  setRole('tv');
+                }}
+                className="p-5 border border-gray-200 hover:border-gray-900 rounded-xl cursor-pointer transition bg-gray-50 hover:bg-white"
+              >
+                <div className="flex items-center gap-2 text-xs font-bold text-gray-900 mb-2">
+                  <Sparkles size={16} className="text-blue-600" />
+                  <span>Automated Carousel Cycle</span>
+                </div>
+                <p className="text-xs text-gray-600">
+                  Cycles between live court board, playoff tree, podium, and sponsor spotlight on configurable timer.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 text-xs text-gray-600 flex items-center justify-between">
+              <span>Public Live Jumbotron URL for this tournament:</span>
+              <code className="font-mono bg-white px-2 py-1 rounded border text-gray-800 text-[11px]">
+                /t/{event.slug || 'austin-winter-open-2026'}/tv
+              </code>
+            </div>
+          </div>
+        )}
+
+        {/* ============================================================== */}
         {/* VIEW: DISPUTES & INCIDENTS */}
+        {/* ============================================================== */}
         {(activeTab === 'disputes' || activeTab === 'incidents') && (
           <DisputesView
             disputes={disputes}
@@ -760,7 +1133,9 @@ export default function DinksterWebPlatform() {
           />
         )}
 
+        {/* ============================================================== */}
         {/* VIEW: REFEREE SCORECARD */}
+        {/* ============================================================== */}
         {activeTab === 'card' && (
           <RefereeScorecardView
             match={matches.find((m) => m.id === 'M107')}
@@ -769,7 +1144,9 @@ export default function DinksterWebPlatform() {
           />
         )}
 
-        {/* VIEW: COPILOT */}
+        {/* ============================================================== */}
+        {/* VIEW: COPILOT AI */}
+        {/* ============================================================== */}
         {activeTab === 'copilot' && (
           <CopilotView
             role={role === 'org' ? 'org' : 'desk'}
@@ -780,7 +1157,9 @@ export default function DinksterWebPlatform() {
           />
         )}
 
+        {/* ============================================================== */}
         {/* VIEW: CHANGE LOG */}
+        {/* ============================================================== */}
         {activeTab === 'log' && (
           <ChangeLogView log={changeLog} onRollback={handleRollback} />
         )}
@@ -804,17 +1183,18 @@ function NavItem({
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
-      className={`flex items-center justify-between p-2.5 rounded-xl text-sm font-semibold transition-colors ${
-        active ? 'bg-white/20 text-white shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'
+      className={`flex items-center justify-between p-2 rounded-xl text-xs font-semibold transition-colors ${
+        active ? 'bg-white/20 text-white font-bold shadow-xs' : 'text-white/70 hover:bg-white/10 hover:text-white'
       }`}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5">
         {icon}
         <span>{label}</span>
       </div>
       {badge && (
-        <span className="text-[11px] font-bold px-1.5 py-0.5 bg-[#EF9F27] text-black rounded-full">
+        <span className="text-[10px] font-bold px-1.5 py-0.5 bg-[#EF9F27] text-black rounded-full">
           {badge}
         </span>
       )}
@@ -824,9 +1204,9 @@ function NavItem({
 
 function KpiCard({ label, value, subtext }: { label: string; value: string; subtext: string }) {
   return (
-    <div className="bg-white p-5 rounded-2xl border border-black/10 shadow-sm">
-      <div className="text-xs font-bold text-gray-500 uppercase">{label}</div>
-      <div className="font-display font-extrabold text-3xl my-1">{value}</div>
+    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
+      <div className="text-[11px] font-semibold text-gray-500 uppercase">{label}</div>
+      <div className="text-2xl font-bold text-gray-900 my-1">{value}</div>
       <div className="text-xs text-gray-500">{subtext}</div>
     </div>
   );
@@ -845,16 +1225,16 @@ function DivisionProgress({
 }) {
   const isBehind = status.toLowerCase().includes('behind');
   return (
-    <div className="py-3 border-b last:border-0 flex justify-between items-center">
+    <div className="py-3 border-b border-gray-100 last:border-0 flex justify-between items-center">
       <div>
-        <div className="font-bold text-sm">{title}</div>
-        <div className="text-xs text-gray-500">
+        <div className="font-semibold text-xs text-gray-900">{title}</div>
+        <div className="text-[11px] text-gray-500 mt-0.5">
           Planned finish: {planned} &bull; Projected: {projected}
         </div>
       </div>
       <span
-        className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-          isBehind ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+        className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
+          isBehind ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
         }`}
       >
         {status}
