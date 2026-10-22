@@ -52,6 +52,7 @@ import { RefereeScorecardView } from '../components/referee/RefereeScorecardView
 import { CopilotView } from '../components/copilot/CopilotView';
 import { ChangeLogView } from '../components/copilot/ChangeLogView';
 import { TvBroadcastView } from '../components/tv/TvBroadcastView';
+import { BracketsPlayoffsView } from '../components/brackets/BracketsPlayoffsView';
 
 export default function DinksterWebPlatform() {
   const [role, setRole] = useState<Role>('org');
@@ -399,6 +400,12 @@ export default function DinksterWebPlatform() {
                 onClick={() => setActiveTab('setup')}
               />
               <NavItem
+                icon={<Trophy size={18} />}
+                label="Brackets & Medals"
+                active={activeTab === 'brackets'}
+                onClick={() => setActiveTab('brackets')}
+              />
+              <NavItem
                 icon={<Users size={18} />}
                 label="Registrations"
                 active={activeTab === 'regs'}
@@ -664,6 +671,11 @@ export default function DinksterWebPlatform() {
               showToast('Tournament published and visible on Dinkster mobile.');
             }}
           />
+        )}
+
+        {/* VIEW: BRACKETS & PLAYOFFS */}
+        {activeTab === 'brackets' && (
+          <BracketsPlayoffsView onOpenTvMode={() => setRole('tv')} />
         )}
 
         {/* VIEW: REGISTRATIONS */}

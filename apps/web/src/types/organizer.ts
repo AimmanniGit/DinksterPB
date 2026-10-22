@@ -3,6 +3,7 @@ export type TabKey =
   | 'dash'
   | 'setup'
   | 'regs'
+  | 'brackets'
   | 'sponsors'
   | 'copilot'
   | 'log'
@@ -11,6 +12,64 @@ export type TabKey =
   | 'incidents'
   | 'card'
   | 'tv';
+
+export interface PoolTeam {
+  id: string;
+  name: string;
+  seed: number;
+  wins: number;
+  losses: number;
+  pointsFor: number;
+  pointsAgainst: number;
+  pointDiff: number;
+  qualified: boolean;
+}
+
+export interface PoolGroup {
+  name: string; // e.g. "Pool A", "Pool B"
+  teams: PoolTeam[];
+  matches: Array<{
+    id: string;
+    team1: string;
+    team2: string;
+    score?: [number, number];
+    status: 'COMPLETED' | 'LIVE' | 'SCHEDULED';
+    court?: number;
+  }>;
+}
+
+export interface PlayoffMatchNode {
+  id: string;
+  round: 'quarters' | 'semis' | 'bronze' | 'final';
+  title: string; // e.g. "Semifinal 1", "Gold Medal Final"
+  court?: number;
+  team1: {
+    name: string;
+    seed?: number;
+    score?: number;
+    winner?: boolean;
+  };
+  team2: {
+    name: string;
+    seed?: number;
+    score?: number;
+    winner?: boolean;
+  };
+  status: 'SCHEDULED' | 'LIVE' | 'COMPLETED';
+}
+
+export interface DivisionBracketData {
+  divisionId: string;
+  divisionName: string;
+  tournamentType: string;
+  pools: PoolGroup[];
+  playoffs: {
+    quarters: PlayoffMatchNode[];
+    semis: PlayoffMatchNode[];
+    bronze: PlayoffMatchNode;
+    final: PlayoffMatchNode;
+  };
+}
 
 export interface Division {
   id: string;
