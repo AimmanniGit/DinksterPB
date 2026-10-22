@@ -443,9 +443,23 @@ export default function DinksterWebPlatform() {
             </button>
           </div>
         ) : (
-          <div className="bg-white/10 p-3 rounded-xl border border-white/15 text-xs text-white/80">
-            <div className="font-bold text-white mb-0.5">Fleet Overview Mode</div>
-            <div className="text-[11px] text-white/70">Managing {tournaments.length} tournaments across tenure</div>
+          <div className="bg-white/10 p-3 rounded-xl border border-white/15 text-xs text-white/80 space-y-2">
+            <div>
+              <div className="font-bold text-white mb-0.5">Fleet Overview Mode</div>
+              <div className="text-[11px] text-white/70">Managing {tournaments.length} tournaments across tenure</div>
+            </div>
+
+            {/* Quick Jump back to Live Tournament if in Fleet Mode */}
+            {tournaments.some((t) => t.status === 'Live') && (
+              <button
+                type="button"
+                onClick={() => handleSelectTournament(tournaments.find((t) => t.status === 'Live')?.id || 'tourn-austin-live')}
+                className="w-full text-center py-1.5 px-2 bg-emerald-400 hover:bg-emerald-300 text-emerald-950 rounded-lg text-[11px] font-bold transition flex items-center justify-center gap-1.5 shadow-xs"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-900 animate-pulse" />
+                <span>Go to Live Tournament &rarr;</span>
+              </button>
+            )}
           </div>
         )}
 
@@ -786,6 +800,7 @@ export default function DinksterWebPlatform() {
         {(!selectedTournamentId || activeTab === 'fleet') && (
           <TournamentFleetDirectory
             tournaments={tournaments}
+            activeTournamentId={selectedTournamentId}
             onSelectTournament={handleSelectTournament}
             onCreateTournament={handleCreateTournament}
           />
