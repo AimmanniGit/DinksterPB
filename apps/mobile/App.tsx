@@ -7,13 +7,14 @@ import {
   TouchableOpacity,
   StatusBar,
 } from 'react-native';
-import { DiscoverScreen } from './src/screens/DiscoverScreen';
-import { PlayScreen } from './src/screens/PlayScreen';
-import { CourtsScreen } from './src/screens/CourtsScreen';
-import { CrewScreen } from './src/screens/CrewScreen';
-import { ProfileScreen } from './src/screens/ProfileScreen';
-import { WatchModal } from './src/components/WatchModal';
-import { CopilotModal } from './src/components/CopilotModal';
+import {
+  DiscoverScreen,
+  PlayScreen,
+  CourtsScreen,
+  CrewScreen,
+  ProfileScreen,
+} from './src/screens';
+import { WatchModal, CopilotModal } from './src/components';
 import { PlayerProfile } from '@dinkster/shared';
 
 type Tab = 'discover' | 'play' | 'courts' | 'crew' | 'profile';

@@ -43,16 +43,13 @@ import {
   INITIAL_INCIDENTS,
 } from '../constants/initialState';
 
-import { EventSetupView } from '../components/setup/EventSetupView';
-import { CourtBoardView } from '../components/desk/CourtBoardView';
-import { DisputesView } from '../components/desk/DisputesView';
-import { RegistrationsView } from '../components/organizer/RegistrationsView';
-import { SponsorsView } from '../components/organizer/SponsorsView';
-import { RefereeScorecardView } from '../components/referee/RefereeScorecardView';
-import { CopilotView } from '../components/copilot/CopilotView';
-import { ChangeLogView } from '../components/copilot/ChangeLogView';
-import { TvBroadcastView } from '../components/tv/TvBroadcastView';
-import { BracketsPlayoffsView } from '../components/brackets/BracketsPlayoffsView';
+import { EventSetupView } from '../components/setup';
+import { CourtBoardView, DisputesView } from '../components/desk';
+import { RegistrationsView, SponsorsView } from '../components/organizer';
+import { RefereeScorecardView } from '../components/referee';
+import { CopilotView, ChangeLogView } from '../components/copilot';
+import { TvBroadcastView } from '../components/tv';
+import { BracketsPlayoffsView } from '../components/brackets';
 
 export default function DinksterWebPlatform() {
   const [role, setRole] = useState<Role>('org');

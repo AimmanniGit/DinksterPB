@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { TvBroadcastView } from '../../components/tv/TvBroadcastView';
+import { TvBroadcastView } from '../../components/tv';
 import {
   INITIAL_EVENT,
   INITIAL_COURTS,
