@@ -39,6 +39,7 @@ import {
   INITIAL_SPONSORS,
   generateInitialMatches,
   INITIAL_COURTS,
+  generateCourts,
   INITIAL_DISPUTES,
   INITIAL_INCIDENTS,
 } from '../constants/initialState';
@@ -658,7 +659,13 @@ export default function DinksterWebPlatform() {
             event={event}
             divisions={divisions}
             sponsors={sponsors}
-            onUpdateEvent={setEvent}
+            onUpdateEvent={(updated) => {
+              setEvent(updated);
+              if (updated.totalCourts && updated.totalCourts !== courts.length) {
+                setCourts((prev) => generateCourts(updated.totalCourts, prev));
+                showToast(`Competition courts updated to ${updated.totalCourts} courts.`);
+              }
+            }}
             onAddDivision={(div) => {
               setDivisions([...divisions, div]);
               showToast(`Division "${div.name}" added.`);
@@ -688,6 +695,7 @@ export default function DinksterWebPlatform() {
         {activeTab === 'sponsors' && (
           <SponsorsView
             sponsors={sponsors}
+            totalCourts={event.totalCourts || courts.length}
             onAddSponsor={(sp) => {
               setSponsors([...sponsors, sp]);
               showToast(`Sponsor "${sp.name}" added.`);

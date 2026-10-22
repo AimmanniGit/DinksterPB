@@ -39,7 +39,7 @@ export const CourtBoardView: React.FC<CourtBoardViewProps> = ({
         <div>
           <h1 className="font-display font-bold text-3xl">Court Desk Board</h1>
           <p className="text-sm text-gray-600">
-            Real-time court management, referee scoring, and automated court calls across all 8 courts.
+            Real-time court management, referee scoring, and automated court calls across all {courts.length} courts.
           </p>
         </div>
         <div className="flex items-center gap-3">

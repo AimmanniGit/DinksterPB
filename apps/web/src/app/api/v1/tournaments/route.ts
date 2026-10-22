@@ -26,6 +26,13 @@ export async function GET(req: Request) {
     // 3. Query automatically scoped to organizerId
     const tournaments = await tenantDb.tournament.findMany({
       include: {
+        venue: {
+          include: {
+            courts: {
+              where: { isActive: true },
+            },
+          },
+        },
         divisions: {
           select: {
             id: true,
@@ -79,7 +86,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { name, slug, startsAt, endsAt, platformFeeBps } = body;
+    const { name, slug, startsAt, endsAt, platformFeeBps, courtCount, venueName } = body;
 
     if (!name || !slug) {
       return NextResponse.json(
@@ -90,15 +97,42 @@ export async function POST(req: Request) {
 
     const tenantDb = createTenantClient(authResult.user.id);
 
-    // Creates tournament guaranteed to belong to this organizer
+    // Creates tournament guaranteed to belong to this organizer with optional dynamic courts
     const tournament = await tenantDb.tournament.create({
       data: {
-        organizerId: authResult.user.id,
+        organizer: {
+          connect: { id: authResult.user.id },
+        },
         name,
         slug,
         startsAt: startsAt ? new Date(startsAt) : new Date(),
         endsAt: endsAt ? new Date(endsAt) : new Date(Date.now() + 86400000),
         platformFeeBps: platformFeeBps ?? 1000,
+        ...(venueName || courtCount
+          ? {
+              venue: {
+                create: {
+                  name: venueName || `${name} Venue`,
+                  courts: {
+                    create: Array.from(
+                      { length: Math.min(32, Math.max(1, courtCount || 8)) },
+                      (_, i) => ({
+                        label: i === 0 ? 'Stadium Court (Court 1)' : `Court ${i + 1}`,
+                        isActive: true,
+                      })
+                    ),
+                  },
+                },
+              },
+            }
+          : {}),
+      },
+      include: {
+        venue: {
+          include: {
+            courts: true,
+          },
+        },
       },
     });
 

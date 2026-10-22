@@ -86,16 +86,112 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
                 />
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-gray-500 uppercase block mb-1">
-                  Venue & City
-                </label>
-                <input
-                  type="text"
-                  value={event.venue}
-                  onChange={(e) => onUpdateEvent({ ...event, venue: e.target.value })}
-                  className="w-full bg-[#FAF8F3] border border-black/10 rounded-xl px-3.5 py-2 text-sm font-semibold focus:outline-none focus:border-[#0A5C43]"
-                />
+              <div className="grid grid-cols-2 gap-3 mt-1">
+                <div>
+                  <label className="text-xs font-bold text-gray-500 uppercase block mb-1">
+                    Venue & City
+                  </label>
+                  <input
+                    type="text"
+                    value={event.venue}
+                    onChange={(e) => onUpdateEvent({ ...event, venue: e.target.value })}
+                    className="w-full bg-[#FAF8F3] border border-black/10 rounded-xl px-3.5 py-2 text-sm font-semibold focus:outline-none focus:border-[#0A5C43]"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-gray-500 uppercase block mb-1">
+                    Court Surface
+                  </label>
+                  <select
+                    value={event.courtSurface || 'Outdoor Hardcourt'}
+                    onChange={(e) => onUpdateEvent({ ...event, courtSurface: e.target.value })}
+                    className="w-full bg-[#FAF8F3] border border-black/10 rounded-xl px-3.5 py-2 text-sm font-semibold focus:outline-none focus:border-[#0A5C43]"
+                  >
+                    <option value="Outdoor Hardcourt">Outdoor Hardcourt (Acrylic)</option>
+                    <option value="Indoor Cushioned Hardcourt">Indoor Cushioned Hardcourt</option>
+                    <option value="Indoor Wood Court">Indoor Wood Court</option>
+                    <option value="Modular Sport Court">Modular Sport Court</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Dynamic Court Configuration */}
+              <div className="mt-3 p-4 bg-[#FAF8F3] border border-black/10 rounded-xl">
+                <div className="flex justify-between items-center mb-2">
+                  <div>
+                    <label className="text-xs font-bold text-gray-800 uppercase block">
+                      Active Competition Courts
+                    </label>
+                    <p className="text-[11px] text-gray-500">
+                      Syncs automatically to Court Desk Board, TV Jumbotron, and Match Scheduler.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onUpdateEvent({ ...event, totalCourts: Math.max(1, (event.totalCourts || 8) - 1) })}
+                      className="w-7 h-7 flex items-center justify-center bg-white border border-black/15 rounded-lg text-sm font-bold hover:bg-gray-100"
+                    >
+                      -
+                    </button>
+                    <input
+                      type="number"
+                      min={1}
+                      max={32}
+                      value={event.totalCourts || 8}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10);
+                        if (!isNaN(val)) {
+                          onUpdateEvent({ ...event, totalCourts: Math.max(1, Math.min(32, val)) });
+                        }
+                      }}
+                      className="w-14 text-center font-display font-extrabold text-base bg-white border border-black/15 rounded-lg py-0.5 text-[#0A5C43]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => onUpdateEvent({ ...event, totalCourts: Math.min(32, (event.totalCourts || 8) + 1) })}
+                      className="w-7 h-7 flex items-center justify-center bg-white border border-black/15 rounded-lg text-sm font-bold hover:bg-gray-100"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick Presets */}
+                <div className="flex items-center gap-1.5 mb-3">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase mr-1">Presets:</span>
+                  {[4, 6, 8, 12, 16].map((count) => (
+                    <button
+                      key={count}
+                      type="button"
+                      onClick={() => onUpdateEvent({ ...event, totalCourts: count })}
+                      className={`px-2.5 py-1 text-xs font-bold rounded-lg border transition ${
+                        (event.totalCourts || 8) === count
+                          ? 'bg-[#0A5C43] text-white border-[#0A5C43]'
+                          : 'bg-white text-gray-700 border-black/10 hover:bg-gray-50'
+                      }`}
+                    >
+                      {count} Courts
+                    </button>
+                  ))}
+                </div>
+
+                {/* Court Tag Chips Preview */}
+                <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto p-2 bg-white rounded-lg border border-black/5">
+                  {Array.from({ length: event.totalCourts || 8 }, (_, i) => i + 1).map((cNum) => (
+                    <span
+                      key={cNum}
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                        cNum === 1
+                          ? 'bg-amber-100 text-amber-900 border border-amber-300 font-extrabold'
+                          : 'bg-gray-100 text-gray-700 border border-gray-200'
+                      }`}
+                    >
+                      {cNum === 1 ? '★ Stadium Court (Court 1)' : `Court ${cNum}`}
+                    </span>
+                  ))}
+                </div>
               </div>
 
               <div className="flex items-center gap-6 mt-2 pt-2 border-t">
@@ -208,6 +304,14 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
             <h2 className="font-display font-extrabold text-2xl">{event.name}</h2>
             <p className="text-sm opacity-90 mt-1">{event.dates}</p>
             <p className="text-xs opacity-75 mt-0.5">{event.venue}</p>
+            <div className="mt-3 flex items-center gap-2">
+              <span className="text-[11px] font-extrabold px-2.5 py-1 bg-white/20 rounded-lg backdrop-blur-sm">
+                🏟️ {event.totalCourts || 8} Competition Courts
+              </span>
+              <span className="text-[11px] font-bold px-2 py-1 bg-white/10 rounded-lg">
+                {event.courtSurface || 'Outdoor Hardcourt'}
+              </span>
+            </div>
           </div>
 
           <div className="p-6 flex flex-col gap-4 flex-1">

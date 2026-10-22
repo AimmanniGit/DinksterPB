@@ -3,12 +3,14 @@ import { Sponsor } from '../../types/organizer';
 
 interface SponsorsViewProps {
   sponsors: Sponsor[];
+  totalCourts?: number;
   onAddSponsor: (sponsor: Sponsor) => void;
   onAssignCourt: (sponsorIndex: number, courtNumber: number | null) => void;
 }
 
 export const SponsorsView: React.FC<SponsorsViewProps> = ({
   sponsors,
+  totalCourts = 8,
   onAddSponsor,
   onAssignCourt,
 }) => {
@@ -69,7 +71,7 @@ export const SponsorsView: React.FC<SponsorsViewProps> = ({
                         className="bg-[#FAF8F3] border border-black/10 rounded-lg px-2.5 py-1 text-xs font-semibold"
                       >
                         <option value="">None (General)</option>
-                        {[1, 2, 3, 4, 5, 6, 7, 8].map((c) => (
+                        {Array.from({ length: totalCourts }, (_, i) => i + 1).map((c) => (
                           <option key={c} value={c}>
                             Court {c}
                           </option>

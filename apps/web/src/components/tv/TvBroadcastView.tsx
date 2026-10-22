@@ -122,7 +122,7 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
-              8-Court Jumbotron
+              {courts.length}-Court Jumbotron
             </button>
             <button
               onClick={() => setDisplayMode('spotlight')}

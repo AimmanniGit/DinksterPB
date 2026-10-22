@@ -89,6 +89,8 @@ export interface TournamentEvent {
   status: 'Draft' | 'Published' | 'Live';
   requireWaiver: boolean;
   seedByDupr: boolean;
+  totalCourts: number;
+  courtSurface?: string;
 }
 
 export interface Registration {
@@ -120,6 +122,8 @@ export interface TournamentMatch {
 
 export interface CourtDeskState {
   number: number;
+  label?: string;
+  surface?: string;
   status: 'live' | 'called' | 'open' | 'blocked';
   matchTitle?: string;
   score?: [number, number];

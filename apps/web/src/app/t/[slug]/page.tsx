@@ -52,6 +52,7 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
   const eventName = INITIAL_EVENT.name;
   const eventVenue = INITIAL_EVENT.venue;
   const eventDates = INITIAL_EVENT.dates;
+  const totalCourts = INITIAL_EVENT.totalCourts || 8;
 
   const handleOpenRegistration = (division: Division) => {
     setSelectedDivision(division);
@@ -129,7 +130,7 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
             </div>
             <div className="flex items-center gap-2">
               <ShieldCheck size={18} className="text-emerald-400" />
-              <span>DUPR Sanctioned &bull; 8 Dedicated Courts</span>
+              <span>DUPR Sanctioned &bull; {totalCourts} Dedicated Courts</span>
             </div>
           </div>
         </div>

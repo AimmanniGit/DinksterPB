@@ -17,6 +17,8 @@ export const INITIAL_EVENT: TournamentEvent = {
   status: 'Draft',
   requireWaiver: true,
   seedByDupr: true,
+  totalCourts: 8,
+  courtSurface: 'Outdoor Hardcourt',
 };
 
 export const INITIAL_DIVISIONS: Division[] = [
@@ -148,6 +150,7 @@ export function generateInitialMatches(): TournamentMatch[] {
 export const INITIAL_COURTS: CourtDeskState[] = [
   {
     number: 1,
+    label: 'Stadium Court (Court 1)',
     status: 'live',
     matchTitle: 'B-14  Okafor / Cruz vs Tran / Lee',
     score: [7, 5],
@@ -156,6 +159,7 @@ export const INITIAL_COURTS: CourtDeskState[] = [
   },
   {
     number: 2,
+    label: 'Court 2',
     status: 'live',
     matchTitle: 'B-15  Brooks / Diaz vs Singh / Hart',
     score: [3, 6],
@@ -164,6 +168,7 @@ export const INITIAL_COURTS: CourtDeskState[] = [
   },
   {
     number: 3,
+    label: 'Court 3',
     status: 'live',
     matchTitle: 'M107  Lowe / Shah vs Moss / Ito',
     score: [10, 10],
@@ -173,6 +178,7 @@ export const INITIAL_COURTS: CourtDeskState[] = [
   },
   {
     number: 4,
+    label: 'Court 4',
     status: 'live',
     matchTitle: 'M108  Chen / Kim vs Park / Ruiz',
     score: [11, 9],
@@ -182,6 +188,7 @@ export const INITIAL_COURTS: CourtDeskState[] = [
   },
   {
     number: 5,
+    label: 'Court 5',
     status: 'live',
     matchTitle: 'C-08  Singles, Reyes vs Chen',
     score: [4, 8],
@@ -190,19 +197,45 @@ export const INITIAL_COURTS: CourtDeskState[] = [
   },
   {
     number: 6,
+    label: 'Court 6',
     status: 'open',
   },
   {
     number: 7,
+    label: 'Court 7',
     status: 'open',
   },
   {
     number: 8,
+    label: 'Court 8',
     status: 'called',
     matchTitle: 'M109  Johnson / Rivera vs Cruz / Lee',
     matchId: 'M109',
   },
 ];
+
+export function generateCourts(count: number, existingCourts: CourtDeskState[] = []): CourtDeskState[] {
+  const safeCount = Math.max(1, Math.min(32, count));
+  const result: CourtDeskState[] = [];
+  
+  for (let i = 1; i <= safeCount; i++) {
+    const existing = existingCourts.find((c) => c.number === i) || INITIAL_COURTS.find((c) => c.number === i);
+    if (existing) {
+      result.push({
+        ...existing,
+        number: i,
+        label: existing.label || (i === 1 ? 'Stadium Court (Court 1)' : `Court ${i}`),
+      });
+    } else {
+      result.push({
+        number: i,
+        label: `Court ${i}`,
+        status: 'open',
+      });
+    }
+  }
+  return result;
+}
 
 export const INITIAL_DISPUTES: Dispute[] = [
   {
