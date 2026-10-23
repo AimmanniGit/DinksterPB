@@ -9,6 +9,7 @@ import {
 } from '../../types/organizer';
 import { CreatableCombobox } from './CreatableCombobox';
 import { SponsorsManagementHub } from '../sponsors';
+import { DivisionInteractiveCard } from '../divisions';
 import {
   Trophy,
   Calendar,
@@ -589,84 +590,49 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
                 </button>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {divisions.map((d) => (
-                  <div
-                    key={d.id}
-                    className="p-4 rounded-xl border border-gray-200 bg-[#FAF8F3] hover:bg-white transition flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-base text-gray-900">{d.name}</span>
-                        {d.isPilot && (
-                          <span className="text-[10px] font-semibold uppercase px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full border border-amber-300">
-                            Pilot Dink Battle
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-gray-600">
-                        <span className="px-2 py-0.5 rounded bg-white border border-gray-200 text-gray-700">
-                          {d.format}
-                        </span>
-                        <span className="px-2 py-0.5 rounded bg-white border border-gray-200 text-emerald-800 font-semibold">
-                          DUPR: {d.minDupr && d.maxDupr ? `${d.minDupr} - ${d.maxDupr}` : 'Open'}
-                        </span>
-                        <span className="px-2 py-0.5 rounded bg-white border border-gray-200 text-gray-700">
-                          {d.ageBracket || 'All Ages'}
-                        </span>
-                        <span className="px-2 py-0.5 rounded bg-white border border-gray-200 text-gray-700">
-                          Cap: {d.teamCap} teams
-                        </span>
-                      </div>
-                    </div>
+                  <div key={d.id} className="space-y-2">
+                    <DivisionInteractiveCard
+                      division={d}
+                      tournamentStatus={event.status || 'Live'}
+                      tournamentName={event.name}
+                      tournamentSlug={event.slug}
+                      viewerRole="director"
+                      defaultExpanded={false}
+                    />
 
-                    <div className="flex items-center gap-4 shrink-0 justify-between md:justify-end border-t md:border-t-0 pt-2 md:pt-0">
-                      {/* Entry Fee per person Highlight (Redacted for non-financial roles) */}
-                      {canViewFinancials ? (
-                        <div className="text-right">
-                          <span className="text-[10px] uppercase font-semibold text-gray-400 block">Fee / Player</span>
-                          <span className="font-bold text-xl text-[#0A5C43]">
-                            ${d.entryFee}
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="text-right">
-                          <span className="text-[10px] uppercase font-semibold text-gray-400 block">Division Status</span>
-                          <span className="font-bold text-xs text-gray-700 bg-gray-100 px-2 py-1 rounded-md">
-                            Active Slot
-                          </span>
-                        </div>
+                    {/* Founder / Director Quick Action Bar for this Division */}
+                    <div className="flex items-center justify-end gap-2 text-xs pr-1">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditDivision(d)}
+                        className="px-2.5 py-1 rounded-lg bg-white hover:bg-gray-100 border border-gray-200 text-gray-700 font-semibold flex items-center gap-1 transition shadow-2xs"
+                        title="Edit Division Rules & Schedule"
+                      >
+                        <Edit2 size={12} />
+                        <span>Edit Settings</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDuplicateDivision(d)}
+                        className="px-2.5 py-1 rounded-lg bg-white hover:bg-gray-100 border border-gray-200 text-gray-700 font-semibold flex items-center gap-1 transition shadow-2xs"
+                        title="Duplicate Division"
+                      >
+                        <Copy size={12} />
+                        <span>Clone</span>
+                      </button>
+                      {onDeleteDivision && (
+                        <button
+                          type="button"
+                          onClick={() => onDeleteDivision(d.id)}
+                          className="px-2.5 py-1 rounded-lg bg-white hover:bg-red-50 border border-gray-200 text-gray-500 hover:text-red-600 font-semibold flex items-center gap-1 transition shadow-2xs"
+                          title="Delete Division"
+                        >
+                          <Trash2 size={12} />
+                          <span>Delete</span>
+                        </button>
                       )}
-
-                      {/* Division Action Buttons */}
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenEditDivision(d)}
-                          className="p-2 rounded-lg bg-white hover:bg-gray-100 border border-gray-200 text-gray-700 hover:text-black transition shadow-xs"
-                          title="Edit Division"
-                        >
-                          <Edit2 size={13} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDuplicateDivision(d)}
-                          className="p-2 rounded-lg bg-white hover:bg-gray-100 border border-gray-200 text-gray-700 hover:text-black transition shadow-xs"
-                          title="Duplicate Division"
-                        >
-                          <Copy size={13} />
-                        </button>
-                        {onDeleteDivision && (
-                          <button
-                            type="button"
-                            onClick={() => onDeleteDivision(d.id)}
-                            className="p-2 rounded-lg bg-white hover:bg-red-50 border border-gray-200 text-gray-500 hover:text-red-600 transition shadow-xs"
-                            title="Delete Division"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        )}
-                      </div>
                     </div>
                   </div>
                 ))}

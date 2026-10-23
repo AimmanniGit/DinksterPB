@@ -43,6 +43,7 @@ import {
   ArrowUpRight,
   Sliders,
   CheckCircle,
+  Mail,
 } from 'lucide-react';
 import {
   INITIAL_EVENT,
@@ -51,7 +52,8 @@ import {
   DEFAULT_PLAYER_ACCOUNT,
   DEMO_PARTNER_ACCOUNT,
 } from '../../constants/initialState';
-import { PlayerAccount, TournamentEvent, PastDivisionRecord } from '../../types/organizer';
+import { PlayerAccount, TournamentEvent, PastDivisionRecord, Division } from '../../types/organizer';
+import { DivisionInteractiveCard, PartnerInviteTrackerModal } from '../../components/divisions';
 
 export default function PlayerPortalHomePage() {
   // Session State
@@ -69,6 +71,20 @@ export default function PlayerPortalHomePage() {
   const [showQrModal, setShowQrModal] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [copiedCodeSuccess, setCopiedCodeSuccess] = useState<string | null>(null);
+  const [partnerInviteModalData, setPartnerInviteModalData] = useState<{
+    teamName: string;
+    divisionName: string;
+    tournamentName: string;
+    tournamentSlug: string;
+    teammateCode: string;
+    isPrepaid: boolean;
+    initialPartner?: {
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+      status?: 'sent' | 'opened' | 'registered' | 'confirmed';
+    };
+  } | null>(null);
 
   // Profile Edit Form State
   const [editFullName, setEditFullName] = useState(signedInPlayer.fullName);
@@ -547,9 +563,22 @@ export default function PlayerPortalHomePage() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 gap-6">
                 {signedInPlayer.registeredDivisions.map((reg, idx) => {
                   const isLiveEvent = reg.tournamentSlug === 'austin-winter-open-2026';
+                  const isAwaitingPartner = !reg.partnerName || reg.status === 'awaiting_partner';
+
+                  const divObj: Division = {
+                    id: reg.divisionId,
+                    name: reg.divisionName,
+                    format: 'Double Elimination Pools & Playoffs',
+                    minDupr: 3.5,
+                    maxDupr: 4.0,
+                    entryFee: reg.amountPaid / (reg.isCaptain ? 2 : 1),
+                    teamCap: 16,
+                    scheduleDay: reg.scheduleDay,
+                    timeSlot: reg.timeSlot,
+                  };
 
                   return (
                     <div
@@ -560,6 +589,7 @@ export default function PlayerPortalHomePage() {
                           : 'border-gray-200'
                       }`}
                     >
+                      {/* Top Context & Dispatch Header */}
                       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -585,6 +615,12 @@ export default function PlayerPortalHomePage() {
                                 Team Captain
                               </span>
                             )}
+
+                            {isAwaitingPartner && (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-slate-950 animate-pulse">
+                                Awaiting Partner Registration
+                              </span>
+                            )}
                           </div>
 
                           <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
@@ -602,14 +638,42 @@ export default function PlayerPortalHomePage() {
                               <Users size={13} className="text-gray-400" />
                               <span>Team: <strong>{reg.teamName}</strong></span>
                             </span>
-                            {reg.partnerName && (
+                            {reg.partnerName ? (
                               <span>Partner: <strong>{reg.partnerName}</strong></span>
+                            ) : (
+                              <span className="text-amber-700 font-semibold">Partner: <strong>Pending Invite Acceptance</strong></span>
                             )}
                           </div>
                         </div>
 
                         {/* Action buttons & Live Desk trigger */}
                         <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setPartnerInviteModalData({
+                                teamName: reg.teamName,
+                                divisionName: reg.divisionName,
+                                tournamentName: reg.tournamentName,
+                                tournamentSlug: reg.tournamentSlug,
+                                teammateCode: reg.teammateCode || 'TP-8492',
+                                isPrepaid: reg.isCaptain,
+                                initialPartner: {
+                                  firstName: reg.partnerName ? reg.partnerName.split(' ')[0] : 'Morgan',
+                                  lastName: reg.partnerName ? reg.partnerName.split(' ').slice(1).join(' ') : 'Reyes',
+                                  email: reg.partnerName
+                                    ? `${reg.partnerName.toLowerCase().replace(/\s+/g, '.')}@dinkster.app`
+                                    : 'morgan.reyes@dinkster.app',
+                                  status: isAwaitingPartner ? 'sent' : 'registered',
+                                },
+                              })
+                            }
+                            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition flex items-center gap-1.5 shadow-2xs"
+                          >
+                            <Mail size={13} />
+                            <span>{isAwaitingPartner ? 'Send / Track Partner Invite' : 'Partner Invite Tracker'}</span>
+                          </button>
+
                           <Link
                             href={`/t/${reg.tournamentSlug}`}
                             className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-800 transition flex items-center gap-1.5"
@@ -632,7 +696,7 @@ export default function PlayerPortalHomePage() {
                       </div>
 
                       {/* Detail sub-card: Court status & Teammate pre-paid code */}
-                      <div className="bg-gray-50 p-4 rounded-xl border border-gray-200/80 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                      <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-200/80 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                         <div className="space-y-0.5">
                           <span className="text-[10px] uppercase font-bold text-gray-400 block">Check-in & Court</span>
                           {reg.courtAssigned ? (
@@ -663,7 +727,9 @@ export default function PlayerPortalHomePage() {
                                 <Copy size={13} />
                               )}
                             </button>
-                            <span className="text-[10px] text-emerald-700 font-semibold">(Captain Pre-Paid)</span>
+                            <span className="text-[10px] text-emerald-700 font-semibold">
+                              {reg.isCaptain ? '(Captain Pre-Paid)' : '(Team Entry)'}
+                            </span>
                           </div>
                         </div>
 
@@ -673,6 +739,35 @@ export default function PlayerPortalHomePage() {
                             ${reg.amountPaid} Paid via Stripe
                           </span>
                         </div>
+                      </div>
+
+                      {/* Interactive Division Expansion (Teams, Competitors, Seeds & Match Progress) */}
+                      <div className="pt-1">
+                        <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center justify-between">
+                          <span>Division Teams, Competitors & Schedule Pacing</span>
+                          <span className="text-emerald-700 font-normal">Click card to expand or inspect any opponent</span>
+                        </div>
+                        <DivisionInteractiveCard
+                          division={divObj}
+                          tournamentStatus={isLiveEvent ? 'Live' : 'Published'}
+                          tournamentName={reg.tournamentName}
+                          tournamentSlug={reg.tournamentSlug}
+                          viewerRole="player"
+                          signedInPlayerId={signedInPlayer.dinksterId}
+                          signedInPlayerTeamCode={reg.teammateCode || 'TP-8492'}
+                          teamName={reg.teamName}
+                          isPlayerRegisteredInThisDiv={true}
+                          playerTeamIsAwaitingPartner={isAwaitingPartner}
+                          playerPartnerInfo={{
+                            firstName: reg.partnerName ? reg.partnerName.split(' ')[0] : 'Morgan',
+                            lastName: reg.partnerName ? reg.partnerName.split(' ').slice(1).join(' ') : 'Reyes',
+                            email: reg.partnerName
+                              ? `${reg.partnerName.toLowerCase().replace(/\s+/g, '.')}@dinkster.app`
+                              : 'morgan.reyes@dinkster.app',
+                            status: isAwaitingPartner ? 'sent' : 'registered',
+                          }}
+                          defaultExpanded={idx === 0}
+                        />
                       </div>
                     </div>
                   );
@@ -701,7 +796,7 @@ export default function PlayerPortalHomePage() {
                   Recommended Events & Divisions For Your Skill Level
                 </h2>
                 <p className="text-xs text-gray-700 max-w-2xl">
-                  We match you with sanctioned Texas tournaments where you can compete in closely rated brackets or test high-speed pilot formats like Dink Battle.
+                  We match you with sanctioned Texas tournaments where you can compete in closely rated brackets or test high-speed pilot formats like Dink Battle. Click any division below to inspect registered players and teams.
                 </p>
               </div>
 
@@ -714,65 +809,101 @@ export default function PlayerPortalHomePage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {recommendedDivisions.map((rec, idx) => (
-                <div
-                  key={idx}
-                  className="bg-white rounded-2xl p-5 border border-gray-200 shadow-xs hover:border-[#0A5C43] transition flex flex-col justify-between space-y-4"
-                >
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          rec.isPilot
-                            ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                            : 'bg-emerald-100 text-emerald-800'
-                        }`}
-                      >
-                        {rec.skillLabel}
-                      </span>
-                      <span className="text-[11px] font-mono font-bold text-emerald-800">
-                        ${rec.fee} / Team
-                      </span>
-                    </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {recommendedDivisions.map((rec, idx) => {
+                const recDivision: Division = {
+                  id: `rec-div-${idx + 1}`,
+                  name: rec.divisionTitle,
+                  format: rec.isPilot ? 'Dink Battle (Court Shrink Pilot)' : 'Double Elimination',
+                  minDupr: 3.5,
+                  maxDupr: 4.0,
+                  entryFee: rec.fee,
+                  teamCap: 16,
+                  isPilot: rec.isPilot,
+                  scheduleDay: rec.dates,
+                };
 
-                    <h3 className="text-base font-bold text-gray-900 leading-snug">
-                      {rec.divisionTitle}
-                    </h3>
-
-                    <p className="text-xs font-semibold text-gray-500">
-                      {rec.tournamentName}
-                    </p>
-
-                    <p className="text-xs text-gray-600 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                      {rec.matchReason}
-                    </p>
-
-                    <div className="space-y-1 text-xs text-gray-500 pt-1">
-                      <div className="flex items-center gap-1.5">
-                        <Calendar size={13} className="text-gray-400" />
-                        <span>{rec.dates}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <MapPin size={13} className="text-gray-400" />
-                        <span className="truncate">{rec.venue}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-amber-700 font-semibold">
-                        <Flame size={13} className="text-amber-500" />
-                        <span>Only {rec.spotsLeft} team spots remaining</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <Link
-                    href={`/t/${rec.tournamentSlug}`}
-                    className="w-full py-2.5 bg-[#0A5C43] hover:bg-[#084734] text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs"
+                return (
+                  <div
+                    key={idx}
+                    className="bg-white rounded-2xl p-5 border border-gray-200 shadow-xs hover:border-[#0A5C43] transition flex flex-col justify-between space-y-4"
                   >
-                    <span>Register with Partner</span>
-                    <ArrowRight size={13} />
-                  </Link>
-                </div>
-              ))}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            rec.isPilot
+                              ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                              : 'bg-emerald-100 text-emerald-800'
+                          }`}
+                        >
+                          {rec.skillLabel}
+                        </span>
+                        <span className="text-[11px] font-mono font-bold text-emerald-800">
+                          ${rec.fee} / Player
+                        </span>
+                      </div>
+
+                      <div>
+                        <h3 className="text-base font-bold text-gray-900 leading-snug">
+                          {rec.divisionTitle}
+                        </h3>
+                        <p className="text-xs font-semibold text-gray-500 mt-0.5">
+                          {rec.tournamentName}
+                        </p>
+                      </div>
+
+                      <p className="text-xs text-gray-600 bg-amber-50/60 p-2.5 rounded-xl border border-amber-200/80">
+                        {rec.matchReason}
+                      </p>
+
+                      <div className="space-y-1 text-xs text-gray-500">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar size={13} className="text-gray-400" />
+                          <span>{rec.dates}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <MapPin size={13} className="text-gray-400" />
+                          <span className="truncate">{rec.venue}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-amber-700 font-semibold">
+                          <Flame size={13} className="text-amber-500" />
+                          <span>Only {rec.spotsLeft} team spots remaining</span>
+                        </div>
+                      </div>
+
+                      {/* Interactive Division Card (Click to expand competitor roster before entering) */}
+                      <div className="pt-1">
+                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                          <span>Division Roster & DUPRs</span>
+                          <span className="text-[#0A5C43]">Click to Expand</span>
+                        </div>
+                        <DivisionInteractiveCard
+                          division={recDivision}
+                          tournamentStatus={rec.tournamentSlug === 'austin-winter-open-2026' ? 'Live' : 'Published'}
+                          tournamentName={rec.tournamentName}
+                          tournamentSlug={rec.tournamentSlug}
+                          viewerRole="player"
+                          signedInPlayerId={signedInPlayer.dinksterId}
+                          isPlayerRegisteredInThisDiv={false}
+                          defaultExpanded={false}
+                          onOpenRegistration={() => {
+                            window.location.href = `/t/${rec.tournamentSlug}`;
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <Link
+                      href={`/t/${rec.tournamentSlug}`}
+                      className="w-full py-2.5 bg-[#0A5C43] hover:bg-[#084734] text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs"
+                    >
+                      <span>Register with Partner</span>
+                      <ArrowRight size={13} />
+                    </Link>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -1313,6 +1444,23 @@ export default function PlayerPortalHomePage() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* 8. PARTNER INVITE TRACKER MODAL */}
+      {/* ============================================================== */}
+      {partnerInviteModalData && (
+        <PartnerInviteTrackerModal
+          isOpen={Boolean(partnerInviteModalData)}
+          onClose={() => setPartnerInviteModalData(null)}
+          teamName={partnerInviteModalData.teamName}
+          divisionName={partnerInviteModalData.divisionName}
+          tournamentName={partnerInviteModalData.tournamentName}
+          tournamentSlug={partnerInviteModalData.tournamentSlug}
+          teammateCode={partnerInviteModalData.teammateCode}
+          isPrepaid={partnerInviteModalData.isPrepaid}
+          initialPartner={partnerInviteModalData.initialPartner}
+        />
       )}
     </div>
   );

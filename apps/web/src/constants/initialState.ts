@@ -862,6 +862,20 @@ export const DEFAULT_PLAYER_ACCOUNT: PlayerAccount = {
       partnerName: 'Jordan Cruz',
       status: 'confirmed',
     },
+    {
+      tournamentSlug: 'houston-dupr-grand-prix-2026',
+      tournamentName: 'Houston DUPR Grand Prix 2026',
+      divisionId: 'HOU-MIX-35',
+      divisionName: 'Mixed Doubles 3.5 to 4.0',
+      teamName: 'Miller & Partner (Pending)',
+      isCaptain: true,
+      scheduleDay: 'Saturday Apr 11',
+      timeSlot: '1:00 PM - 5:00 PM',
+      teammateCode: 'TP-9921',
+      amountPaid: 60,
+      partnerName: '',
+      status: 'awaiting_partner',
+    },
   ],
   pastDivisions: [
     {

@@ -179,7 +179,7 @@ export interface PlayerAccount {
     teammateCode?: string;
     amountPaid: number;
     partnerName?: string;
-    status?: 'confirmed' | 'pending_partner' | 'checked_in';
+    status?: 'confirmed' | 'pending_partner' | 'checked_in' | 'awaiting_partner';
     courtAssigned?: number;
   }>;
   pastDivisions?: PastDivisionRecord[];

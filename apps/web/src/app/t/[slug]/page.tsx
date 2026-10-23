@@ -45,6 +45,7 @@ import {
   TournamentRegistrationModal,
   RegisteredPlayerRecord,
 } from '../../../components/registration';
+import { DivisionInteractiveCard } from '../../../components/divisions';
 
 interface PublicTournamentPageProps {
   params: {
@@ -621,74 +622,29 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
               <div className="grid grid-cols-1 gap-3.5">
                 {INITIAL_DIVISIONS.map((div) => {
                   const isPlayerRegisteredInThisDiv = playerRegisteredInThisEvent.some((r) => r.divisionId === div.id);
+                  const isDivisionA = div.id === 'A';
 
                   return (
-                    <div
+                    <DivisionInteractiveCard
                       key={div.id}
-                      className={`bg-white rounded-xl border p-5 transition shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 ${
-                        isPlayerRegisteredInThisDiv
-                          ? 'border-emerald-500 ring-1 ring-emerald-500/20 bg-emerald-50/10'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="space-y-1.5">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-base font-bold text-gray-900">{div.name}</span>
-                          {div.isPilot && (
-                            <span className="px-2 py-0.5 bg-amber-100 text-amber-900 font-bold text-[10px] rounded-full">
-                              Pilot Rules
-                            </span>
-                          )}
-                          {isPlayerRegisteredInThisDiv && (
-                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold text-[10px] rounded-full flex items-center gap-1">
-                              <Check size={11} /> Registered
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-600">
-                          <span>
-                            DUPR Range: <strong>{div.minDupr === 0 ? 'All Levels' : `${div.minDupr} - ${div.maxDupr}`}</strong>
-                          </span>
-                          <span>&bull;</span>
-                          <span>Format: <strong>{div.format}</strong></span>
-                          <span>&bull;</span>
-                          <span>Cap: <strong>{div.teamCap} teams</strong></span>
-                          {div.scheduleDay && (
-                            <>
-                              <span>&bull;</span>
-                              <span className="text-emerald-800 font-semibold">Schedule: {div.scheduleDay}</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-4 self-end md:self-auto">
-                        <div className="text-right">
-                          <div className="text-lg font-bold text-[#0A5C43]">${div.entryFee}</div>
-                          <span className="text-[10px] text-gray-400 block font-semibold">per player</span>
-                        </div>
-
-                        {isPlayerRegisteredInThisDiv ? (
-                          <button
-                            type="button"
-                            onClick={() => setShowMyRegistrationsDrawer(true)}
-                            className="px-4 py-2 bg-emerald-50 border border-emerald-300 text-[#0A5C43] font-bold text-xs rounded-lg hover:bg-emerald-100 transition"
-                          >
-                            View Team
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => handleOpenRegistration(div)}
-                            className="px-4 py-2 bg-[#0A5C43] hover:bg-[#084734] text-white font-semibold text-xs rounded-lg transition shadow-xs flex items-center gap-1"
-                          >
-                            <span>Register</span>
-                            <ArrowRight size={13} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
+                      division={div}
+                      tournamentStatus="Live"
+                      tournamentName={eventName}
+                      tournamentSlug={params.slug}
+                      viewerRole="player"
+                      signedInPlayerId={signedInPlayer?.id}
+                      signedInPlayerTeamCode="TP-8492"
+                      isPlayerRegisteredInThisDiv={isPlayerRegisteredInThisDiv}
+                      playerTeamIsAwaitingPartner={isPlayerRegisteredInThisDiv && Boolean(signedInPlayer)}
+                      playerPartnerInfo={{
+                        firstName: 'Morgan',
+                        lastName: 'Reyes',
+                        email: 'morgan.reyes@dinkster.app',
+                        status: 'registered',
+                      }}
+                      onOpenRegistration={(d) => handleOpenRegistration(d)}
+                      defaultExpanded={isPlayerRegisteredInThisDiv || isDivisionA}
+                    />
                   );
                 })}
               </div>
