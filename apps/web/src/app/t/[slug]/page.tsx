@@ -46,6 +46,7 @@ import {
   RegisteredPlayerRecord,
 } from '../../../components/registration';
 import { DivisionInteractiveCard } from '../../../components/divisions';
+import { TournamentRunwayTracker } from '../../../components/common';
 
 interface PublicTournamentPageProps {
   params: {
@@ -432,6 +433,30 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
               <ShieldCheck size={15} className="text-emerald-300" />
               <span>DUPR Sanctioned &bull; {courtSurface}</span>
             </div>
+          </div>
+
+          {/* Tournament Days Remaining & Capacity Runway Banner */}
+          <div className="pt-2 text-gray-900">
+            <TournamentRunwayTracker
+              tournament={{
+                id: params.slug,
+                name: eventName,
+                slug: params.slug,
+                joinCode: 'D-8492',
+                dates: eventDates,
+                venue: eventVenue,
+                status: params.slug === 'austin-winter-open-2026' ? 'Live' : 'Published',
+                requireWaiver: true,
+                seedByDupr: true,
+                registeredCount: 56,
+                maxCapacity: 64,
+                totalCourts: totalCourts,
+                courtSurface: courtSurface,
+              }}
+              divisions={INITIAL_DIVISIONS}
+              variant="hero"
+              showDivisionBreakdown={true}
+            />
           </div>
         </div>
       </section>

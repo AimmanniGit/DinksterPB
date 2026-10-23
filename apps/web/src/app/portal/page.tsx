@@ -54,6 +54,8 @@ import {
 } from '../../constants/initialState';
 import { PlayerAccount, TournamentEvent, PastDivisionRecord, Division } from '../../types/organizer';
 import { DivisionInteractiveCard, PartnerInviteTrackerModal } from '../../components/divisions';
+import { TournamentRunwayTracker } from '../../components/common';
+import { getTournamentRunway } from '../../utils/tournamentRunway';
 
 export default function PlayerPortalHomePage() {
   // Session State
@@ -741,6 +743,34 @@ export default function PlayerPortalHomePage() {
                         </div>
                       </div>
 
+                      {/* Tournament Runway & Division Pacing Tracker */}
+                      {(() => {
+                        const matchedTourn: TournamentEvent = tournaments.find((t) => t.slug === reg.tournamentSlug) || {
+                          id: reg.tournamentSlug,
+                          name: reg.tournamentName,
+                          slug: reg.tournamentSlug,
+                          joinCode: 'D-8492',
+                          dates: reg.scheduleDay || 'Upcoming',
+                          venue: 'Texas Dedicated Complex',
+                          status: isLiveEvent ? 'Live' : 'Published',
+                          requireWaiver: true,
+                          seedByDupr: true,
+                          registeredCount: 56,
+                          maxCapacity: 64,
+                          totalCourts: 16,
+                        };
+                        return (
+                          <div className="bg-[#FAF8F3] p-3.5 rounded-xl border border-gray-200">
+                            <TournamentRunwayTracker
+                              tournament={matchedTourn}
+                              divisions={isLiveEvent ? INITIAL_DIVISIONS : [divObj]}
+                              variant="card"
+                              showDivisionBreakdown={true}
+                            />
+                          </div>
+                        );
+                      })()}
+
                       {/* Interactive Division Expansion (Teams, Competitors, Seeds & Match Progress) */}
                       <div className="pt-1">
                         <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center justify-between">
@@ -871,6 +901,33 @@ export default function PlayerPortalHomePage() {
                           <span>Only {rec.spotsLeft} team spots remaining</span>
                         </div>
                       </div>
+
+                      {/* Tournament Runway & Pacing Indicator */}
+                      {(() => {
+                        const recTournament: TournamentEvent = {
+                          id: rec.tournamentSlug,
+                          name: rec.tournamentName,
+                          slug: rec.tournamentSlug,
+                          joinCode: 'D-5120',
+                          dates: rec.dates,
+                          venue: rec.venue,
+                          status: rec.tournamentSlug === 'austin-winter-open-2026' ? 'Live' : 'Published',
+                          requireWaiver: true,
+                          seedByDupr: true,
+                          registeredCount: (16 - rec.spotsLeft) * 2,
+                          maxCapacity: 32,
+                          totalCourts: 8,
+                        };
+                        return (
+                          <div className="bg-[#FAF8F3] p-2.5 rounded-xl border border-gray-200">
+                            <TournamentRunwayTracker
+                              tournament={recTournament}
+                              divisions={[recDivision]}
+                              variant="compact"
+                            />
+                          </div>
+                        );
+                      })()}
 
                       {/* Interactive Division Card (Click to expand competitor roster before entering) */}
                       <div className="pt-1">
@@ -1138,10 +1195,19 @@ export default function PlayerPortalHomePage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                    <div className="text-xs">
-                      <span className="text-[10px] uppercase font-bold text-gray-400 block">Registration</span>
-                      <span className="font-bold text-gray-800">{t.registeredCount || 0} / {t.maxCapacity || 64} Players</span>
+                  {/* Tournament Runway & Division Capacity Breakdown */}
+                  <div className="pt-2 border-t border-gray-100">
+                    <TournamentRunwayTracker
+                      tournament={t}
+                      divisions={t.slug === 'austin-winter-open-2026' ? INITIAL_DIVISIONS : undefined}
+                      variant="card"
+                      showDivisionBreakdown={true}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2">
+                    <div className="text-xs text-gray-500">
+                      <span>Total Capacity: <strong>{t.maxCapacity || 64} Players</strong></span>
                     </div>
 
                     <Link

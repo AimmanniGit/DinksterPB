@@ -14,6 +14,7 @@ import {
 import { CreatableCombobox } from './CreatableCombobox';
 import { SponsorsManagementHub } from '../sponsors';
 import { DivisionInteractiveCard } from '../divisions';
+import { TournamentRunwayTracker } from '../common';
 import {
   Trophy,
   Calendar,
@@ -376,6 +377,14 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Live Registration Runway & Pacing Tracker */}
+      <TournamentRunwayTracker
+        tournament={event}
+        divisions={divisions}
+        variant="hero"
+        showDivisionBreakdown={true}
+      />
 
       {/* Main Grid: Left Setup Forms | Right Real-time Independent Portal Preview */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">

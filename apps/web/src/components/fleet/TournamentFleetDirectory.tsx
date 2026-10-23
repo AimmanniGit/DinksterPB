@@ -40,6 +40,7 @@ import {
 } from 'lucide-react';
 import { SponsorsManagementHub } from '../sponsors/SponsorsManagementHub';
 import { ExecutiveAnalyticsHub } from '../analytics/ExecutiveAnalyticsHub';
+import { TournamentRunwayTracker } from '../common';
 
 interface TournamentFleetDirectoryProps {
   tournaments: TournamentEvent[];
@@ -997,6 +998,16 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
                       <Layers size={13} className="text-gray-400" />
                       {t.totalCourts} Courts ({t.courtSurface || 'Acrylic'})
                     </span>
+                  </div>
+
+                  {/* Tournament Runway & Division Capacity Breakdown */}
+                  <div className="pt-2">
+                    <TournamentRunwayTracker
+                      tournament={t}
+                      divisions={t.id === activeTournamentId ? divisions : undefined}
+                      variant="card"
+                      showDivisionBreakdown={true}
+                    />
                   </div>
                 </div>
 
