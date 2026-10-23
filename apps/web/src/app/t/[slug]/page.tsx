@@ -306,7 +306,7 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
       {/* Top Header - Streamlined to ONLY 'Have a Team Code' and 'Sign In / Register' */}
       <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-2">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/portal" className="flex items-center gap-2">
             <div className="text-xl font-bold tracking-tight text-[#0A5C43]">
               dink<span className="text-[#EF9F27]">ster</span>
             </div>
@@ -337,19 +337,26 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
           {/* 2. Player Account Sign-In / Register / User Pill */}
           {signedInPlayer ? (
             <div className="flex items-center gap-2">
-              <Link
-                href="/portal"
-                className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-gray-50 hover:bg-gray-100 text-gray-700 transition flex items-center gap-1.5 border border-gray-200"
-                title="Go to My Player Home Dashboard"
-              >
-                <Trophy size={13} className="text-[#0A5C43]" />
-                <span className="hidden md:inline">My Player Dashboard</span>
-              </Link>
+              {playerRegisteredInThisEvent.length > 0 && playerRegisteredInThisEvent[0].teammateCode && (
+                <button
+                  type="button"
+                  onClick={() => copyTeammateCode(playerRegisteredInThisEvent[0].teammateCode || '')}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition flex items-center gap-1.5 shadow-2xs"
+                  title="Share Team Code with Partner"
+                >
+                  <Users size={13} />
+                  <span className="hidden sm:inline">Invite Teammate</span>
+                  <span className="font-mono text-[10px] bg-slate-950/15 px-1 py-0.2 rounded font-bold">
+                    {playerRegisteredInThisEvent[0].teammateCode}
+                  </span>
+                </button>
+              )}
 
               <button
                 type="button"
                 onClick={() => setShowMyRegistrationsDrawer(true)}
                 className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-[#0A5C43] border border-emerald-300 transition flex items-center gap-2 shadow-2xs"
+                title="View Player Profile & Event Registrations"
               >
                 <User size={13} className="text-[#0A5C43]" />
                 <span className="font-bold">{signedInPlayer.fullName.split(' ')[0]}</span>
@@ -364,10 +371,11 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition"
+                className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-500 hover:text-red-600 hover:bg-red-50 transition flex items-center gap-1"
                 title="Sign Out"
               >
-                <LogOut size={14} />
+                <LogOut size={13} />
+                <span className="hidden md:inline">Sign Out</span>
               </button>
             </div>
           ) : (
@@ -668,7 +676,7 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
                         status: 'registered',
                       }}
                       onOpenRegistration={(d) => handleOpenRegistration(d)}
-                      defaultExpanded={isPlayerRegisteredInThisDiv || isDivisionA}
+                      defaultExpanded={false}
                     />
                   );
                 })}
