@@ -248,7 +248,7 @@ export interface Sponsor {
   };
 }
 
-export type UserRole = 'founder' | 'director' | 'marshall' | 'volunteer';
+export type UserRole = 'admin' | 'founder' | 'director' | 'marshall' | 'volunteer';
 
 export interface UserActorProfile {
   id: string;
@@ -258,6 +258,8 @@ export interface UserActorProfile {
   roleTitle: string;
   avatarInitials: string;
   permissions: {
+    canManageSystemTemplates?: boolean; // Add/edit tournament formats, division templates, scoring rules
+    canConfigureLookupTables?: boolean; // Manage court surfaces, balls, sanctioning bodies, age tiers
     canViewFinancials: boolean; // Gross revenue, entry fee intake, bank payouts
     canViewAnalytics: boolean; // Executive analytics dashboard & reporting across tournaments
     canManageFleet: boolean; // Create, archive, delete tournaments across fleet
@@ -268,6 +270,79 @@ export interface UserActorProfile {
     canResolveDisputes: boolean; // Incident logging, referee disputes
     canInputScores: boolean; // Score entry
   };
+}
+
+export type LookupCategory =
+  | 'COURT_SURFACE'
+  | 'BALL_TYPE'
+  | 'SANCTIONING_BODY'
+  | 'AGE_BRACKET'
+  | 'DIVISION_FORMAT'
+  | 'VENUE_AMENITY'
+  | 'WAIVER_TEMPLATE';
+
+export interface SystemLookupOption {
+  id: string;
+  category: LookupCategory;
+  key: string;
+  label: string;
+  description?: string;
+  isDefault?: boolean;
+  isActive: boolean;
+  sortOrder: number;
+  metadata?: Record<string, any>;
+}
+
+export interface TournamentFormatTemplate {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  bracketType: string;
+  defaultScoringMode: 'STANDARD' | 'TARGET_SCORE' | 'SWISS_BLITZ' | 'DINK_BATTLE';
+  isPilot: boolean;
+  isActive: boolean;
+  minCourtsRecommended: number;
+  recommendedTeamCap: number;
+  rulesSummary?: string;
+  stagesConfig?: Record<string, any>;
+}
+
+export interface DivisionTemplate {
+  id: string;
+  code: string;
+  name: string;
+  format: string;
+  minDupr: number;
+  maxDupr: number;
+  ageMin?: number;
+  ageMax?: number;
+  defaultFee: number;
+  defaultCap: number;
+  scoringFormat?: string;
+  isPilot: boolean;
+  isActive: boolean;
+}
+
+export interface ScoringRuleTemplate {
+  id: string;
+  code: string;
+  name: string;
+  scoringMode: 'STANDARD' | 'TARGET_SCORE' | 'SWISS_BLITZ' | 'DINK_BATTLE';
+  pointsToWin: number;
+  winBy: number;
+  bestOfSets: number;
+  timeLimitMinutes?: number;
+  shrinkCourtAfterShot?: number;
+  description?: string;
+  isActive: boolean;
+}
+
+export interface SystemRegistryState {
+  lookups: SystemLookupOption[];
+  formatTemplates: TournamentFormatTemplate[];
+  divisionTemplates: DivisionTemplate[];
+  scoringTemplates: ScoringRuleTemplate[];
 }
 
 export interface TournamentMatch {
@@ -327,7 +402,18 @@ export interface ChangeLogEntry {
 
 export interface CopilotProposal {
   id: number;
-  type: 'pivot' | 'draft' | 'seed' | 'dink' | 'move' | 'alert' | 'undo';
+  type:
+    | 'pivot'
+    | 'draft'
+    | 'seed'
+    | 'dink'
+    | 'move'
+    | 'alert'
+    | 'undo'
+    | 'admin_lookup'
+    | 'admin_format'
+    | 'admin_division'
+    | 'admin_scoring';
   title: string;
   toolName: string;
   body: string;

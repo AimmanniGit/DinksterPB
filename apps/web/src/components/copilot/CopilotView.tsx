@@ -4,7 +4,7 @@ import { Sparkles, Bot, ShieldCheck, CheckCircle2, ArrowRight, Zap, RefreshCw } 
 import { VoiceInputButton } from './VoiceInputButton';
 
 interface CopilotViewProps {
-  role: 'org' | 'desk';
+  role: 'org' | 'desk' | 'admin';
   matches: TournamentMatch[];
   onConfirmProposal: (proposal: CopilotProposal) => void;
   onRejectProposal: (proposalId: number) => void;
@@ -22,7 +22,9 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
     {
       fromBot: true,
       text:
-        role === 'org'
+        role === 'admin'
+          ? 'Hello Sloan! I am your Dinkster Platform SuperAdmin Copilot. I have elevated write access to system lookup tables and tournament format templates. You can ask me to register new court surfaces, ball types, sanctioning bodies, division packages, or new tournament formats like MLP Team Dual or Compass Draw. I will stage the schema change for your 1-click confirmation.'
+          : role === 'org'
           ? 'Hello! I am your Dinkster Tournament Copilot. I can draft tournaments, analyze schedule pace, simulate weather and wet-court pivots, recommend DUPR seeding, and optimize division revenue. I propose first and change nothing until you approve.'
           : 'Hello! I am your Desk Copilot. I can suggest court moves, draft line-call dispute summaries, and alert you to schedule bottlenecks.',
     },
@@ -40,6 +42,108 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
     const newMsgs = [...messages, { fromBot: false, text: query }];
     setInputText('');
     const qLower = query.toLowerCase();
+
+    // ADMIN DIRECTIVE 1: Register New Ball Type in Lookups
+    if (role === 'admin' && (/(ball|vulcan|dura|penn|onix)/.test(qLower) || /(add|new|register).*ball/.test(qLower))) {
+      const isVulcan = /vulcan/i.test(qLower);
+      const ballLabel = isVulcan
+        ? 'Vulcan VPRO Flight (Official PPA)'
+        : 'Pro Competition Tour Ball 40';
+      const ballKey = isVulcan ? 'vulcan_vpro_flight' : 'pro_comp_tour_40';
+
+      const prop: CopilotProposal = {
+        id: proposalCounter,
+        type: 'admin_lookup',
+        title: `Register System Ball Option: ${ballLabel}`,
+        toolName: 'add_system_lookup_option',
+        body: `Register "${ballLabel}" into the platform lookup tables:\n• Category: BALL_TYPE\n• Key: ${ballKey}\n• Combobox Impact: Immediately available in Event Setup dropdowns across all Texas tournaments.\n• Specification: Approved for sanctioned DUPR and PPA tour competition.`,
+        status: 'proposed',
+        data: {
+          category: 'BALL_TYPE',
+          key: ballKey,
+          label: ballLabel,
+          description: 'Official tournament competition ball configured by SuperAdmin.',
+        },
+      };
+      setProposalCounter((prev) => prev + 1);
+
+      newMsgs.push({
+        fromBot: true,
+        text: `I have prepared the schema update for official tournament balls. Confirming this will write directly to the platform lookup registry:`,
+        proposal: prop,
+      });
+      setMessages(newMsgs);
+      return;
+    }
+
+    // ADMIN DIRECTIVE 2: Register New Court Surface in Lookups
+    if (role === 'admin' && (/(surface|decoturf|cushion|modular|acrylic|clay)/.test(qLower) || /(add|new|register).*surface/.test(qLower))) {
+      const surfaceLabel = /decoturf/i.test(qLower)
+        ? 'Cushioned Pro Acrylic (DecoTurf)'
+        : 'Hydro-Cushion Polyurethane Modular Tile';
+      const surfaceKey = /decoturf/i.test(qLower) ? 'cushioned_decoturf_pro' : 'hydro_cushion_modular';
+
+      const prop: CopilotProposal = {
+        id: proposalCounter,
+        type: 'admin_lookup',
+        title: `Register Court Surface Option: ${surfaceLabel}`,
+        toolName: 'add_system_lookup_option',
+        body: `Register "${surfaceLabel}" into the platform lookup tables:\n• Category: COURT_SURFACE\n• Key: ${surfaceKey}\n• Combobox Impact: Organizers can immediately select this in Event Setup and fleet facility profiles.\n• Surface Spec: Multi-layer rubberized cushion meeting official US Open / PPA standards.`,
+        status: 'proposed',
+        data: {
+          category: 'COURT_SURFACE',
+          key: surfaceKey,
+          label: surfaceLabel,
+          description: 'Championship multi-layer cushioned surface standard configured by Admin.',
+        },
+      };
+      setProposalCounter((prev) => prev + 1);
+
+      newMsgs.push({
+        fromBot: true,
+        text: `Here is the court surface lookup proposal. Review and confirm to commit to the dropdown registry:`,
+        proposal: prop,
+      });
+      setMessages(newMsgs);
+      return;
+    }
+
+    // ADMIN DIRECTIVE 3: Register New Tournament Format Template
+    if (role === 'admin' && (/(format|mlp|dual|waterfall|compass|template)/.test(qLower) || /(add|new|create).*format/.test(qLower))) {
+      const isMlp = /mlp|dual/i.test(qLower);
+      const fmtName = isMlp
+        ? 'MLP Team Dual-Match (4-Player Coed Teams)'
+        : 'Waterfall Pool Play with Crossover Playoffs';
+      const fmtCode = isMlp ? 'mlp_dual_match' : 'waterfall_crossover';
+
+      const prop: CopilotProposal = {
+        id: proposalCounter,
+        type: 'admin_format',
+        title: `Register Tournament Format Template: ${fmtName}`,
+        toolName: 'add_tournament_format_template',
+        body: `Register new tournament format template in the platform schema:\n• Code: ${fmtCode}\n• Bracket Type: ${isMlp ? 'dual_match' : 'waterfall'}\n• Default Scoring: ${isMlp ? 'Rally scoring to 21 (Dreambreaker 1v1)' : 'Standard to 11 win by 2'}\n• Minimum Courts Recommended: 2 Match Courts\n• Combobox Impact: Organizers can immediately pick this format in Event Setup.`,
+        status: 'proposed',
+        data: {
+          code: fmtCode,
+          name: fmtName,
+          bracketType: isMlp ? 'dual_match' : 'waterfall',
+          description: isMlp
+            ? '4-player coed teams play 1 WD, 1 MD, 2 XD games to 21 with singles Dreambreaker tiebreaker.'
+            : 'Waterfall seeding where early match winners cascade into Championship flights.',
+          minCourtsRecommended: 2,
+          isPilot: false,
+        },
+      };
+      setProposalCounter((prev) => prev + 1);
+
+      newMsgs.push({
+        fromBot: true,
+        text: `Tournament format template drafted for the platform engine. Confirm to publish to all organizer dropdowns:`,
+        proposal: prop,
+      });
+      setMessages(newMsgs);
+      return;
+    }
 
     // 1. Guardrail test: Completed matches immutability
     if (
@@ -328,14 +432,23 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
               Instant AI Directives
             </h3>
             <div className="flex flex-col gap-2">
-              {[
-                'Analyze multi-division cross-registration revenue rate',
-                'Perform financial audit of gross revenue and director net payouts',
-                'Analyze court throughput bottlenecks and match duration pacing',
-                'Courts are running behind. Switch the remaining pool matches in Mixed Doubles 3.5 to 4.0 to games to 9, win by 2.',
-                'Add a Dink Battle pilot division',
-                'Court 3 has a wet spot. Move its upcoming matches to other courts.',
-              ].map((cmd, i) => (
+              {(role === 'admin'
+                ? [
+                    'Add Vulcan VPRO Flight (Official PPA) to official ball dropdown',
+                    'Add Cushioned Pro Acrylic (DecoTurf) to court surfaces lookup',
+                    'Add MLP Team Dual-Match (4-Player Coed) tournament format template',
+                    'Register new pilot scoring rule with 5th shot kitchen shrink',
+                    'Analyze schema lookup tables feeding tournament comboboxes',
+                  ]
+                : [
+                    'Analyze multi-division cross-registration revenue rate',
+                    'Perform financial audit of gross revenue and director net payouts',
+                    'Analyze court throughput bottlenecks and match duration pacing',
+                    'Courts are running behind. Switch the remaining pool matches in Mixed Doubles 3.5 to 4.0 to games to 9, win by 2.',
+                    'Add a Dink Battle pilot division',
+                    'Court 3 has a wet spot. Move its upcoming matches to other courts.',
+                  ]
+              ).map((cmd, i) => (
                 <button
                   key={i}
                   type="button"

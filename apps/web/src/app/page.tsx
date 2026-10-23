@@ -32,6 +32,8 @@ import {
   ChevronRight,
   Settings,
   User,
+  Wrench,
+  Database,
 } from 'lucide-react';
 
 import {
@@ -48,6 +50,10 @@ import {
   ChangeLogEntry,
   CopilotProposal,
   UserActorProfile,
+  SystemLookupOption,
+  TournamentFormatTemplate,
+  DivisionTemplate,
+  ScoringRuleTemplate,
 } from '../types/organizer';
 
 import {
@@ -62,6 +68,10 @@ import {
   INITIAL_DISPUTES,
   INITIAL_INCIDENTS,
   INITIAL_ACTOR_PROFILES,
+  INITIAL_SYSTEM_LOOKUPS,
+  INITIAL_FORMAT_TEMPLATES,
+  INITIAL_DIVISION_TEMPLATES,
+  INITIAL_SCORING_TEMPLATES,
 } from '../constants/initialState';
 
 import { TournamentFleetDirectory } from '../components/fleet';
@@ -74,6 +84,7 @@ import { TvBroadcastView } from '../components/tv';
 import { BracketsPlayoffsView } from '../components/brackets';
 import { SponsorsManagementHub } from '../components/sponsors';
 import { ExecutiveAnalyticsHub } from '../components/analytics';
+import { PlatformConfiguratorHub } from '../components/admin/PlatformConfiguratorHub';
 import { CategorizedTournamentSwitcher } from '../components/navigation/CategorizedTournamentSwitcher';
 import { ActorRoleSwitcher } from '../components/rbac/ActorRoleSwitcher';
 import { PlatformFooter } from '../components/footer/PlatformFooter';
@@ -89,14 +100,52 @@ export default function DinksterV2Platform() {
   const [selectedTournamentId, setSelectedTournamentId] = useState<string | null>('tourn-austin-live');
   
   // Workspace Tab State (Clean V2 navigation tabs)
-  // 'overview' | 'desk' | 'players' | 'brackets' | 'sponsors' | 'analytics' | 'settings' | 'copilot'
-  const [workspaceTab, setWorkspaceTab] = useState<'overview' | 'desk' | 'players' | 'brackets' | 'sponsors' | 'analytics' | 'settings' | 'copilot'>('overview');
+  // 'overview' | 'desk' | 'players' | 'brackets' | 'sponsors' | 'analytics' | 'settings' | 'copilot' | 'admin-config'
+  const [workspaceTab, setWorkspaceTab] = useState<
+    'overview' | 'desk' | 'players' | 'brackets' | 'sponsors' | 'analytics' | 'settings' | 'copilot' | 'admin-config'
+  >('overview');
 
   // RBAC Current Active Role Profile
   const [currentActorProfile, setCurrentActorProfile] = useState<UserActorProfile>(INITIAL_ACTOR_PROFILES.founder);
 
   // Agentic Copilot Creator Modal
   const [showAgenticCreator, setShowAgenticCreator] = useState(false);
+
+  // System Registry Lookups & Templates (SuperAdmin Configurable)
+  const [systemLookups, setSystemLookups] = useState<SystemLookupOption[]>(INITIAL_SYSTEM_LOOKUPS);
+  const [formatTemplates, setFormatTemplates] = useState<TournamentFormatTemplate[]>(INITIAL_FORMAT_TEMPLATES);
+  const [divisionTemplates, setDivisionTemplates] = useState<DivisionTemplate[]>(INITIAL_DIVISION_TEMPLATES);
+  const [scoringTemplates, setScoringTemplates] = useState<ScoringRuleTemplate[]>(INITIAL_SCORING_TEMPLATES);
+
+  const handleAddLookupOption = (opt: SystemLookupOption) => {
+    setSystemLookups((prev) => [...prev, opt]);
+    showToast(`Added "${opt.label}" to ${opt.category.replace('_', ' ')} dropdown options.`);
+  };
+
+  const handleUpdateLookupOption = (id: string, updated: Partial<SystemLookupOption>) => {
+    setSystemLookups((prev) => prev.map((l) => (l.id === id ? { ...l, ...updated } : l)));
+    showToast('Lookup option updated in dropdowns.');
+  };
+
+  const handleAddFormatTemplate = (fmt: TournamentFormatTemplate) => {
+    setFormatTemplates((prev) => [...prev, fmt]);
+    showToast(`Registered "${fmt.name}" in competition format dropdowns.`);
+  };
+
+  const handleUpdateFormatTemplate = (id: string, updated: Partial<TournamentFormatTemplate>) => {
+    setFormatTemplates((prev) => prev.map((f) => (f.id === id ? { ...f, ...updated } : f)));
+    showToast('Tournament format template updated.');
+  };
+
+  const handleAddDivisionTemplate = (div: DivisionTemplate) => {
+    setDivisionTemplates((prev) => [...prev, div]);
+    showToast(`Registered "${div.name}" division template.`);
+  };
+
+  const handleUpdateDivisionTemplate = (id: string, updated: Partial<DivisionTemplate>) => {
+    setDivisionTemplates((prev) => prev.map((d) => (d.id === id ? { ...d, ...updated } : d)));
+    showToast('Division template updated.');
+  };
 
   // Active Tournament Data State (Austin Winter Open or dynamically loaded)
   const [event, setEvent] = useState<TournamentEvent>(INITIAL_EVENT);
@@ -406,6 +455,37 @@ export default function DinksterV2Platform() {
       showToast('Match M110 moved to Court 6. Court 3 will block after M107.');
     }
 
+    if (prop.type === 'admin_lookup') {
+      const newOpt: SystemLookupOption = {
+        id: `opt-${Date.now().toString().slice(-5)}`,
+        category: prop.data.category,
+        key: prop.data.key,
+        label: prop.data.label,
+        description: prop.data.description,
+        isActive: true,
+        sortOrder: systemLookups.length + 1,
+      };
+      setSystemLookups((prev) => [...prev, newOpt]);
+      showToast(`Admin Copilot: Added "${newOpt.label}" to ${newOpt.category.replace('_', ' ')} dropdowns.`);
+    }
+
+    if (prop.type === 'admin_format') {
+      const newFmt: TournamentFormatTemplate = {
+        id: `fmt-${Date.now().toString().slice(-5)}`,
+        code: prop.data.code,
+        name: prop.data.name,
+        description: prop.data.description,
+        bracketType: prop.data.bracketType,
+        defaultScoringMode: prop.data.isPilot ? 'DINK_BATTLE' : 'STANDARD',
+        isPilot: prop.data.isPilot || false,
+        isActive: true,
+        minCourtsRecommended: prop.data.minCourtsRecommended || 2,
+        recommendedTeamCap: 16,
+      };
+      setFormatTemplates((prev) => [...prev, newFmt]);
+      showToast(`Admin Copilot: Registered "${newFmt.name}" in competition format dropdowns.`);
+    }
+
     prop.status = 'executed';
   };
 
@@ -670,6 +750,23 @@ export default function DinksterV2Platform() {
               >
                 Event Settings
               </button>
+
+              {/* SuperAdmin Platform Configurator Tab */}
+              {(currentActorProfile.role === 'admin' || currentActorProfile.permissions.canConfigureLookupTables) && (
+                <button
+                  type="button"
+                  onClick={() => setWorkspaceTab('admin-config')}
+                  className={`py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition flex items-center gap-1.5 whitespace-nowrap ${
+                    workspaceTab === 'admin-config'
+                      ? 'bg-rose-50 text-rose-900 font-bold border border-rose-300 shadow-2xs'
+                      : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                  title="SuperAdmin Platform Configurator: Manage System Lookups & Templates"
+                >
+                  <Wrench size={14} className="text-rose-600" />
+                  <span>Platform Config & Lookups</span>
+                </button>
+              )}
             </nav>
 
             {/* Clean Exit to Fleet Directory shortcut (wide desktop only, eliminating menu overlap) */}
@@ -998,6 +1095,10 @@ export default function DinksterV2Platform() {
                 sponsors={sponsors}
                 canViewFinancials={currentActorProfile.permissions.canViewFinancials}
                 canEditRules={currentActorProfile.permissions.canEditTournamentRules}
+                systemLookups={systemLookups}
+                formatTemplates={formatTemplates}
+                divisionTemplates={divisionTemplates}
+                scoringTemplates={scoringTemplates}
                 onUpdateEvent={(updated) => {
                   setEvent(updated);
                   setTournaments((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
@@ -1036,10 +1137,36 @@ export default function DinksterV2Platform() {
               />
             )}
 
+            {/* TAB: SUPERADMIN PLATFORM CONFIG & LOOKUP ENGINE */}
+            {workspaceTab === 'admin-config' && (
+              <PlatformConfiguratorHub
+                lookups={systemLookups}
+                formatTemplates={formatTemplates}
+                divisionTemplates={divisionTemplates}
+                scoringTemplates={scoringTemplates}
+                onAddLookupOption={handleAddLookupOption}
+                onUpdateLookupOption={handleUpdateLookupOption}
+                onAddFormatTemplate={handleAddFormatTemplate}
+                onUpdateFormatTemplate={handleUpdateFormatTemplate}
+                onAddDivisionTemplate={handleAddDivisionTemplate}
+                onUpdateDivisionTemplate={handleUpdateDivisionTemplate}
+                onOpenAdminCopilot={(prompt) => {
+                  setWorkspaceTab('copilot');
+                  if (prompt) setCopilotInitialPrompt(prompt);
+                }}
+              />
+            )}
+
             {/* TAB: COPILOT AI */}
             {workspaceTab === 'copilot' && (
               <CopilotView
-                role="org"
+                role={
+                  currentActorProfile.role === 'admin'
+                    ? 'admin'
+                    : currentActorProfile.role === 'marshall' || currentActorProfile.role === 'volunteer'
+                    ? 'desk'
+                    : 'org'
+                }
                 matches={matches}
                 onConfirmProposal={handleConfirmProposal}
                 onRejectProposal={handleRejectProposal}

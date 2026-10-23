@@ -1,11 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
   TournamentEvent,
   Division,
   Sponsor,
+  SystemLookupOption,
+  TournamentFormatTemplate,
+  DivisionTemplate,
+  ScoringRuleTemplate,
 } from '../../types/organizer';
 import { CreatableCombobox } from './CreatableCombobox';
 import { SponsorsManagementHub } from '../sponsors';
@@ -50,6 +54,10 @@ interface EventSetupViewProps {
   onAssignCourt?: (sponsorIndex: number, courtNumber: number | null) => void;
   canViewFinancials?: boolean;
   canEditRules?: boolean;
+  systemLookups?: SystemLookupOption[];
+  formatTemplates?: TournamentFormatTemplate[];
+  divisionTemplates?: DivisionTemplate[];
+  scoringTemplates?: ScoringRuleTemplate[];
 }
 
 // Preset options for searchable and creatable comboboxes
@@ -131,7 +139,67 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
   onAssignCourt = () => {},
   canViewFinancials = true,
   canEditRules = true,
+  systemLookups = [],
+  formatTemplates = [],
+  divisionTemplates = [],
+  scoringTemplates = [],
 }) => {
+  // Derive combobox options dynamically from Admin lookups & templates
+  const courtSurfaceOptions = useMemo(() => {
+    if (systemLookups && systemLookups.length > 0) {
+      const active = systemLookups.filter((l) => l.category === 'COURT_SURFACE' && l.isActive).map((l) => l.label);
+      if (active.length > 0) return active;
+    }
+    return PRESET_COURT_SURFACES;
+  }, [systemLookups]);
+
+  const ballTypeOptions = useMemo(() => {
+    if (systemLookups && systemLookups.length > 0) {
+      const active = systemLookups.filter((l) => l.category === 'BALL_TYPE' && l.isActive).map((l) => l.label);
+      if (active.length > 0) return active;
+    }
+    return PRESET_BALL_TYPES;
+  }, [systemLookups]);
+
+  const formatOptions = useMemo(() => {
+    if (formatTemplates && formatTemplates.length > 0) {
+      const active = formatTemplates.filter((f) => f.isActive).map((f) => f.name);
+      if (active.length > 0) return active;
+    }
+    return PRESET_FORMATS;
+  }, [formatTemplates]);
+
+  const sanctioningOptions = useMemo(() => {
+    if (systemLookups && systemLookups.length > 0) {
+      const active = systemLookups.filter((l) => l.category === 'SANCTIONING_BODY' && l.isActive).map((l) => l.label);
+      if (active.length > 0) return active;
+    }
+    return PRESET_SANCTIONING;
+  }, [systemLookups]);
+
+  const divisionFormatOptions = useMemo(() => {
+    if (systemLookups && systemLookups.length > 0) {
+      const active = systemLookups.filter((l) => l.category === 'DIVISION_FORMAT' && l.isActive).map((l) => l.label);
+      if (active.length > 0) return active;
+    }
+    return PRESET_DIVISION_FORMATS;
+  }, [systemLookups]);
+
+  const ageBracketOptions = useMemo(() => {
+    if (systemLookups && systemLookups.length > 0) {
+      const active = systemLookups.filter((l) => l.category === 'AGE_BRACKET' && l.isActive).map((l) => l.label);
+      if (active.length > 0) return active;
+    }
+    return PRESET_AGE_BRACKETS;
+  }, [systemLookups]);
+
+  const scoringFormatOptions = useMemo(() => {
+    if (scoringTemplates && scoringTemplates.length > 0) {
+      const active = scoringTemplates.filter((s) => s.isActive).map((s) => s.name);
+      if (active.length > 0) return active;
+    }
+    return PRESET_SCORING_FORMATS;
+  }, [scoringTemplates]);
   // Division Add / Edit State
   const [editingDivisionId, setEditingDivisionId] = useState<string | null>(null);
   const [divName, setDivName] = useState('');
@@ -406,7 +474,7 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
                 label="Court Surface / Material"
                 value={event.courtSurface || 'Outdoor Acrylic Hardcourt (PPA Standard)'}
                 onChange={(val) => onUpdateEvent({ ...event, courtSurface: val })}
-                options={PRESET_COURT_SURFACES}
+                options={courtSurfaceOptions}
                 placeholder="Select or enter custom court surface..."
                 helpText="Custom court types (e.g. CushionX, Modular Sport Court) can be typed directly."
               />
@@ -416,7 +484,7 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
                 label="Official Tournament Ball"
                 value={event.ballType || 'Franklin X-40 (Outdoor Yellow)'}
                 onChange={(val) => onUpdateEvent({ ...event, ballType: val })}
-                options={PRESET_BALL_TYPES}
+                options={ballTypeOptions}
                 placeholder="Select or enter custom ball..."
                 helpText="Specify the official tournament game ball for players."
               />
@@ -426,7 +494,7 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
                 label="Competition Format"
                 value={event.tournamentFormat || 'Round Robin Pools to Single Elimination Playoffs'}
                 onChange={(val) => onUpdateEvent({ ...event, tournamentFormat: val })}
-                options={PRESET_FORMATS}
+                options={formatOptions}
                 placeholder="Select or enter custom format..."
                 helpText="Controls the stage progression engine (pools to playoffs)."
               />
@@ -436,7 +504,7 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
                 label="Sanctioning / Ratings Body"
                 value={event.sanctioningBody || 'DUPR Official Sanctioned'}
                 onChange={(val) => onUpdateEvent({ ...event, sanctioningBody: val })}
-                options={PRESET_SANCTIONING}
+                options={sanctioningOptions}
                 placeholder="Select or enter sanctioning..."
                 helpText="Determines whether matches automatically export to DUPR."
               />
@@ -813,7 +881,7 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
                   label="Play Format"
                   value={divFormat}
                   onChange={setDivFormat}
-                  options={PRESET_DIVISION_FORMATS}
+                  options={divisionFormatOptions}
                   placeholder="Select or enter custom format..."
                 />
 
@@ -821,7 +889,7 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
                   label="Age Bracket"
                   value={divAge}
                   onChange={setDivAge}
-                  options={PRESET_AGE_BRACKETS}
+                  options={ageBracketOptions}
                   placeholder="Select or enter age bracket..."
                 />
               </div>
@@ -909,7 +977,7 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
                 label="Division Match Scoring Format"
                 value={divScoring}
                 onChange={setDivScoring}
-                options={PRESET_SCORING_FORMATS}
+                options={scoringFormatOptions}
                 placeholder="Select or enter scoring format..."
               />
 

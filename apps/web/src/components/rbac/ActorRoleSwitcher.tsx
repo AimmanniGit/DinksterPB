@@ -14,6 +14,7 @@ import {
   Eye,
   EyeOff,
   Lock,
+  Wrench,
 } from 'lucide-react';
 
 interface ActorRoleSwitcherProps {
@@ -22,6 +23,11 @@ interface ActorRoleSwitcherProps {
 }
 
 export const ROLE_ICONS: Record<UserRole, { icon: React.ReactNode; color: string; bg: string }> = {
+  admin: {
+    icon: <Wrench size={13} className="text-rose-700" />,
+    color: 'text-rose-900',
+    bg: 'bg-rose-100 border-rose-300',
+  },
   founder: {
     icon: <Crown size={13} className="text-amber-600" />,
     color: 'text-amber-900',

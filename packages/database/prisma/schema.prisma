@@ -98,6 +98,7 @@ enum CopilotSurface {
   ORGANIZER
   DESK
   PLAYER
+  ADMIN
 }
 
 enum ToolCallStatus {
@@ -403,4 +404,85 @@ model CopilotToolCall {
 
   session CopilotSession   @relation(fields: [sessionId], references: [id])
   changes MatchChangeLog[]
+}
+
+// ---------- System Configuration, Templates & Lookups (Admin Managed) ----------
+
+enum LookupCategory {
+  COURT_SURFACE
+  BALL_TYPE
+  SANCTIONING_BODY
+  AGE_BRACKET
+  DIVISION_FORMAT
+  VENUE_AMENITY
+  WAIVER_TEMPLATE
+}
+
+model SystemLookupOption {
+  id          String         @id @default(uuid()) @db.Uuid
+  category    LookupCategory
+  key         String         // e.g. "cushioned_acrylic", "vulcan_vpro"
+  label       String         // e.g. "Cushioned Acrylic Hardcourt (PPA Standard)"
+  description String?
+  isDefault   Boolean        @default(false)
+  isActive    Boolean        @default(true)
+  sortOrder   Int            @default(0)
+  metadata    Json           @default("{}") // e.g. manufacturer, surface rating, sponsor tag
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([category, key])
+  @@index([category, isActive])
+}
+
+model TournamentFormatTemplate {
+  id                   String      @id @default(uuid()) @db.Uuid
+  code                 String      @unique // e.g. "rr_pools_playoffs", "dink_battle", "mlp_dual"
+  name                 String      // e.g. "Round Robin Pools to Single Elimination Playoffs"
+  description          String
+  bracketType          String      // "pools_to_playoffs", "double_elim", "single_elim", "compass", "waterfall", "dual_match"
+  defaultScoringMode   ScoringMode @default(STANDARD)
+  isPilot              Boolean     @default(false)
+  isActive             Boolean     @default(true)
+  minCourtsRecommended Int         @default(4)
+  recommendedTeamCap   Int         @default(16)
+  rulesSummary         String?
+  stagesConfig         Json        @default("{}")
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+}
+
+model DivisionTemplate {
+  id              String          @id @default(uuid()) @db.Uuid
+  code            String          @unique // e.g. "mens_35", "mixed_pilot_shrink"
+  name            String          // e.g. "Men's Doubles 3.5 to 4.0"
+  format          DivisionFormat  @default(DOUBLES)
+  gender          DivisionGender  @default(OPEN)
+  skillMin        Decimal?        @db.Decimal(4, 3)
+  skillMax        Decimal?        @db.Decimal(4, 3)
+  ageMin          Int?
+  ageMax          Int?
+  defaultFeeCents Int             @default(6000)
+  defaultCap      Int             @default(16)
+  scoringFormat   String?
+  isPilot         Boolean         @default(false)
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+model ScoringRuleTemplate {
+  id                   String      @id @default(uuid()) @db.Uuid
+  code                 String      @unique // e.g. "standard_11", "best_2_of_3", "dink_shrink_5"
+  name                 String      // e.g. "Standard Rally to 11 (Win by 2)"
+  scoringMode          ScoringMode @default(STANDARD)
+  pointsToWin          Int         @default(11)
+  winBy                Int         @default(2)
+  bestOfSets           Int         @default(1)
+  timeLimitMinutes     Int?
+  shrinkCourtAfterShot Int?        // 5 for Dink Battle pilot
+  description          String?
+  isActive             Boolean     @default(true)
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
 }
