@@ -23,7 +23,7 @@ module.exports = {
         },
       },
       fontFamily: {
-        display: ['Syne', 'sans-serif'],
+        display: ['DM Sans', 'sans-serif'],
         sans: ['DM Sans', 'sans-serif'],
         mono: ['DM Mono', 'monospace'],
       },

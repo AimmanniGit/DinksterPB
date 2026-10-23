@@ -1213,7 +1213,7 @@ export const TvBroadcastView: React.FC<TvBroadcastViewProps> = ({
               </span>
             </div>
             <h1
-              className={`font-display font-black text-3xl md:text-4xl tracking-tight ${
+              className={`font-black text-3xl md:text-4xl tracking-tight ${
                 themeMode === 'light' ? 'text-slate-950' : 'text-white'
               }`}
             >

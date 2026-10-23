@@ -813,7 +813,7 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
         <div className="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-gray-200 animate-fade-in overflow-y-auto max-h-[90vh]">
             <div className="flex justify-between items-center border-b pb-3 mb-4">
-              <h3 className="font-display font-black text-2xl text-gray-900">
+              <h3 className="font-bold text-xl text-gray-900 tracking-tight">
                 {editingDivisionId ? 'Edit Division Settings' : 'Add Custom Division'}
               </h3>
               <button
@@ -978,7 +978,7 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
               <div className="w-14 h-14 bg-emerald-100 text-[#0A5C43] rounded-2xl flex items-center justify-center mx-auto shadow-sm">
                 <Sparkles size={28} />
               </div>
-              <h2 className="font-display font-black text-3xl text-gray-900">
+              <h2 className="font-bold text-2xl text-gray-900 tracking-tight">
                 Tournament Portals Created & Live!
               </h2>
               <p className="text-sm text-gray-600 max-w-md mx-auto">
@@ -991,7 +991,7 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Globe size={18} className="text-[#0A5C43]" />
-                  <span className="font-display font-black text-base text-gray-900">
+                  <span className="font-bold text-base text-gray-900 tracking-tight">
                     1. Independent Web App Player & Registration Portal
                   </span>
                 </div>
@@ -1031,7 +1031,7 @@ export const EventSetupView: React.FC<EventSetupViewProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Smartphone size={18} className="text-gray-700" />
-                  <span className="font-display font-black text-base text-gray-900">
+                  <span className="font-bold text-base text-gray-900 tracking-tight">
                     2. Dinkster App Player Code
                   </span>
                 </div>

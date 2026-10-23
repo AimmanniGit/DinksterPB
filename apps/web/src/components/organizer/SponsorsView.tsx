@@ -33,7 +33,7 @@ export const SponsorsView: React.FC<SponsorsViewProps> = ({
     <div>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="font-display font-bold text-3xl">Tournament Sponsors</h1>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Tournament Sponsors</h1>
           <p className="text-sm text-gray-600">
             Sponsor banners appear across the player app, event page, and desk board. Assign court naming rights to sponsor specific courts.
           </p>
@@ -43,7 +43,7 @@ export const SponsorsView: React.FC<SponsorsViewProps> = ({
       <div className="grid grid-cols-2 gap-6">
         {/* Left: Sponsors Table & Form */}
         <div className="bg-white p-6 rounded-2xl border border-black/10 shadow-sm flex flex-col gap-4">
-          <h2 className="font-display font-bold text-lg">Partner Roster & Naming Rights</h2>
+          <h2 className="text-base font-bold text-gray-900 tracking-tight">Partner Roster & Naming Rights</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
@@ -113,7 +113,7 @@ export const SponsorsView: React.FC<SponsorsViewProps> = ({
 
         {/* Right: Live Preview of Court Calls */}
         <div className="bg-white p-6 rounded-2xl border border-black/10 shadow-sm flex flex-col gap-4">
-          <h2 className="font-display font-bold text-lg">How Players See It</h2>
+          <h2 className="text-base font-bold text-gray-900 tracking-tight">How Players See It</h2>
           <p className="text-xs text-gray-500">
             When court calls are broadcast to player devices via push notifications or displayed on the public kiosk, court sponsor names are prominently displayed:
           </p>
@@ -125,7 +125,7 @@ export const SponsorsView: React.FC<SponsorsViewProps> = ({
                   key={idx}
                   className="bg-[#E8F7F1] border border-[#5DCAA5]/40 rounded-xl p-4"
                 >
-                  <div className="font-display font-extrabold text-base text-[#0A5C43]">
+                  <div className="font-bold text-base text-[#0A5C43] tracking-tight">
                     Court {s.courtAssigned}, presented by {s.name}
                   </div>
                   <p className="text-xs text-gray-700 mt-1">

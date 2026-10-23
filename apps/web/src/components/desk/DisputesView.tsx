@@ -39,7 +39,7 @@ export const DisputesView: React.FC<DisputesViewProps> = ({
       <div>
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="font-display font-bold text-3xl">Court Disputes</h1>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Court Disputes</h1>
             <p className="text-sm text-gray-600">
               The court desk makes all binding decisions. Dinkster Copilot drafts impartial incident summaries.
             </p>
@@ -54,7 +54,7 @@ export const DisputesView: React.FC<DisputesViewProps> = ({
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="font-display font-bold text-base">
+                  <h3 className="font-bold text-base text-gray-900 tracking-tight">
                     {d.matchId} &bull; Court {d.courtNumber}
                   </h3>
                   <p className="text-sm text-gray-700 mt-0.5">
@@ -126,7 +126,7 @@ export const DisputesView: React.FC<DisputesViewProps> = ({
       {/* Incidents Section */}
       <div>
         <div className="mb-4">
-          <h2 className="font-display font-bold text-2xl">Incident Log</h2>
+          <h2 className="text-xl font-bold text-gray-900 tracking-tight">Incident Log</h2>
           <p className="text-sm text-gray-600">Track court injuries, equipment repairs, or conduct flags.</p>
         </div>
 
@@ -161,7 +161,7 @@ export const DisputesView: React.FC<DisputesViewProps> = ({
 
           {/* Form */}
           <div className="bg-white p-5 rounded-2xl border border-black/10 shadow-sm flex flex-col gap-3">
-            <h3 className="font-display font-bold text-base">Log New Incident</h3>
+            <h3 className="font-bold text-base text-gray-900 tracking-tight">Log New Incident</h3>
             <div>
               <label className="text-xs font-bold text-gray-500 uppercase block mb-1">
                 Court

@@ -55,7 +55,7 @@ export const RefereeScorecardView: React.FC<RefereeScorecardViewProps> = ({
     <div>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="font-display font-bold text-3xl">Referee Scorecard</h1>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Referee Scorecard</h1>
           <p className="text-sm text-gray-600">
             Assigned: Court 3 &bull; M107 &bull; Lowe / Shah vs Moss / Ito
           </p>
@@ -72,7 +72,7 @@ export const RefereeScorecardView: React.FC<RefereeScorecardViewProps> = ({
       <div className="bg-white p-6 rounded-2xl border border-black/10 shadow-sm max-w-xl">
         {isCompleted ? (
           <div>
-            <h2 className="font-display font-bold text-xl text-gray-900 mb-2">
+            <h2 className="text-xl font-bold text-gray-900 mb-2 tracking-tight">
               🔒 Final Score Locked
             </h2>
             <p className="text-sm text-gray-600 mb-4">

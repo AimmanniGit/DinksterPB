@@ -23,7 +23,7 @@ export const RegistrationsView: React.FC<RegistrationsViewProps> = ({
     <div>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="font-display font-bold text-3xl">Registrations</h1>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Registrations</h1>
           <p className="text-sm text-gray-600">
             Mixed Doubles 3.5 to 4.0 &bull; {registrations.length} teams registered &bull; DUPR-verified seeding
           </p>
@@ -49,19 +49,19 @@ export const RegistrationsView: React.FC<RegistrationsViewProps> = ({
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-white p-5 rounded-2xl border border-black/10 shadow-sm">
             <span className="text-xs font-bold text-gray-500 uppercase">Gross Entries</span>
-            <div className="font-display font-extrabold text-3xl text-gray-900 my-1">${gross}</div>
+            <div className="font-extrabold text-3xl text-gray-900 my-1 font-mono tracking-tight">${gross}</div>
             <span className="text-xs text-gray-500">{paidCount} teams paid ($60/team)</span>
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-black/10 shadow-sm">
             <span className="text-xs font-bold text-gray-500 uppercase">Dinkster Platform Fee</span>
-            <div className="font-display font-extrabold text-3xl text-[#EF9F27] my-1">${fee}</div>
+            <div className="font-extrabold text-3xl text-[#EF9F27] my-1 font-mono tracking-tight">${fee}</div>
             <span className="text-xs text-gray-500">10% standard tournament fee</span>
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-black/10 shadow-sm">
             <span className="text-xs font-bold text-gray-500 uppercase">Organizer Net Revenue</span>
-            <div className="font-display font-extrabold text-3xl text-[#0A5C43] my-1">${net}</div>
+            <div className="font-extrabold text-3xl text-[#0A5C43] my-1 font-mono tracking-tight">${net}</div>
             <span className="text-xs text-gray-500">Instant Stripe Connect payout</span>
           </div>
         </div>
@@ -69,13 +69,13 @@ export const RegistrationsView: React.FC<RegistrationsViewProps> = ({
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-white p-5 rounded-2xl border border-black/10 shadow-sm">
             <span className="text-xs font-bold text-gray-500 uppercase">Registered Teams</span>
-            <div className="font-display font-extrabold text-3xl text-gray-900 my-1">{registrations.length} Teams</div>
+            <div className="font-extrabold text-3xl text-gray-900 my-1 tracking-tight">{registrations.length} Teams</div>
             <span className="text-xs text-emerald-700 font-semibold">{paidCount} confirmed rosters</span>
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-black/10 shadow-sm">
             <span className="text-xs font-bold text-gray-500 uppercase">Digital Waivers</span>
-            <div className="font-display font-extrabold text-3xl text-[#0A5C43] my-1">
+            <div className="font-extrabold text-3xl text-[#0A5C43] my-1 tracking-tight">
               {registrations.filter((r) => r.waiverSigned).length} / {registrations.length}
             </div>
             <span className="text-xs text-gray-500">100% legal compliance</span>
@@ -83,7 +83,7 @@ export const RegistrationsView: React.FC<RegistrationsViewProps> = ({
 
           <div className="bg-white p-5 rounded-2xl border border-black/10 shadow-sm">
             <span className="text-xs font-bold text-gray-500 uppercase">Court Readiness</span>
-            <div className="font-display font-extrabold text-3xl text-[#EF9F27] my-1">Ready</div>
+            <div className="font-extrabold text-3xl text-[#EF9F27] my-1 tracking-tight">Ready</div>
             <span className="text-xs text-gray-500">Bracket & pool seeds assigned</span>
           </div>
         </div>

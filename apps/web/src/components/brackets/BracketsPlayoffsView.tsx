@@ -82,7 +82,7 @@ export const BracketsPlayoffsView: React.FC<BracketsPlayoffsViewProps> = ({ onOp
             </span>
             <span className="text-xs text-gray-500 font-medium">Auto-advancement enabled</span>
           </div>
-          <h1 className="font-display font-bold text-3xl text-gray-900">
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
             Bracket Progression & Medal Matches
           </h1>
           <p className="text-sm text-gray-600 mt-0.5">
@@ -182,7 +182,7 @@ export const BracketsPlayoffsView: React.FC<BracketsPlayoffsViewProps> = ({ onOp
       {(stageFilter === 'all' || stageFilter === 'pools') && hasPools && (
         <section className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="font-display font-bold text-xl text-gray-900 flex items-center gap-2">
+            <h2 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
               <span>Stage 1: Round Robin Pool Play</span>
               <span className="text-xs font-bold text-gray-500 bg-gray-200 px-2.5 py-0.5 rounded-full">
                 Top 2 Advance to Semifinals
@@ -271,7 +271,7 @@ export const BracketsPlayoffsView: React.FC<BracketsPlayoffsViewProps> = ({ onOp
       {(stageFilter === 'all' || stageFilter === 'bracket') && (
         <section className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="font-display font-bold text-xl text-gray-900 flex items-center gap-2">
+            <h2 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
               <span>Stage 2: Championship Playoff Bracket</span>
               <span className="text-xs font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full flex items-center gap-1">
                 <Medal size={12} />

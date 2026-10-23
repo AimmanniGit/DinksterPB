@@ -111,7 +111,7 @@ export const TvOlympicPodium: React.FC<TvOlympicPodiumProps> = ({
               <span>Silver Medalist</span>
             </div>
             <h3
-              className={`font-display font-black text-xl md:text-3xl tracking-tight line-clamp-2 ${
+              className={`font-black text-xl md:text-3xl tracking-tight line-clamp-2 ${
                 isLight
                   ? 'text-slate-900 drop-shadow-none font-black'
                   : 'text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]'
@@ -158,7 +158,7 @@ export const TvOlympicPodium: React.FC<TvOlympicPodiumProps> = ({
 
             {/* Giant Embossed Metallic Rank Number 2 */}
             <span
-              className="font-display font-black text-6xl md:text-8xl leading-none select-none tracking-tighter drop-shadow-[0_6px_14px_rgba(0,0,0,0.8)]"
+              className="font-black text-6xl md:text-8xl leading-none select-none tracking-tighter drop-shadow-[0_6px_14px_rgba(0,0,0,0.8)] font-sans"
               style={{
                 background: 'linear-gradient(180deg, #ffffff 0%, #94a3b8 100%)',
                 WebkitBackgroundClip: 'text',
@@ -167,7 +167,7 @@ export const TvOlympicPodium: React.FC<TvOlympicPodiumProps> = ({
             >
               2
             </span>
-            <span className="font-display text-sm md:text-lg tracking-widest uppercase text-slate-300 font-bold opacity-90 mt-1">
+            <span className="text-sm md:text-lg tracking-widest uppercase text-slate-300 font-bold opacity-90 mt-1">
               Silver
             </span>
           </div>
@@ -191,7 +191,7 @@ export const TvOlympicPodium: React.FC<TvOlympicPodiumProps> = ({
               <Sparkles size={16} className={isLight ? 'text-amber-600' : 'text-yellow-300'} />
             </div>
             <h2
-              className={`font-display font-black text-2xl md:text-4xl tracking-tight line-clamp-2 ${
+              className={`font-black text-2xl md:text-4xl tracking-tight line-clamp-2 ${
                 isLight
                   ? 'text-slate-950 drop-shadow-none font-black'
                   : 'text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.9)]'
@@ -238,7 +238,7 @@ export const TvOlympicPodium: React.FC<TvOlympicPodiumProps> = ({
 
             {/* Giant Embossed Metallic Rank Number 1 */}
             <span
-              className="font-display font-black text-7xl md:text-9xl leading-none select-none tracking-tighter drop-shadow-[0_8px_18px_rgba(0,0,0,0.8)]"
+              className="font-black text-7xl md:text-9xl leading-none select-none tracking-tighter drop-shadow-[0_8px_18px_rgba(0,0,0,0.8)] font-sans"
               style={{
                 background: 'linear-gradient(180deg, #fef08a 0%, #ca8a04 100%)',
                 WebkitBackgroundClip: 'text',
@@ -247,7 +247,7 @@ export const TvOlympicPodium: React.FC<TvOlympicPodiumProps> = ({
             >
               1
             </span>
-            <span className="font-display text-base md:text-xl tracking-widest uppercase text-yellow-200 font-extrabold opacity-95 mt-1">
+            <span className="text-base md:text-xl tracking-widest uppercase text-yellow-200 font-extrabold opacity-95 mt-1">
               Champion
             </span>
           </div>
@@ -270,7 +270,7 @@ export const TvOlympicPodium: React.FC<TvOlympicPodiumProps> = ({
               <span>Bronze Medalist</span>
             </div>
             <h3
-              className={`font-display font-black text-xl md:text-3xl tracking-tight line-clamp-2 ${
+              className={`font-black text-xl md:text-3xl tracking-tight line-clamp-2 ${
                 isLight
                   ? 'text-slate-900 drop-shadow-none font-black'
                   : 'text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]'
@@ -317,7 +317,7 @@ export const TvOlympicPodium: React.FC<TvOlympicPodiumProps> = ({
 
             {/* Giant Embossed Metallic Rank Number 3 */}
             <span
-              className="font-display font-black text-6xl md:text-8xl leading-none select-none tracking-tighter drop-shadow-[0_6px_14px_rgba(0,0,0,0.8)]"
+              className="font-black text-6xl md:text-8xl leading-none select-none tracking-tighter drop-shadow-[0_6px_14px_rgba(0,0,0,0.8)] font-sans"
               style={{
                 background: 'linear-gradient(180deg, #fed7aa 0%, #c2410c 100%)',
                 WebkitBackgroundClip: 'text',
@@ -326,7 +326,7 @@ export const TvOlympicPodium: React.FC<TvOlympicPodiumProps> = ({
             >
               3
             </span>
-            <span className="font-display text-sm md:text-lg tracking-widest uppercase text-orange-200 font-bold opacity-90 mt-1">
+            <span className="text-sm md:text-lg tracking-widest uppercase text-orange-200 font-bold opacity-90 mt-1">
               Bronze
             </span>
           </div>

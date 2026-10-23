@@ -37,7 +37,7 @@ export const CourtBoardView: React.FC<CourtBoardViewProps> = ({
     <div>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="font-display font-bold text-3xl">Court Desk Board</h1>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Court Desk Board</h1>
           <p className="text-sm text-gray-600">
             Real-time court management, referee scoring, and automated court calls across all {courts.length} courts.
           </p>
@@ -86,7 +86,7 @@ export const CourtBoardView: React.FC<CourtBoardViewProps> = ({
                 {/* Court Header */}
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <h3 className="font-display font-extrabold text-lg">Court {c.number}</h3>
+                    <h3 className="font-bold text-base text-gray-900 tracking-tight">Court {c.number}</h3>
                     {sponsorText && (
                       <p className="text-[11px] font-bold text-[#0A5C43]">{sponsorText}</p>
                     )}
@@ -118,7 +118,7 @@ export const CourtBoardView: React.FC<CourtBoardViewProps> = ({
                 {/* Live Match Scoreboard */}
                 {isLive && c.score && (
                   <div className="my-2">
-                    <div className="font-display font-extrabold text-3xl text-gray-900 tracking-tight">
+                    <div className="font-mono font-extrabold text-3xl text-gray-900 tracking-tight">
                       {c.score[0]} : {c.score[1]}
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
@@ -186,7 +186,7 @@ export const CourtBoardView: React.FC<CourtBoardViewProps> = ({
             <div className="bg-[#FAF8F3] p-6 rounded-2xl">
               <div className="flex justify-between items-center mb-4">
                 <div>
-                  <h2 className="font-display font-extrabold text-2xl text-gray-900">
+                  <h2 className="text-xl font-bold text-gray-900 tracking-tight">
                     Court {activeKioskCourt.number} Scorecard
                   </h2>
                   <p className="text-xs text-gray-600 font-semibold">
@@ -209,7 +209,7 @@ export const CourtBoardView: React.FC<CourtBoardViewProps> = ({
                     className="bg-white p-6 rounded-2xl border-2 border-black/10 text-center shadow-sm"
                   >
                     <p className="text-sm font-bold text-gray-500 uppercase">Team {teamIdx + 1}</p>
-                    <div className="font-display font-black text-7xl my-3 text-gray-900">
+                    <div className="font-mono font-black text-7xl my-3 text-gray-900 tracking-tight">
                       {activeKioskCourt.score ? activeKioskCourt.score[teamIdx] : 0}
                     </div>
                     <div className="flex gap-2 justify-center">

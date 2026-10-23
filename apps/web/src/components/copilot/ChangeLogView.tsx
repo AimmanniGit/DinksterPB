@@ -11,7 +11,7 @@ export const ChangeLogView: React.FC<ChangeLogViewProps> = ({ log, onRollback })
     <div>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="font-display font-bold text-3xl">Rule Change Log</h1>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Rule Change Log</h1>
           <p className="text-sm text-gray-600">
             Immutable audit record of all live rule shifts, court pivots, and organizer approvals.
           </p>
