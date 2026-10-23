@@ -671,23 +671,16 @@ export default function DinksterV2Platform() {
               </button>
             </nav>
 
-            {/* Quick Context / Exit to Fleet shortcut */}
-            <div className="hidden lg:flex items-center gap-3 text-xs text-gray-500 shrink-0">
-              <span className="flex items-center gap-1 font-medium">
-                <MapPin size={12} className="text-gray-400" />
-                <span>{event.venue}</span>
-              </span>
-              <span>•</span>
-              <span className="font-semibold text-gray-700">{courts.length} Courts Assigned</span>
-              <span>•</span>
+            {/* Clean Exit to Fleet Directory shortcut (wide desktop only, eliminating menu overlap) */}
+            <div className="hidden xl:flex items-center shrink-0 pl-4">
               <button
                 type="button"
                 onClick={handleExitToFleet}
-                className="text-gray-500 hover:text-[#0A5C43] font-semibold transition flex items-center gap-1"
-                title="Return to Fleet Directory"
+                className="text-xs text-gray-500 hover:text-[#0A5C43] font-semibold transition flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-gray-100"
+                title="Return to All Tournaments Fleet Directory"
               >
                 <span>Fleet Directory</span>
-                <ArrowRight size={11} />
+                <ArrowRight size={12} />
               </button>
             </div>
           </div>
