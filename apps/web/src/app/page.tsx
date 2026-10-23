@@ -31,6 +31,7 @@ import {
   Zap,
   ChevronRight,
   Settings,
+  User,
 } from 'lucide-react';
 
 import {
@@ -515,13 +516,14 @@ export default function DinksterV2Platform() {
                   <span className="hidden md:inline">TV Cast</span>
                 </button>
 
-                {/* Public Registration Link */}
+                {/* Public Player Portal Link */}
                 <Link
-                  href={`/t/${event.slug || 'austin-winter-open-2026'}`}
+                  href="/portal"
                   target="_blank"
                   className="px-3 py-1.5 rounded-xl text-xs font-medium bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 transition flex items-center gap-1.5"
-                  title="Open Public Player Registration Portal"
+                  title="Open Player Portal & Tournament Explorer"
                 >
+                  <User size={13} className="text-[#0A5C43]" />
                   <span className="hidden md:inline">Player Portal</span>
                   <ExternalLink size={12} className="text-gray-400" />
                 </Link>

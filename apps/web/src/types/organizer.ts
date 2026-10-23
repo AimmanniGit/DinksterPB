@@ -131,6 +131,31 @@ export interface TournamentEvent {
   revenue?: number;
 }
 
+export interface PastDivisionMatchResult {
+  matchId: string;
+  round: string;
+  opponentTeam: string;
+  scores: string;
+  result: 'W' | 'L';
+}
+
+export interface PastDivisionRecord {
+  tournamentSlug: string;
+  tournamentName: string;
+  divisionId: string;
+  divisionName: string;
+  dates: string;
+  venue: string;
+  city: string;
+  finishPlacement: string;
+  medal?: 'gold' | 'silver' | 'bronze';
+  partnerName: string;
+  matchesPlayed: number;
+  matchesWon: number;
+  duprDelta?: string;
+  matchResults: PastDivisionMatchResult[];
+}
+
 export interface PlayerAccount {
   id: string;
   dinksterId: string;
@@ -150,9 +175,22 @@ export interface PlayerAccount {
     teamName: string;
     isCaptain: boolean;
     scheduleDay?: string;
+    timeSlot?: string;
     teammateCode?: string;
     amountPaid: number;
+    partnerName?: string;
+    status?: 'confirmed' | 'pending_partner' | 'checked_in';
+    courtAssigned?: number;
   }>;
+  pastDivisions?: PastDivisionRecord[];
+  careerStats?: {
+    matchesPlayed: number;
+    matchesWon: number;
+    winRate: number;
+    golds: number;
+    silvers: number;
+    bronzes: number;
+  };
 }
 
 export interface TournamentFleetStats {

@@ -303,14 +303,22 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
     <div className="min-h-screen bg-[#FAF8F3] text-gray-900 font-sans flex flex-col antialiased">
       {/* Top Header - Streamlined to ONLY 'Have a Team Code' and 'Sign In / Register' */}
       <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-40">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="text-xl font-bold tracking-tight text-[#0A5C43]">
-            dink<span className="text-[#EF9F27]">ster</span>
-          </div>
-          <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-gray-100 text-gray-600">
-            Player Portal
-          </span>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="text-xl font-bold tracking-tight text-[#0A5C43]">
+              dink<span className="text-[#EF9F27]">ster</span>
+            </div>
+          </Link>
+          <span className="text-gray-300 font-normal">/</span>
+          <Link
+            href="/portal"
+            className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 hover:bg-emerald-100 text-[#0A5C43] border border-emerald-200 transition flex items-center gap-1"
+            title="Return to Player Portal Home"
+          >
+            <span>Player Home</span>
+            <ArrowRight size={10} />
+          </Link>
+        </div>
 
         <div className="flex items-center gap-2.5">
           {/* 1. Teammate Code button */}
@@ -327,6 +335,15 @@ export default function PublicTournamentPage({ params }: PublicTournamentPagePro
           {/* 2. Player Account Sign-In / Register / User Pill */}
           {signedInPlayer ? (
             <div className="flex items-center gap-2">
+              <Link
+                href="/portal"
+                className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-gray-50 hover:bg-gray-100 text-gray-700 transition flex items-center gap-1.5 border border-gray-200"
+                title="Go to My Player Home Dashboard"
+              >
+                <Trophy size={13} className="text-[#0A5C43]" />
+                <span className="hidden md:inline">My Player Dashboard</span>
+              </Link>
+
               <button
                 type="button"
                 onClick={() => setShowMyRegistrationsDrawer(true)}
