@@ -48,7 +48,6 @@ import {
 } from 'lucide-react';
 import {
   INITIAL_EVENT,
-  INITIAL_TOURNAMENT_FLEET,
   INITIAL_DIVISIONS,
   DEFAULT_PLAYER_ACCOUNT,
   DEMO_PARTNER_ACCOUNT,
@@ -56,6 +55,79 @@ import {
 import { PlayerAccount, TournamentEvent, PastDivisionRecord, Division } from '../../types/organizer';
 import { DivisionInteractiveCard, PartnerInviteTrackerModal } from '../../components/divisions';
 import { TournamentRunwayTracker } from '../../components/common';
+
+/**
+ * STRICT DECOUPLING: Player Portal Tournament Directory.
+ * Player Portal is strictly for players finding and registering for active tournaments.
+ * Internal organizer setup drafts ('Draft') and completed archive records ('Concluded')
+ * are excluded from the player discovery directory.
+ */
+const PUBLIC_PLAYER_TOURNAMENTS: TournamentEvent[] = [
+  INITIAL_EVENT, // Austin Winter Open 2026 (Live Now)
+  {
+    id: 'tourn-lonestar-upcoming',
+    name: 'Lone Star Spring Slam 2026',
+    slug: 'lone-star-spring-slam-2026',
+    joinCode: 'D-3190',
+    dates: 'Sat Mar 21 - Sun Mar 22, 2026',
+    venue: 'Oasis Pickleball Club, Dallas, TX',
+    status: 'Published',
+    requireWaiver: true,
+    seedByDupr: true,
+    totalCourts: 16,
+    courtSurface: 'Indoor Cushioned Hardcourt',
+    ballType: 'Dura Fast 40',
+    tournamentFormat: 'Round Robin Pools to Single Elimination Playoffs',
+    registrationDeadline: 'Wednesday Mar 18, 2026',
+    city: 'Dallas',
+    state: 'TX',
+    divisionsCount: 6,
+    registeredCount: 84,
+    maxCapacity: 128,
+  },
+  {
+    id: 'tourn-houston-published',
+    name: 'Houston DUPR Grand Prix 2026',
+    slug: 'houston-dupr-grand-prix-2026',
+    joinCode: 'D-6542',
+    dates: 'Sat Apr 11 - Sun Apr 12, 2026',
+    venue: 'Memorial Park Tennis & Pickleball Center, Houston, TX',
+    status: 'Published',
+    requireWaiver: true,
+    seedByDupr: true,
+    totalCourts: 12,
+    courtSurface: 'Outdoor Acrylic Hardcourt',
+    ballType: 'Franklin X-40 (Outdoor Yellow)',
+    tournamentFormat: 'Double Elimination Bracket',
+    registrationDeadline: 'Monday Apr 6, 2026',
+    city: 'Houston',
+    state: 'TX',
+    divisionsCount: 4,
+    registeredCount: 52,
+    maxCapacity: 96,
+  },
+  {
+    id: 'tourn-alamo-published',
+    name: 'San Antonio Alamo Open 2026',
+    slug: 'san-antonio-alamo-open-2026',
+    joinCode: 'D-9214',
+    dates: 'Sat May 16 - Sun May 17, 2026',
+    venue: 'Chicken N Pickle, San Antonio, TX',
+    status: 'Published',
+    requireWaiver: true,
+    seedByDupr: true,
+    totalCourts: 8,
+    courtSurface: 'Dedicated Sport Court Modular Tile',
+    ballType: 'Vulcan VPRO Flight',
+    tournamentFormat: 'Round Robin Pools to Single Elimination Playoffs',
+    registrationDeadline: 'Thursday May 14, 2026',
+    city: 'San Antonio',
+    state: 'TX',
+    divisionsCount: 4,
+    registeredCount: 28,
+    maxCapacity: 64,
+  },
+];
 
 interface GroupedPastEvent {
   tournamentSlug: string;
@@ -74,7 +146,7 @@ interface GroupedPastEvent {
 export default function PlayerPortalHomePage() {
   // Session State
   const [signedInPlayer, setSignedInPlayer] = useState<PlayerAccount | null>(DEFAULT_PLAYER_ACCOUNT);
-  const [tournaments] = useState<TournamentEvent[]>(INITIAL_TOURNAMENT_FLEET);
+  const [tournaments] = useState<TournamentEvent[]>(PUBLIC_PLAYER_TOURNAMENTS);
 
   // Active Tab: 'my-tournaments' | 'find-tournaments' | 'results' | 'mobile-companion'
   const [activeTab, setActiveTab] = useState<
@@ -245,20 +317,22 @@ export default function PlayerPortalHomePage() {
     }
   };
 
-  // Filtered Tournaments for the Explorer Tab
+  // Strictly Filtered Tournaments for the Explorer: ONLY Published or Live
   const filteredTournaments = useMemo(() => {
-    return tournaments.filter((t) => {
-      const matchCity = cityFilter === 'All' || t.city === cityFilter || t.venue.includes(cityFilter);
-      const matchSearch =
-        !searchQuery.trim() ||
-        t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.venue.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (t.city && t.city.toLowerCase().includes(searchQuery.toLowerCase()));
-      return matchCity && matchSearch;
-    });
+    return tournaments
+      .filter((t) => t.status === 'Published' || t.status === 'Live')
+      .filter((t) => {
+        const matchCity = cityFilter === 'All' || t.city === cityFilter || t.venue.includes(cityFilter);
+        const matchSearch =
+          !searchQuery.trim() ||
+          t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          t.venue.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (t.city && t.city.toLowerCase().includes(searchQuery.toLowerCase()));
+        return matchCity && matchSearch;
+      });
   }, [tournaments, cityFilter, searchQuery]);
 
-  // Recommended Divisions based on player DUPR
+  // Recommended Divisions based on player DUPR: Strictly from Published or Live events
   const recommendedDivisions = useMemo(() => {
     const rating = signedInPlayer?.duprRating || 3.82;
 
@@ -283,15 +357,15 @@ export default function PlayerPortalHomePage() {
         venue: 'Memorial Park Tennis & Pickleball Center, Houston, TX',
         fee: 60,
         skillLabel: 'DUPR 3.5 - 4.0 Bracket',
-        matchReason: `98% Skill Match for your verified ${rating.toFixed(2)} DUPR rating. Premier Houston venue with 12 courts.`,
+        matchReason: `98% Skill Match for your verified ${rating.toFixed(2)} DUPR rating. Premier Houston venue with 12 dedicated courts.`,
         spotsLeft: 8,
         isPilot: false,
       },
       {
-        tournamentName: 'Hill Country Summer Classic 2026',
-        tournamentSlug: 'hill-country-summer-classic-2026',
+        tournamentName: 'San Antonio Alamo Open 2026',
+        tournamentSlug: 'san-antonio-alamo-open-2026',
         divisionTitle: "Open 3.5 Division",
-        dates: 'Sat Jun 13 - Sun Jun 14, 2026',
+        dates: 'Sat May 16 - Sun May 17, 2026',
         venue: 'Chicken N Pickle, San Antonio, TX',
         fee: 65,
         skillLabel: 'DUPR 3.5+ Sanctioned',
@@ -361,7 +435,7 @@ export default function PlayerPortalHomePage() {
       )}
 
       {/* ============================================================== */}
-      {/* 1. TOP HEADER NAVIGATION BAR */}
+      {/* 1. TOP HEADER NAVIGATION BAR (100% PLAYER FACING, NO ORGANIZER) */}
       {/* ============================================================== */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200 px-4 sm:px-6 py-2.5 transition">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
@@ -441,17 +515,6 @@ export default function PlayerPortalHomePage() {
                 <span>Sign In / Demo</span>
               </button>
             )}
-
-            <div className="h-4 w-[1px] bg-gray-200 hidden xl:block" />
-
-            {/* Subtle Organizer Switcher for Admins */}
-            <Link
-              href="/"
-              className="text-xs font-semibold text-gray-500 hover:text-[#0A5C43] transition hidden xl:flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-gray-100"
-              title="Switch to Dinkster Host & Organizer Suite"
-            >
-              <span>Host Suite &rarr;</span>
-            </Link>
           </div>
         </div>
       </header>
@@ -645,7 +708,7 @@ export default function PlayerPortalHomePage() {
                   activeTab === 'find-tournaments' ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-800'
                 }`}
               >
-                {tournaments.length}
+                {filteredTournaments.length}
               </span>
             </button>
 
@@ -1195,7 +1258,7 @@ export default function PlayerPortalHomePage() {
               </div>
             </div>
 
-            {/* 2. TEXAS TOURNAMENT CIRCUIT DIRECTORY (LIST CARD VIEW) */}
+            {/* 2. TEXAS TOURNAMENT CIRCUIT DIRECTORY (LIST CARD VIEW - ONLY ACTIVE PUBLISHED & LIVE) */}
             <div className="space-y-4">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">
                 <div>
@@ -1206,7 +1269,7 @@ export default function PlayerPortalHomePage() {
                     All Upcoming Sanctioned Tournaments
                   </h3>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    Browse verified tournaments across Texas with direct team registration and partner invites.
+                    Browse open tournaments across Texas with direct team registration and partner invites.
                   </p>
                 </div>
 
@@ -1241,7 +1304,7 @@ export default function PlayerPortalHomePage() {
                 />
               </div>
 
-              {/* Tournament Directory (Strict List Card View - Mobile Friendly) */}
+              {/* Tournament Directory (Strict List Card View - Only Published & Live) */}
               <div className="flex flex-col gap-4">
                 {filteredTournaments.map((t) => (
                   <div
@@ -1252,15 +1315,13 @@ export default function PlayerPortalHomePage() {
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${
                               t.status === 'Live'
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : t.status === 'Published'
-                                ? 'bg-blue-100 text-blue-800'
-                                : 'bg-amber-100 text-amber-800'
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                : 'bg-blue-100 text-blue-800 border border-blue-200'
                             }`}
                           >
-                            {t.status === 'Live' ? 'LIVE NOW' : t.status === 'Published' ? 'REGISTRATION OPEN' : 'UPCOMING DRAFT'}
+                            {t.status === 'Live' ? 'LIVE NOW • MATCHDAY' : 'REGISTRATION OPEN'}
                           </span>
 
                           <span className="text-xs text-gray-500">
@@ -1319,7 +1380,7 @@ export default function PlayerPortalHomePage() {
         )}
 
         {/* ============================================================ */}
-        {/* TAB 3: PAST EVENTS & RESULTS (GROUPED BY EVENT FIRST) */}
+        {/* TAB 3: PAST EVENTS & RESULTS (HISTORICAL ARCHIVE) */}
         {/* ============================================================ */}
         {activeTab === 'results' && (
           <div className="space-y-5">
@@ -1549,7 +1610,7 @@ export default function PlayerPortalHomePage() {
                     <span>Dinkster Web Portal (This Experience)</span>
                   </div>
                   <ul className="space-y-1.5 text-gray-300">
-                    <li>&bull; Find & browse upcoming Texas tournaments across Austin, Dallas, Houston</li>
+                    <li>&bull; Find & browse upcoming Texas tournaments across Austin, Dallas, Houston, San Antonio</li>
                     <li>&bull; View comprehensive past event placements, medals & official game scores</li>
                     <li>&bull; Register teams, pre-pay partner fees & invite partners via codes</li>
                     <li>&bull; View big-screen TV jumbotron scoreboard broadcasts</li>
