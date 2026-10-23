@@ -39,10 +39,12 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { SponsorsManagementHub } from '../sponsors/SponsorsManagementHub';
+import { ExecutiveAnalyticsHub } from '../analytics/ExecutiveAnalyticsHub';
 
 interface TournamentFleetDirectoryProps {
   tournaments: TournamentEvent[];
   sponsors?: Sponsor[];
+  divisions?: Division[];
   activeTournamentId?: string | null;
   onSelectTournament: (tournamentId: string) => void;
   onCreateTournament: (newEvent: TournamentEvent) => void;
@@ -52,11 +54,14 @@ interface TournamentFleetDirectoryProps {
   onAssignCourt?: (sponsorIndex: number, courtNumber: number | null) => void;
   actorProfile?: UserActorProfile;
   onOpenAnalytics?: () => void;
+  onAskCopilot?: (prompt: string) => void;
+  initialHub?: 'events' | 'sponsors' | 'analytics' | 'facilities';
 }
 
 export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> = ({
   tournaments,
   sponsors = [],
+  divisions = [],
   activeTournamentId,
   onSelectTournament,
   onCreateTournament,
@@ -66,10 +71,15 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
   onAssignCourt,
   actorProfile,
   onOpenAnalytics,
+  onAskCopilot,
+  initialHub = 'events',
 }) => {
   const canViewFinancials = actorProfile ? actorProfile.permissions.canViewFinancials : true;
   const canManageFleet = actorProfile ? actorProfile.permissions.canManageFleet : true;
   const canManageGlobalSponsors = actorProfile ? actorProfile.permissions.canManageGlobalSponsors : true;
+
+  // Active Multi-Hub Tab State ('events' | 'sponsors' | 'analytics' | 'facilities')
+  const [activeHub, setActiveHub] = useState<'events' | 'sponsors' | 'analytics' | 'facilities'>(initialHub);
 
   const sponsorsList = sponsors || [];
   const [showSponsorsManager, setShowSponsorsManager] = useState(false);
@@ -166,6 +176,47 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
       targetPool,
     };
   }, [tournaments, statusFilter, totalSponsorRev]);
+
+  // Texas Facilities & Venue Footprint derived dynamically from tournaments fleet
+  const facilitiesList = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        venue: string;
+        city: string;
+        state: string;
+        courts: number;
+        surface: string;
+        ball: string;
+        tournaments: TournamentEvent[];
+      }
+    >();
+
+    tournaments.forEach((t) => {
+      const key = t.venue || `${t.city} Center`;
+      if (!map.has(key)) {
+        map.set(key, {
+          venue: t.venue,
+          city: t.city || 'Texas',
+          state: t.state || 'TX',
+          courts: t.totalCourts || 8,
+          surface: t.courtSurface || 'Outdoor Acrylic Hardcourt (PPA Standard)',
+          ball: t.ballType || 'Franklin X-40',
+          tournaments: [t],
+        });
+      } else {
+        const existing = map.get(key)!;
+        existing.courts = Math.max(existing.courts, t.totalCourts || 8);
+        existing.tournaments.push(t);
+      }
+    });
+
+    return Array.from(map.values());
+  }, [tournaments]);
+
+  const totalFacilitiesCourts = useMemo(() => {
+    return facilitiesList.reduce((acc, f) => acc + f.courts, 0);
+  }, [facilitiesList]);
 
   // Copilot Interactive Prompt Generator
   const handleCopilotSend = (customPrompt?: string) => {
@@ -358,18 +409,33 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
 
               {/* Founder Privileges & Scope Badges */}
               <div className="flex items-center gap-2 flex-wrap text-[11px] pt-1">
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/10 text-emerald-300 border border-white/10 font-medium">
+                <button
+                  type="button"
+                  onClick={() => setActiveHub('events')}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-emerald-300 border border-white/10 font-medium transition cursor-pointer"
+                  title="View Tournaments & Events Hub"
+                >
                   <ShieldCheck size={12} className="text-emerald-400" />
                   <span>Unrestricted Fleet Control</span>
-                </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/10 text-amber-300 border border-white/10 font-medium">
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveHub('facilities')}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-amber-300 border border-white/10 font-medium transition cursor-pointer"
+                  title="View Texas Facilities & Operations Hub"
+                >
                   <Building2 size={12} className="text-amber-400" />
                   <span>Texas Footprint: Austin, Dallas, Houston, San Antonio</span>
-                </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/10 text-blue-300 border border-white/10 font-medium">
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveHub('sponsors')}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-blue-300 border border-white/10 font-medium transition cursor-pointer"
+                  title="View Sponsors & Commercial Hub"
+                >
                   <Globe size={12} className="text-blue-400" />
                   <span>Global Title Partner: JOOLA ($15,000/yr)</span>
-                </span>
+                </button>
               </div>
             </div>
 
@@ -396,30 +462,148 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
               <div className="flex items-center gap-2 flex-wrap">
                 <button
                   type="button"
-                  onClick={() => setShowSponsorsManager(true)}
-                  className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs"
+                  onClick={() => setActiveHub('sponsors')}
+                  className={`px-3.5 py-1.5 font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs ${
+                    activeHub === 'sponsors'
+                      ? 'bg-amber-400 text-slate-950 ring-2 ring-amber-300'
+                      : 'bg-amber-500 hover:bg-amber-400 text-slate-950'
+                  }`}
                 >
                   <Briefcase size={13} />
-                  <span>Manage Fleet Sponsors</span>
+                  <span>Sponsors Hub</span>
                 </button>
 
-                {onOpenAnalytics && (
+                {canViewFinancials && (
                   <button
                     type="button"
-                    onClick={onOpenAnalytics}
-                    className="px-3.5 py-1.5 bg-white/15 hover:bg-white/25 text-white font-semibold rounded-xl text-xs transition flex items-center gap-1.5 border border-white/20"
+                    onClick={() => {
+                      setActiveHub('analytics');
+                      if (onOpenAnalytics) onOpenAnalytics();
+                    }}
+                    className={`px-3.5 py-1.5 font-semibold rounded-xl text-xs transition flex items-center gap-1.5 border ${
+                      activeHub === 'analytics'
+                        ? 'bg-white text-slate-950 border-white'
+                        : 'bg-white/15 hover:bg-white/25 text-white border-white/20'
+                    }`}
                   >
-                    <BarChart3 size={13} className="text-blue-300" />
-                    <span>Portfolio Analytics</span>
+                    <BarChart3 size={13} className={activeHub === 'analytics' ? 'text-blue-600' : 'text-blue-300'} />
+                    <span>Executive Analytics</span>
                   </button>
                 )}
+
+                <button
+                  type="button"
+                  onClick={() => setActiveHub('facilities')}
+                  className={`px-3.5 py-1.5 font-semibold rounded-xl text-xs transition flex items-center gap-1.5 border ${
+                    activeHub === 'facilities'
+                      ? 'bg-emerald-400 text-slate-950 border-emerald-300'
+                      : 'bg-white/15 hover:bg-white/25 text-white border-white/20'
+                  }`}
+                >
+                  <Building2 size={13} className={activeHub === 'facilities' ? 'text-slate-950' : 'text-emerald-300'} />
+                  <span>Facilities Hub</span>
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* 1. TOP HEADER CARD */}
+      {/* MULTI-HUB HORIZONTAL SWITCHER (APPLE/TESLA SEGMENTED PILL BAR) */}
+      <div className="bg-white p-2 rounded-2xl border border-gray-200 shadow-xs flex items-center justify-between gap-3 overflow-x-auto [scrollbar-width:none]">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Hub 1: Tournaments & Events */}
+          <button
+            type="button"
+            onClick={() => setActiveHub('events')}
+            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 whitespace-nowrap ${
+              activeHub === 'events'
+                ? 'bg-gray-900 text-white shadow-xs'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <Trophy size={16} className={activeHub === 'events' ? 'text-emerald-400' : 'text-gray-400'} />
+            <span>Tournaments & Events Hub</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                activeHub === 'events' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-700'
+              }`}
+            >
+              {tournaments.length}
+            </span>
+          </button>
+
+          {/* Hub 2: Sponsors & Commercial */}
+          <button
+            type="button"
+            onClick={() => setActiveHub('sponsors')}
+            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 whitespace-nowrap ${
+              activeHub === 'sponsors'
+                ? 'bg-amber-500 text-slate-950 shadow-xs'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <Briefcase size={16} className={activeHub === 'sponsors' ? 'text-slate-950' : 'text-amber-500'} />
+            <span>Sponsors & Commercial Hub</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                activeHub === 'sponsors' ? 'bg-slate-950/20 text-slate-950' : 'bg-amber-100 text-amber-900'
+              }`}
+            >
+              {sponsorsList.length}
+            </span>
+          </button>
+
+          {/* Hub 3: Executive Analytics */}
+          {canViewFinancials && (
+            <button
+              type="button"
+              onClick={() => setActiveHub('analytics')}
+              className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 whitespace-nowrap ${
+                activeHub === 'analytics'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              <BarChart3 size={16} className={activeHub === 'analytics' ? 'text-white' : 'text-blue-600'} />
+              <span>Executive Analytics Hub</span>
+            </button>
+          )}
+
+          {/* Hub 4: Facilities & Operations */}
+          <button
+            type="button"
+            onClick={() => setActiveHub('facilities')}
+            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 whitespace-nowrap ${
+              activeHub === 'facilities'
+                ? 'bg-[#0A5C43] text-white shadow-xs'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <Building2 size={16} className={activeHub === 'facilities' ? 'text-emerald-300' : 'text-emerald-700'} />
+            <span>Facilities & Operations Hub</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                activeHub === 'facilities' ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-800'
+              }`}
+            >
+              {facilitiesList.length}
+            </span>
+          </button>
+        </div>
+
+        <div className="hidden lg:flex items-center gap-2 pr-3 text-xs text-gray-500 font-medium shrink-0">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span>Texas Operations Network</span>
+        </div>
+      </div>
+
+      {/* ============================================================== */}
+      {/* HUB 1: TOURNAMENTS & EVENTS HUB */}
+      {/* ============================================================== */}
+      {activeHub === 'events' && (
+        <div className="space-y-4">
+          {/* 1. TOP HEADER CARD */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -891,177 +1075,514 @@ export const TournamentFleetDirectory: React.FC<TournamentFleetDirectoryProps> =
           })
         )}
       </div>
+    </div>
+  )}
 
-      {/* 5. CORPORATE & FLEET BRAND PARTNERSHIPS SHOWCASE */}
-      <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b pb-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
-                Commercial Partnerships Hub
-              </span>
-              <span className="text-[11px] text-gray-500 font-medium">
-                Fleet-Wide & Event Level
-              </span>
-            </div>
-            <h2 className="text-lg font-bold text-gray-900 tracking-tight flex items-center gap-2">
-              <span>Corporate Sponsors & Brand Partners</span>
-              <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full font-semibold">
-                {sponsorsList.length} Active Partners
-              </span>
-            </h2>
-            <p className="text-xs text-gray-600 mt-0.5">
-              Multi-tournament global title presenting partners, court naming rights, and event sponsors active across Dinkster.
-            </p>
+  {/* ============================================================== */}
+  {/* HUB 2: SPONSORS & COMMERCIAL HUB */}
+  {/* ============================================================== */}
+  {activeHub === 'sponsors' && (
+    <div className="space-y-4">
+      {/* Sponsors Header Card */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+              Commercial Partnerships Hub
+            </span>
+            <span className="text-[11px] text-gray-500 font-medium">
+              Fleet-Wide & Event Level
+            </span>
           </div>
+          <h2 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+            <span>Corporate Sponsors & Commercial Partnerships Hub</span>
+            <span className="text-xs bg-gray-100 text-gray-700 px-2.5 py-0.5 rounded-full font-semibold">
+              {sponsorsList.length} Active Partners
+            </span>
+          </h2>
+          <p className="text-xs text-gray-600 mt-0.5 max-w-2xl">
+            Multi-tournament global title presenting partners, court naming rights, and event commercial sponsors active across the Dinkster platform.
+          </p>
+        </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl text-xs font-semibold">
-              <button
-                type="button"
-                onClick={() => setSponsorTabFilter('all')}
-                className={`px-3 py-1 rounded-lg transition ${
-                  sponsorTabFilter === 'all'
-                    ? 'bg-white text-gray-900 font-bold shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                All ({sponsorsList.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setSponsorTabFilter('global')}
-                className={`px-3 py-1 rounded-lg transition ${
-                  sponsorTabFilter === 'global'
-                    ? 'bg-white text-amber-900 font-bold shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Global Fleet ({globalSponsors.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setSponsorTabFilter('event')}
-                className={`px-3 py-1 rounded-lg transition ${
-                  sponsorTabFilter === 'event'
-                    ? 'bg-white text-emerald-900 font-bold shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Event Specific ({eventSponsors.length})
-              </button>
-            </div>
+        <div className="flex items-center gap-2 self-start md:self-auto flex-wrap">
+          <button
+            type="button"
+            onClick={() => setShowSponsorsManager(true)}
+            className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition flex items-center gap-2 shadow-xs"
+          >
+            <Briefcase size={14} />
+            <span>Manage Fleet Partnerships</span>
+          </button>
+        </div>
+      </div>
 
-            <button
-              type="button"
-              onClick={() => setShowSponsorsManager(true)}
-              className="px-3.5 py-1.5 bg-[#0A5C43] hover:bg-[#084734] text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center gap-1.5"
-            >
-              <Briefcase size={14} />
-              <span>Manage Partnerships</span>
-            </button>
+      {/* Commercial KPI Metrics Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
+          <span className="text-[11px] font-semibold text-gray-500 uppercase block">
+            Total Contract Book
+          </span>
+          <div className="text-xl font-bold text-[#0A5C43] my-1 font-mono">
+            ${totalSponsorRev.toLocaleString()}
+          </div>
+          <div className="text-xs text-gray-500">
+            100% Invoiced & Contracted
           </div>
         </div>
 
-        {/* FEATURED: GLOBAL TITLE PRESENTING PARTNER (JOOLA) */}
-        {globalSponsors.length > 0 && (sponsorTabFilter === 'all' || sponsorTabFilter === 'global') && (
-          <div className="p-4 rounded-xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-300 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="space-y-1.5 flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-500 text-slate-950 tracking-wider">
-                  ★ Global Title Presenting Partner
+        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
+          <span className="text-[11px] font-semibold text-gray-500 uppercase block">
+            Active Brand Partners
+          </span>
+          <div className="text-xl font-bold text-gray-900 my-1 font-mono">
+            {sponsorsList.length} Partners
+          </div>
+          <div className="text-xs text-gray-500">
+            {globalSponsors.length} Global &bull; {eventSponsors.length} Event-Specific
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
+          <span className="text-[11px] font-semibold text-gray-500 uppercase block">
+            Court Naming Rights
+          </span>
+          <div className="text-xl font-bold text-emerald-800 my-1 font-mono">
+            {sponsorsList.filter((s) => s.courtAssigned).length} Courts Branded
+          </div>
+          <div className="text-xs text-emerald-700 font-semibold">
+            Baseline Signage Deployed
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
+          <span className="text-[11px] font-semibold text-gray-500 uppercase block">
+            Global Title Partner
+          </span>
+          <div className="text-xl font-bold text-amber-900 my-1">
+            JOOLA
+          </div>
+          <div className="text-xs text-amber-700 font-semibold">
+            $15,000 / Year Headline Deal
+          </div>
+        </div>
+      </div>
+
+      {/* Filter Pills */}
+      <div className="flex items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-gray-200 shadow-xs flex-wrap">
+        <div className="flex items-center gap-1.5 text-xs font-semibold">
+          <button
+            type="button"
+            onClick={() => setSponsorTabFilter('all')}
+            className={`px-3 py-1.5 rounded-lg transition whitespace-nowrap ${
+              sponsorTabFilter === 'all'
+                ? 'bg-gray-900 text-white font-bold shadow-xs'
+                : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+            }`}
+          >
+            All Partners ({sponsorsList.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setSponsorTabFilter('global')}
+            className={`px-3 py-1.5 rounded-lg transition whitespace-nowrap ${
+              sponsorTabFilter === 'global'
+                ? 'bg-amber-500 text-slate-950 font-bold shadow-xs'
+                : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200'
+            }`}
+          >
+            Global Fleet Partners ({globalSponsors.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setSponsorTabFilter('event')}
+            className={`px-3 py-1.5 rounded-lg transition whitespace-nowrap ${
+              sponsorTabFilter === 'event'
+                ? 'bg-emerald-700 text-white font-bold shadow-xs'
+                : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200'
+            }`}
+          >
+            Event Specific ({eventSponsors.length})
+          </button>
+        </div>
+
+        <span className="text-xs text-gray-500">
+          Showing {(sponsorTabFilter === 'global' ? globalSponsors : sponsorTabFilter === 'event' ? eventSponsors : sponsorsList).length} Partners
+        </span>
+      </div>
+
+      {/* FEATURED: GLOBAL TITLE PRESENTING PARTNER (JOOLA) */}
+      {globalSponsors.length > 0 && (sponsorTabFilter === 'all' || sponsorTabFilter === 'global') && (
+        <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-300 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
+          <div className="space-y-1.5 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-500 text-slate-950 tracking-wider">
+                ★ Global Title Presenting Partner
+              </span>
+              <span className="text-xs font-semibold text-amber-900">
+                Multi-Tournament Annual Agreement
+              </span>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <h3 className="text-lg font-extrabold text-gray-950">
+                {globalSponsors[0].name}
+              </h3>
+              {canViewFinancials && (
+                <span className="text-sm font-mono font-bold text-[#0A5C43]">
+                  ${(globalSponsors[0].amountPaid || 15000).toLocaleString()} / Year
                 </span>
-                <span className="text-xs font-semibold text-amber-900">
-                  Multi-Tournament Annual Agreement
-                </span>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <h3 className="text-base font-extrabold text-gray-950">
-                  {globalSponsors[0].name}
-                </h3>
+              )}
+            </div>
+            <p className="text-xs text-gray-700 max-w-2xl">
+              {globalSponsors[0].assetDescription || 'Headline logo across all Dinkster tournament portals, jumbo TV broadcasts, and official balls.'}
+            </p>
+            <div className="flex items-center gap-2 text-[11px] text-gray-600 flex-wrap pt-1">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 font-medium">
+                <Tv size={12} /> Jumbo TV Broadcast
+              </span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 font-medium">
+                <Globe size={12} /> Player Portal Banner
+              </span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 font-medium">
+                <Layers size={12} /> Baseline Court Banners
+              </span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 font-medium">
+                <Smartphone size={12} /> Mobile App Shoutout
+              </span>
+            </div>
+          </div>
+
+          <div className="shrink-0 flex items-center gap-2">
+            {globalSponsors[0].websiteUrl && (
+              <a
+                href={globalSponsors[0].websiteUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="px-4 py-2 rounded-xl border border-amber-400 bg-white hover:bg-amber-50 text-amber-950 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
+              >
+                <span>Visit Official Site</span>
+                <ExternalLink size={13} />
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* SPONSORS GRID */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {(sponsorTabFilter === 'global' ? globalSponsors : sponsorTabFilter === 'event' ? eventSponsors : sponsorsList).map((s, idx) => {
+          if (sponsorTabFilter === 'all' && s.scope === 'global') return null; // already featured on top
+          return (
+            <div
+              key={s.id || idx}
+              className="p-4 bg-white hover:bg-gray-50/50 rounded-2xl border border-gray-200 hover:border-gray-300 transition shadow-xs space-y-2.5 group"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-block ${
+                    s.scope === 'global' ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-800'
+                  }`}>
+                    {s.tier}
+                  </span>
+                  <h4 className="font-bold text-gray-900 text-sm mt-1.5 group-hover:text-[#0A5C43] transition">
+                    {s.name}
+                  </h4>
+                </div>
                 {canViewFinancials && (
-                  <span className="text-xs font-mono font-bold text-[#0A5C43]">
-                    ${(globalSponsors[0].amountPaid || 15000).toLocaleString()} / Year
+                  <span className="font-mono text-sm font-extrabold text-[#0A5C43]">
+                    ${(s.amountPaid || 0).toLocaleString()}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-gray-700">
-                {globalSponsors[0].assetDescription || 'Headline logo across all Dinkster tournament portals, jumbo TV broadcasts, and official balls.'}
+
+              <p className="text-xs text-gray-500 line-clamp-2">
+                {s.assetDescription || s.categoryLabel || 'Official Tournament Commercial Partner'}
               </p>
-              <div className="flex items-center gap-2 text-[11px] text-gray-600 flex-wrap pt-1">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-medium">
-                  <Tv size={12} /> Jumbo TV Broadcast
+
+              <div className="flex items-center justify-between pt-2.5 border-t border-gray-100 text-[11px] text-gray-400">
+                <span className="font-medium text-gray-600">
+                  {s.categoryLabel || (s.scope === 'global' ? 'Fleet Partner' : 'Event Partner')}
                 </span>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-medium">
-                  <Globe size={12} /> Player Portal Banner
-                </span>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-medium">
-                  <Layers size={12} /> Baseline Court Banners
-                </span>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-medium">
-                  <Smartphone size={12} /> Mobile App Shoutout
-                </span>
+                {s.courtAssigned && (
+                  <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[10px]">
+                    Court {s.courtAssigned} Naming
+                  </span>
+                )}
               </div>
             </div>
+          );
+        })}
+      </div>
 
-            <div className="shrink-0 flex items-center gap-2">
-              {globalSponsors[0].websiteUrl && (
-                <a
-                  href={globalSponsors[0].websiteUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-3 py-1.5 rounded-lg border border-amber-400 bg-white hover:bg-amber-50 text-amber-950 text-xs font-semibold transition flex items-center gap-1"
-                >
-                  <span>Visit Partner</span>
-                  <ExternalLink size={12} />
-                </a>
-              )}
-            </div>
+      {/* Bottom Action Callout Card */}
+      <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h3 className="text-sm font-bold text-gray-900">Commercial Partnerships Administration</h3>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Add new sponsors, allocate court naming rights, manage contract amounts, and configure tier-based benefits.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowSponsorsManager(true)}
+          className="px-4 py-2 bg-[#0A5C43] hover:bg-[#084734] text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center gap-2 shrink-0"
+        >
+          <Briefcase size={14} />
+          <span>Open Partnerships Manager</span>
+        </button>
+      </div>
+    </div>
+  )}
+
+  {/* ============================================================== */}
+  {/* HUB 3: EXECUTIVE ANALYTICS HUB */}
+  {/* ============================================================== */}
+  {activeHub === 'analytics' && (
+    <div className="space-y-4">
+      {canViewFinancials ? (
+        <ExecutiveAnalyticsHub
+          tournaments={tournaments}
+          sponsors={sponsorsList}
+          divisions={divisions}
+          selectedTournamentId={null}
+          actorProfile={actorProfile}
+          onSelectTournament={onSelectTournament}
+          onAskCopilot={onAskCopilot}
+        />
+      ) : (
+        <div className="bg-white p-12 rounded-2xl border border-gray-200 text-center space-y-3">
+          <ShieldCheck size={36} className="text-amber-500 mx-auto" />
+          <h3 className="text-base font-bold text-gray-900">Restricted Executive View</h3>
+          <p className="text-xs text-gray-500 max-w-md mx-auto">
+            Executive Financial Analytics and ledger audits are reserved for Dinkster Platform Founders and Tournament Directors.
+          </p>
+        </div>
+      )}
+    </div>
+  )}
+
+  {/* ============================================================== */}
+  {/* HUB 4: FACILITIES & OPERATIONS HUB */}
+  {/* ============================================================== */}
+  {activeHub === 'facilities' && (
+    <div className="space-y-4">
+      {/* Facilities Header Card */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+              Operations & Facilities Network
+            </span>
+            <span className="text-[11px] text-gray-500 font-medium">
+              Texas State Footprint
+            </span>
           </div>
-        )}
+          <h2 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+            <span>Texas Facilities & Venue Operations Hub</span>
+            <span className="text-xs bg-gray-100 text-gray-700 px-2.5 py-0.5 rounded-full font-semibold">
+              {facilitiesList.length} Contracted Venues
+            </span>
+          </h2>
+          <p className="text-xs text-gray-600 mt-0.5 max-w-2xl">
+            Audit contracted pickleball facilities, court surface specifications, official tournament ball standards, and multi-venue operational readiness across Austin, Dallas, Houston, and San Antonio.
+          </p>
+        </div>
 
-        {/* SPONSORS GRID */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {(sponsorTabFilter === 'global' ? globalSponsors : sponsorTabFilter === 'event' ? eventSponsors : sponsorsList).map((s, idx) => {
-            if (sponsorTabFilter === 'all' && s.scope === 'global') return null; // already featured on top
-            return (
-              <div
-                key={s.id || idx}
-                className="p-3.5 bg-gray-50/80 hover:bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition shadow-2xs space-y-2 group"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-block ${
-                      s.scope === 'global' ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-800'
-                    }`}>
-                      {s.tier}
-                    </span>
-                    <h4 className="font-bold text-gray-900 text-xs mt-1 group-hover:text-[#0A5C43] transition">
-                      {s.name}
-                    </h4>
-                  </div>
-                  {canViewFinancials && (
-                    <span className="font-mono text-xs font-extrabold text-[#0A5C43]">
-                      ${(s.amountPaid || 0).toLocaleString()}
-                    </span>
-                  )}
-                </div>
+        <div className="flex items-center gap-2 self-start md:self-auto flex-wrap">
+          <button
+            type="button"
+            onClick={() => setActiveKpiModal('courts')}
+            className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-900 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-xs"
+          >
+            <Layers size={14} className="text-emerald-700" />
+            <span>Court Allocation Audit</span>
+          </button>
 
-                <p className="text-[11px] text-gray-500 line-clamp-2">
-                  {s.assetDescription || s.categoryLabel || 'Official Tournament Commercial Partner'}
-                </p>
-
-                <div className="flex items-center justify-between pt-2 border-t border-gray-200/60 text-[10px] text-gray-400">
-                  <span>{s.categoryLabel || (s.scope === 'global' ? 'Fleet Partner' : 'Event Partner')}</span>
-                  {s.courtAssigned && (
-                    <span className="font-bold text-emerald-700">Court {s.courtAssigned} Naming</span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+          {canManageFleet && (
+            <button
+              type="button"
+              onClick={() => {
+                setCreateMode('manual');
+                setShowCreateModal(true);
+              }}
+              className="px-3.5 py-2 bg-[#0A5C43] hover:bg-[#084734] text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center gap-2"
+            >
+              <Plus size={15} />
+              <span>Add Facility Event</span>
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Operational KPI Metric Tiles */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
+          <span className="text-[11px] font-semibold text-gray-500 uppercase block">
+            Contracted Venues
+          </span>
+          <div className="text-xl font-bold text-gray-900 my-1">
+            {facilitiesList.length} Texas Venues
+          </div>
+          <div className="text-xs text-gray-500">
+            Austin, Dallas, Houston, San Antonio
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
+          <span className="text-[11px] font-semibold text-gray-500 uppercase block">
+            Total Competition Courts
+          </span>
+          <div className="text-xl font-bold text-emerald-800 my-1 font-mono">
+            {totalFacilitiesCourts} Active Courts
+          </div>
+          <div className="text-xs text-emerald-700 font-semibold">
+            Available for Tournament Scheduling
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
+          <span className="text-[11px] font-semibold text-gray-500 uppercase block">
+            Certified Surface Standards
+          </span>
+          <div className="text-xl font-bold text-gray-900 my-1">
+            100% PPA Certified
+          </div>
+          <div className="text-xs text-gray-500">
+            Acrylic Hardcourt & Sport Tile
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
+          <span className="text-[11px] font-semibold text-gray-500 uppercase block">
+            Official Ball Standard
+          </span>
+          <div className="text-xl font-bold text-amber-900 my-1">
+            Franklin X-40
+          </div>
+          <div className="text-xs text-gray-500">
+            USAP Approved Tournament Balls
+          </div>
+        </div>
+      </div>
+
+      {/* Facilities Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {facilitiesList.map((fac, idx) => (
+          <div
+            key={idx}
+            className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs hover:border-[#0A5C43] transition space-y-4"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-800 uppercase tracking-wider">
+                    {fac.city}, {fac.state}
+                  </span>
+                  <span className="text-[11px] text-emerald-700 font-semibold">
+                    {fac.courts} Competition Courts
+                  </span>
+                </div>
+                <h3 className="text-base font-bold text-gray-900 mt-1">
+                  {fac.venue}
+                </h3>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 shrink-0">
+                <Building2 size={20} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="p-2.5 rounded-xl bg-gray-50 border border-gray-100">
+                <span className="text-[10px] uppercase font-bold text-gray-400 block">Court Surface</span>
+                <span className="font-semibold text-gray-800 mt-0.5 block">{fac.surface}</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-gray-50 border border-gray-100">
+                <span className="text-[10px] uppercase font-bold text-gray-400 block">Match Ball</span>
+                <span className="font-semibold text-gray-800 mt-0.5 block">{fac.ball}</span>
+              </div>
+            </div>
+
+            {/* Associated Tournaments Hosted at this Facility */}
+            <div className="border-t pt-3 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[11px] font-bold text-gray-500 uppercase">
+                  Tournaments Hosted ({fac.tournaments.length})
+                </span>
+              </div>
+
+              <div className="space-y-1.5">
+                {fac.tournaments.map((t) => (
+                  <div
+                    key={t.id}
+                    onClick={() => onSelectTournament(t.id)}
+                    className="p-2.5 rounded-xl bg-gray-50 hover:bg-emerald-50/70 border border-gray-200 flex items-center justify-between transition cursor-pointer group"
+                  >
+                    <div className="min-w-0 pr-2">
+                      <div className="font-bold text-gray-900 group-hover:text-[#0A5C43] transition truncate text-xs">
+                        {t.name}
+                      </div>
+                      <div className="text-[11px] text-gray-500 truncate">
+                        {t.dates} &bull; {t.registeredCount || 0} Registered
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          t.status === 'Live'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : t.status === 'Published'
+                            ? 'bg-blue-100 text-blue-800'
+                            : t.status === 'Draft'
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        {t.status === 'Live' ? 'LIVE NOW' : t.status}
+                      </span>
+                      <ChevronRight size={14} className="text-gray-400 group-hover:text-[#0A5C43] transition" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Technical Specifications & Equipment Standards */}
+      <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-4">
+        <div className="border-b pb-3">
+          <h3 className="text-base font-bold text-gray-900">
+            Official Dinkster Technical & Equipment Specifications
+          </h3>
+          <p className="text-xs text-gray-500">
+            All Texas venues must conform to USAP regulation standards for court geometry, surface friction, and tournament ball tolerances.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+          <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200 space-y-1">
+            <span className="font-bold text-gray-900 block">Court Dimensions</span>
+            <span className="text-gray-600 block">20&apos; x 44&apos; playing boundaries with 7&apos; Non-Volley Zone (Kitchen). Minimum 5&apos; side buffer.</span>
+          </div>
+          <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200 space-y-1">
+            <span className="font-bold text-gray-900 block">Net Height & Tension</span>
+            <span className="text-gray-600 block">36&quot; height at net posts, 34&quot; center strap height. Steel cable with tension adjusters.</span>
+          </div>
+          <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200 space-y-1">
+            <span className="font-bold text-gray-900 block">Official Ball Specs</span>
+            <span className="text-gray-600 block">Franklin X-40 (40 precision holes, 2.9&quot; diameter, 0.92 oz). Tested for 30-34&quot; bounce at 75°F.</span>
+          </div>
+          <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200 space-y-1">
+            <span className="font-bold text-gray-900 block">Lighting & Camera Standards</span>
+            <span className="text-gray-600 block">Minimum 750 Lux LED uniform distribution with dual baseline 4K optical broadcast mounts.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )}
 
       {/* 6. INTERACTIVE KPI BREAKDOWN MODAL */}
       {activeKpiModal && (

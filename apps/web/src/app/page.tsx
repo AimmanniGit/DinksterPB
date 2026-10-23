@@ -90,7 +90,6 @@ export default function DinksterV2Platform() {
   // Workspace Tab State (Clean V2 navigation tabs)
   // 'overview' | 'desk' | 'players' | 'brackets' | 'sponsors' | 'analytics' | 'settings' | 'copilot'
   const [workspaceTab, setWorkspaceTab] = useState<'overview' | 'desk' | 'players' | 'brackets' | 'sponsors' | 'analytics' | 'settings' | 'copilot'>('overview');
-  const [isFleetAnalyticsOpen, setIsFleetAnalyticsOpen] = useState(false);
 
   // RBAC Current Active Role Profile
   const [currentActorProfile, setCurrentActorProfile] = useState<UserActorProfile>(INITIAL_ACTOR_PROFILES.founder);
@@ -705,47 +704,24 @@ export default function DinksterV2Platform() {
         {/* ============================================================ */}
         {!selectedTournamentId && (
           <div className="space-y-6">
-            {isFleetAnalyticsOpen && currentActorProfile.permissions.canViewAnalytics ? (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <button
-                    type="button"
-                    onClick={() => setIsFleetAnalyticsOpen(false)}
-                    className="text-xs font-bold text-gray-700 hover:text-[#0A5C43] transition flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-gray-200 shadow-2xs"
-                  >
-                    <ArrowLeft size={13} />
-                    <span>Return to Fleet Directory</span>
-                  </button>
-                </div>
-                <ExecutiveAnalyticsHub
-                  tournaments={tournaments}
-                  sponsors={sponsors}
-                  divisions={divisions}
-                  selectedTournamentId={null}
-                  actorProfile={currentActorProfile}
-                  onSelectTournament={handleSelectTournament}
-                  onAskCopilot={(prompt) => {
-                    setCopilotInitialPrompt(prompt);
-                    setSelectedTournamentId(tournaments[0]?.id || 'tourn-austin-live');
-                    setWorkspaceTab('copilot');
-                  }}
-                />
-              </div>
-            ) : (
-              <TournamentFleetDirectory
-                tournaments={tournaments}
-                sponsors={sponsors}
-                activeTournamentId={selectedTournamentId}
-                onSelectTournament={handleSelectTournament}
-                onCreateTournament={handleCreateTournament}
-                onAddSponsor={handleAddSponsor}
-                onUpdateSponsor={handleUpdateSponsor}
-                onDeleteSponsor={handleDeleteSponsor}
-                onAssignCourt={handleAssignCourt}
-                actorProfile={currentActorProfile}
-                onOpenAnalytics={() => setIsFleetAnalyticsOpen(true)}
-              />
-            )}
+            <TournamentFleetDirectory
+              tournaments={tournaments}
+              sponsors={sponsors}
+              divisions={divisions}
+              activeTournamentId={selectedTournamentId}
+              onSelectTournament={handleSelectTournament}
+              onCreateTournament={handleCreateTournament}
+              onAddSponsor={handleAddSponsor}
+              onUpdateSponsor={handleUpdateSponsor}
+              onDeleteSponsor={handleDeleteSponsor}
+              onAssignCourt={handleAssignCourt}
+              actorProfile={currentActorProfile}
+              onAskCopilot={(prompt) => {
+                setCopilotInitialPrompt(prompt);
+                setSelectedTournamentId(tournaments[0]?.id || 'tourn-austin-live');
+                setWorkspaceTab('copilot');
+              }}
+            />
           </div>
         )}
 

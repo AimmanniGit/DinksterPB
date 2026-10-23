@@ -28,7 +28,7 @@ interface ExecutiveAnalyticsHubProps {
   sponsors?: Sponsor[];
   divisions?: Division[];
   selectedTournamentId?: string | null;
-  actorProfile: UserActorProfile;
+  actorProfile?: UserActorProfile;
   onAskCopilot?: (analyticsPrompt: string) => void;
   onSelectTournament?: (id: string) => void;
 }
@@ -42,8 +42,28 @@ export const ExecutiveAnalyticsHub: React.FC<ExecutiveAnalyticsHubProps> = ({
   onAskCopilot,
   onSelectTournament,
 }) => {
+  const effectiveProfile: UserActorProfile = actorProfile || {
+    id: 'actor-founder',
+    name: 'AJ (Founder & Owner)',
+    email: 'founder@dinkster.app',
+    role: 'founder',
+    roleTitle: 'Head / Founder (Unrestricted)',
+    avatarInitials: 'AJ',
+    permissions: {
+      canViewFinancials: true,
+      canViewAnalytics: true,
+      canManageFleet: true,
+      canManageGlobalSponsors: true,
+      canManageEventSponsors: true,
+      canEditTournamentRules: true,
+      canDispatchCourts: true,
+      canResolveDisputes: true,
+      canInputScores: true,
+    },
+  };
+
   // If user is a referee or volunteer, block access immediately
-  if (!actorProfile.permissions.canViewAnalytics || !actorProfile.permissions.canViewFinancials) {
+  if (!effectiveProfile.permissions.canViewAnalytics || !effectiveProfile.permissions.canViewFinancials) {
     return (
       <div className="bg-white p-12 rounded-3xl border border-gray-200 text-center max-w-xl mx-auto my-12 shadow-sm">
         <div className="w-14 h-14 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto mb-4 border border-red-200">
@@ -55,7 +75,7 @@ export const ExecutiveAnalyticsHub: React.FC<ExecutiveAnalyticsHubProps> = ({
         </p>
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
           <span>Active Role:</span>
-          <strong>{actorProfile.roleTitle}</strong>
+          <strong>{effectiveProfile.roleTitle}</strong>
         </div>
       </div>
     );
