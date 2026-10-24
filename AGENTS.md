@@ -19,7 +19,29 @@
 
 ---
 
-## 3. Identity & Code Conventions
+## 3. Product Architecture & Non-Negotiable Boundaries (The 3 Pillars)
+- **Pillar 1: Dinkster Mobile (`apps/mobile/`) — The Everyday Player App (Flagship Consumer Product)**:
+  - This is where pickleball players live **365 days a year**.
+  - Core features: Finding hitting partners (**Crew / Player Find**), discovering nearby courts & open play (**Courts**), scoring pickup matches & paddle vibration tracking (**Play**), and personal DUPR career rating & member card (**Profile**).
+  - It is NOT merely a tournament spectator tool; it is the everyday community platform.
+
+- **Pillar 2: Dinkster Player Portal (`apps/web/src/app/portal/`, `/t/[slug]`) — The Tournament Registration Hub (Web)**:
+  - 100% player-facing tournament entry experience.
+  - Core features: Browse open Texas tournaments, Smart DUPR bracket matching, 1-click team registration, split-payments, teammate invite codes (`TP-XXXX`), SMS/WhatsApp sharing, and career medal finishes.
+  - **STRICT ISOLATION RULE**:
+    - **Zero Organizer Routing**: NEVER render links or buttons pointing to the Organizer Suite (`/`). The logo links strictly to `/portal`.
+    - **Zero Draft Events**: Players must NEVER see internal organizer setup drafts (`status: 'Draft'`).
+    - **Zero Concluded Events in Discovery**: Concluded tournaments are never listed in the "Find Tournaments" registration directory. They only appear in the player's personal past finishes archive.
+    - **Only Published & Live Events**: The tournament directory must strictly show `Published` (registration open) or `Live` (matches in progress today).
+
+- **Pillar 3: Dinkster Organizer Suite (`apps/web/src/app/page.tsx`) — The Tournament Operations OS (Web)**:
+  - B2B operations engine for Tournament Directors, Club Owners, Head Referees (Marshalls), and Scorekeepers.
+  - Core features: Multi-tournament fleet management, bracket generation, live court dispatching, silent score dispute resolution, sponsor monetization, and director financial yield accounting.
+  - Strictly decoupled from player registration and casual pickup games.
+
+---
+
+## 4. Identity & Code Conventions
 - **Dinkster Player ID**: Format must strictly follow `DK-XXXXX`.
 - **Game Join Code**: Format must strictly follow `D-XXXX` (entered via native uppercase text field, no custom keypads).
 - **Team Names**: Default team names to player initials (e.g., `"AJ & MR"`), editable inline by the host.
